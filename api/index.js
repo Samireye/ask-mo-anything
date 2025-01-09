@@ -102,53 +102,6 @@ const validateInput = (req, res, next) => {
     next();
 };
 
-// Initialize OpenAI with configuration
-console.log('Initializing OpenAI client...');
-
-let openai;
-try {
-    if (!process.env.OPENAI_API_KEY) {
-        throw new Error('OPENAI_API_KEY environment variable is not set');
-    }
-
-    const apiKey = process.env.OPENAI_API_KEY.trim();
-    console.log('Using API key with prefix:', apiKey.substring(0, 8));
-
-    openai = new OpenAI({
-        apiKey,
-        baseURL: 'https://api.openai.com/v1', // Explicitly set the base URL
-        defaultHeaders: {
-            'Authorization': `Bearer ${apiKey}`,
-            'OpenAI-Organization': process.env.OPENAI_ORG_ID // Optional: if you have an org ID
-        },
-        defaultQuery: {},
-        maxRetries: 3,
-        timeout: 30000
-    });
-
-    // Test the OpenAI client with a simpler API call
-    console.log('Testing OpenAI client configuration...');
-    const response = await openai.chat.completions.create({
-        model: "gpt-3.5-turbo", // Use a simpler model for testing
-        messages: [
-            { role: "user", content: "Hello" }
-        ],
-        max_tokens: 5
-    });
-    
-    console.log('OpenAI client test successful:', response.choices[0]?.message?.content);
-} catch (error) {
-    console.error('Error initializing OpenAI client:', {
-        name: error.name,
-        message: error.message,
-        type: error.type,
-        status: error.response?.status,
-        data: error.response?.data,
-        stack: error.stack
-    });
-    process.exit(1);
-}
-
 // Rate limiting setup
 const limiter = rateLimit({
     windowMs: 15 * 60 * 1000,
@@ -160,70 +113,51 @@ app.use(limiter);
 
 app.post('/api/chat', validateInput, async (req, res) => {
     try {
-        const userMessage = req.body.message.trim();
-        console.log('Received message:', userMessage);
+        // Initialize OpenAI for each request
+        const openai = new OpenAI({
+            apiKey: process.env.OPENAI_API_KEY,
+            timeout: 30000, // 30 second timeout
+            maxRetries: 3
+        });
 
-        if (!openai) {
-            throw new Error('OpenAI client is not initialized');
-        }
+        const { message } = req.body;
 
-        console.log('Creating chat completion...');
         const completion = await openai.chat.completions.create({
             model: "gpt-4",
             messages: [
                 { role: "system", content: systemMessage },
-                { role: "user", content: userMessage }
+                { role: "user", content: message }
             ],
             temperature: 0.7,
-            max_tokens: 1000,
-            presence_penalty: 0.6,
-            frequency_penalty: 0.6
+            max_tokens: 1000
         });
 
-        console.log('Chat completion received');
-        
-        if (!completion.choices || !completion.choices[0]?.message?.content) {
-            console.error('Invalid response structure:', completion);
-            throw new Error('Invalid response from OpenAI');
+        if (!completion.choices || completion.choices.length === 0) {
+            console.error('No completion choices returned');
+            return res.status(500).json({ error: 'No response generated' });
         }
 
         const response = completion.choices[0].message.content;
-        console.log('Sending response to client');
-        
-        res.json({ 
-            response,
-            usage: completion.usage
-        });
-    } catch (error) {
-        console.error('Chat API Error:', {
-            name: error.name,
-            message: error.message,
-            type: error.type,
-            status: error.response?.status,
-            statusText: error.response?.statusText,
-            data: error.response?.data
-        });
-        
-        let errorMessage = 'An error occurred while processing your request.';
-        let statusCode = 500;
+        return res.json({ response });
 
-        if (error.response?.status === 401) {
-            errorMessage = 'API key authentication failed. Please check your OpenAI API key.';
-            statusCode = 401;
-        } else if (error.response?.status === 429) {
-            errorMessage = 'Too many requests. Please try again later.';
-            statusCode = 429;
-        } else if (error.message.includes('API key')) {
-            errorMessage = 'OpenAI API key is not configured properly.';
-            statusCode = 500;
-        }
+    } catch (error) {
+        console.error('Error in chat endpoint:', error);
         
-        res.status(statusCode).json({ 
-            error: errorMessage,
-            type: error.type || 'SERVER_ERROR',
-            details: process.env.NODE_ENV === 'development' ? error.message : undefined
+        // Send structured error response
+        return res.status(500).json({
+            error: 'An error occurred while processing your request',
+            details: error.message
         });
     }
+});
+
+// Error handling middleware
+app.use((err, req, res, next) => {
+    console.error('Global error handler:', err);
+    res.status(500).json({
+        error: 'An unexpected error occurred',
+        details: err.message
+    });
 });
 
 // Use port provided by Vercel or default to 3000
@@ -233,3 +167,5 @@ app.listen(PORT, () => {
 }).on('error', (error) => {
     console.error('Server failed to start:', error);
 });
+
+export default app;
