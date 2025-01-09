@@ -114,6 +114,11 @@ app.post('/api/chat', validateInput, async (req, res) => {
     res.setHeader('Content-Type', 'text/event-stream');
     res.setHeader('Cache-Control', 'no-cache');
     res.setHeader('Connection', 'keep-alive');
+    res.setHeader('X-Accel-Buffering', 'no'); // Disable Nginx buffering
+
+    const sendEvent = (data) => {
+        res.write(`data: ${JSON.stringify(data)}\n\n`);
+    };
 
     try {
         // Initialize OpenAI for each request
@@ -126,7 +131,7 @@ app.post('/api/chat', validateInput, async (req, res) => {
         const { message } = req.body;
 
         // Send initial response to keep connection alive
-        res.write('data: {"status": "processing"}\n\n');
+        sendEvent({ status: 'processing' });
 
         // Create the completion with streaming
         const stream = await openai.chat.completions.create({
@@ -148,13 +153,15 @@ app.post('/api/chat', validateInput, async (req, res) => {
             if (content) {
                 fullResponse += content;
                 // Send each chunk to keep connection alive
-                res.write(`data: {"chunk": ${JSON.stringify(content)}}\n\n`);
+                sendEvent({ chunk: content });
             }
         }
 
         // Process and send the final response
         const processedResponse = processMessageText(fullResponse);
-        res.write(`data: {"response": ${JSON.stringify(processedResponse)}, "status": "complete"}\n\n`);
+        sendEvent({ response: processedResponse, status: 'complete' });
+        
+        // Explicitly end the response
         res.end();
 
     } catch (error) {
@@ -162,12 +169,14 @@ app.post('/api/chat', validateInput, async (req, res) => {
         
         // Handle specific error types
         if (error.message?.includes('timed out') || error.code === 'ETIMEDOUT') {
-            res.write(`data: {"error": "Request timed out", "message": "The request took too long to complete. Please try again."}\n\n`);
+            sendEvent({ error: 'Request timed out', message: 'The request took too long to complete. Please try again.' });
         } else if (error.status === 429 || error.code === 'rate_limit_exceeded') {
-            res.write(`data: {"error": "Rate limit exceeded", "message": "Too many requests. Please wait a moment and try again."}\n\n`);
+            sendEvent({ error: 'Rate limit exceeded', message: 'Too many requests. Please wait a moment and try again.' });
         } else {
-            res.write(`data: {"error": "An error occurred", "message": "${error.message || 'Internal server error'}"}\n\n`);
+            sendEvent({ error: 'An error occurred', message: error.message || 'Internal server error' });
         }
+        
+        // Explicitly end the response
         res.end();
     }
 });

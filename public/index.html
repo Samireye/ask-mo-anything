@@ -370,6 +370,7 @@
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
+                        'Accept': 'text/event-stream'
                     },
                     body: JSON.stringify({ message })
                 });
@@ -378,10 +379,20 @@
                 const reader = response.body.getReader();
                 const decoder = new TextDecoder();
                 let botResponse = '';
+                let isComplete = false;
 
-                while (true) {
+                while (!isComplete) {
                     const { value, done } = await reader.read();
-                    if (done) break;
+                    
+                    if (done) {
+                        isComplete = true;
+                        // If we have a partial response, display it
+                        if (botResponse) {
+                            loadingMessage.className = 'message bot-message';
+                            loadingMessage.innerHTML = processMessageText(botResponse);
+                        }
+                        break;
+                    }
 
                     // Process the chunk
                     const chunk = decoder.decode(value);
@@ -399,14 +410,17 @@
                                     loadingMessage.innerHTML = processMessageText(botResponse);
                                 } else if (data.response) {
                                     // Final response
+                                    isComplete = true;
                                     loadingMessage.className = 'message bot-message';
                                     loadingMessage.innerHTML = data.response;
                                 } else if (data.error) {
+                                    isComplete = true;
                                     loadingMessage.className = 'message error-message';
                                     loadingMessage.textContent = `Error: ${data.message}`;
                                 }
                             } catch (e) {
                                 console.error('Error parsing SSE data:', e);
+                                continue;
                             }
                         }
                     }
