@@ -351,50 +351,55 @@
             
             if (!message) return;
             
-            // Clear input and show loading state
             userInput.value = '';
             const userMessage = document.createElement('div');
             userMessage.className = 'message user-message';
             userMessage.textContent = message;
             chatMessages.appendChild(userMessage);
             
-            // Add loading message
             const loadingMessage = document.createElement('div');
             loadingMessage.className = 'message bot-message loading';
             loadingMessage.textContent = 'Thinking...';
             chatMessages.appendChild(loadingMessage);
             
             try {
-                // Create EventSource for streaming
+                const controller = new AbortController();
+                const timeoutId = setTimeout(() => controller.abort(), 60000); // 60 second timeout
+
                 const response = await fetch('/api/chat', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
                         'Accept': 'text/event-stream'
                     },
-                    body: JSON.stringify({ message })
+                    body: JSON.stringify({ message }),
+                    signal: controller.signal
                 });
 
-                // Create a reader for the response
+                clearTimeout(timeoutId);
+
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+
                 const reader = response.body.getReader();
                 const decoder = new TextDecoder();
                 let botResponse = '';
                 let isComplete = false;
+                let lastUpdate = Date.now();
 
                 while (!isComplete) {
                     const { value, done } = await reader.read();
                     
                     if (done) {
-                        isComplete = true;
-                        // If we have a partial response, display it
-                        if (botResponse) {
+                        console.log('Stream complete');
+                        if (botResponse && !isComplete) {
                             loadingMessage.className = 'message bot-message';
                             loadingMessage.innerHTML = processMessageText(botResponse);
                         }
                         break;
                     }
 
-                    // Process the chunk
                     const chunk = decoder.decode(value);
                     const lines = chunk.split('\n');
 
@@ -402,6 +407,7 @@
                         if (line.startsWith('data: ')) {
                             try {
                                 const data = JSON.parse(line.slice(6));
+                                lastUpdate = Date.now();
 
                                 if (data.status === 'processing') {
                                     loadingMessage.textContent = 'Processing...';
@@ -409,14 +415,15 @@
                                     botResponse += data.chunk;
                                     loadingMessage.innerHTML = processMessageText(botResponse);
                                 } else if (data.response) {
-                                    // Final response
                                     isComplete = true;
                                     loadingMessage.className = 'message bot-message';
                                     loadingMessage.innerHTML = data.response;
+                                    break;
                                 } else if (data.error) {
                                     isComplete = true;
                                     loadingMessage.className = 'message error-message';
                                     loadingMessage.textContent = `Error: ${data.message}`;
+                                    break;
                                 }
                             } catch (e) {
                                 console.error('Error parsing SSE data:', e);
@@ -424,15 +431,28 @@
                             }
                         }
                     }
+
+                    // Check for stalled connection
+                    if (Date.now() - lastUpdate > 10000) {
+                        console.log('Connection stalled');
+                        if (botResponse) {
+                            loadingMessage.className = 'message bot-message';
+                            loadingMessage.innerHTML = processMessageText(botResponse);
+                        }
+                        break;
+                    }
                 }
                 
             } catch (error) {
                 console.error('Error:', error);
                 loadingMessage.className = 'message error-message';
-                loadingMessage.textContent = 'Sorry, there was an error processing your request. Please try again.';
+                if (error.name === 'AbortError') {
+                    loadingMessage.textContent = 'The request took too long and was cancelled. Please try again.';
+                } else {
+                    loadingMessage.textContent = 'Sorry, there was an error processing your request. Please try again.';
+                }
             }
             
-            // Scroll to bottom
             chatMessages.scrollTop = chatMessages.scrollHeight;
         }
 

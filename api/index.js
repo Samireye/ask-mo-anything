@@ -114,26 +114,50 @@ app.post('/api/chat', validateInput, async (req, res) => {
     res.setHeader('Content-Type', 'text/event-stream');
     res.setHeader('Cache-Control', 'no-cache');
     res.setHeader('Connection', 'keep-alive');
-    res.setHeader('X-Accel-Buffering', 'no'); // Disable Nginx buffering
+    res.setHeader('X-Accel-Buffering', 'no');
 
     const sendEvent = (data) => {
-        res.write(`data: ${JSON.stringify(data)}\n\n`);
+        try {
+            res.write(`data: ${JSON.stringify(data)}\n\n`);
+        } catch (error) {
+            console.error('Error sending event:', error);
+        }
     };
 
+    let streamEnded = false;
+    const endStream = () => {
+        if (!streamEnded) {
+            streamEnded = true;
+            try {
+                res.end();
+            } catch (error) {
+                console.error('Error ending stream:', error);
+            }
+        }
+    };
+
+    // Set up response timeout
+    const timeoutId = setTimeout(() => {
+        console.log('Response timeout reached');
+        if (!streamEnded) {
+            sendEvent({ error: 'Response timeout', message: 'The response took too long to generate.' });
+            endStream();
+        }
+    }, 50000); // 50 second timeout
+
     try {
-        // Initialize OpenAI for each request
+        console.log('Starting chat request processing');
         const openai = new OpenAI({
             apiKey: process.env.OPENAI_API_KEY,
             maxRetries: 2,
-            timeout: 60000 // 60 second timeout
+            timeout: 45000 // 45 second timeout
         });
 
         const { message } = req.body;
+        console.log('Received message:', message);
 
-        // Send initial response to keep connection alive
         sendEvent({ status: 'processing' });
 
-        // Create the completion with streaming
         const stream = await openai.chat.completions.create({
             model: "gpt-4",
             messages: [
@@ -141,43 +165,56 @@ app.post('/api/chat', validateInput, async (req, res) => {
                 { role: "user", content: message }
             ],
             temperature: 0.7,
-            max_tokens: 800,
-            stream: true // Enable streaming
+            max_tokens: 750,
+            stream: true,
+            presence_penalty: 0,
+            frequency_penalty: 0
         });
 
+        console.log('Stream created, beginning processing');
         let fullResponse = '';
+        let chunkCount = 0;
 
-        // Process the stream
-        for await (const chunk of stream) {
-            const content = chunk.choices[0]?.delta?.content || '';
-            if (content) {
-                fullResponse += content;
-                // Send each chunk to keep connection alive
-                sendEvent({ chunk: content });
+        try {
+            for await (const chunk of stream) {
+                if (streamEnded) break;
+                
+                const content = chunk.choices[0]?.delta?.content || '';
+                if (content) {
+                    chunkCount++;
+                    fullResponse += content;
+                    console.log(`Processing chunk ${chunkCount}`);
+                    sendEvent({ chunk: content });
+                }
+            }
+
+            console.log('Stream processing complete');
+            if (!streamEnded) {
+                const processedResponse = processMessageText(fullResponse);
+                sendEvent({ response: processedResponse, status: 'complete' });
+            }
+        } catch (streamError) {
+            console.error('Error processing stream:', streamError);
+            if (!streamEnded) {
+                sendEvent({ error: 'Stream processing error', message: streamError.message });
             }
         }
 
-        // Process and send the final response
-        const processedResponse = processMessageText(fullResponse);
-        sendEvent({ response: processedResponse, status: 'complete' });
-        
-        // Explicitly end the response
-        res.end();
-
     } catch (error) {
         console.error('Error in chat endpoint:', error);
-        
-        // Handle specific error types
-        if (error.message?.includes('timed out') || error.code === 'ETIMEDOUT') {
-            sendEvent({ error: 'Request timed out', message: 'The request took too long to complete. Please try again.' });
-        } else if (error.status === 429 || error.code === 'rate_limit_exceeded') {
-            sendEvent({ error: 'Rate limit exceeded', message: 'Too many requests. Please wait a moment and try again.' });
-        } else {
-            sendEvent({ error: 'An error occurred', message: error.message || 'Internal server error' });
+        if (!streamEnded) {
+            if (error.message?.includes('timed out') || error.code === 'ETIMEDOUT') {
+                sendEvent({ error: 'Request timed out', message: 'The request took too long to complete. Please try again.' });
+            } else if (error.status === 429 || error.code === 'rate_limit_exceeded') {
+                sendEvent({ error: 'Rate limit exceeded', message: 'Too many requests. Please wait a moment and try again.' });
+            } else {
+                sendEvent({ error: 'An error occurred', message: error.message || 'Internal server error' });
+            }
         }
-        
-        // Explicitly end the response
-        res.end();
+    } finally {
+        clearTimeout(timeoutId);
+        endStream();
+        console.log('Request processing finished');
     }
 });
 
