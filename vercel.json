@@ -5,7 +5,9 @@
       "src": "api/index.js",
       "use": "@vercel/node",
       "config": {
-        "maxDuration": 90
+        "maxDuration": 30,
+        "memory": 1024,
+        "regions": ["iad1"]
       }
     },
     {
@@ -31,15 +33,5 @@
       "src": "/(.*)",
       "dest": "/public/$1"
     }
-  ],
-  "functions": {
-    "api/index.js": {
-      "memory": 1024,
-      "maxDuration": 60
-    }
-  },
-  "regions": ["iad1"],
-  "serverless": {
-    "timeout": 60
-  }
+  ]
 }
