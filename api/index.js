@@ -158,22 +158,24 @@ Your response must be in exactly 3 sections, each marked with [SECTION_START] an
 [SECTION_START]1
 بِسْمِ اللَّهِ الرَّحْمَنِ الرَّحِيمِ
 
-Brief introduction to the topic
+Brief introduction to the topic (2-3 sentences)
 [SECTION_END]
 
 [SECTION_START]2
 Main content:
-- If citing Quran: verse number, Arabic, English (keep verses short)
-- If citing Hadith: narrator, Arabic, English (keep hadith short)
+- Key biographical information
+- One relevant Quranic verse with Arabic and English
+- One relevant Hadith with Arabic and English
+- Keep Arabic texts complete, don't truncate
 - Use proper honorifics (ﷺ, رضي الله عنه)
 [SECTION_END]
 
 [SECTION_START]3
-Please verify this information with qualified scholars.
+Brief scholarly reminder and closing.
 واللهُ أَعْلَم
 [SECTION_END]
 
-Keep each section focused and concise. Do not combine sections.`
+Keep sections focused and complete. Never truncate Arabic text.`
             }
         ];
 
@@ -183,7 +185,7 @@ Keep each section focused and concise. Do not combine sections.`
             model: "gpt-4",
             messages: [...systemMessages, { role: "user", content: message }],
             temperature: 0.7,
-            max_tokens: 600,
+            max_tokens: 800,
             stream: true,
             presence_penalty: 0,
             frequency_penalty: 0
@@ -192,6 +194,7 @@ Keep each section focused and concise. Do not combine sections.`
         console.log('Stream created, beginning processing');
         let currentSection = '';
         let sectionCount = 0;
+        let lastChunkTime = Date.now();
 
         try {
             for await (const chunk of stream) {
@@ -200,6 +203,7 @@ Keep each section focused and concise. Do not combine sections.`
                 const content = chunk.choices[0]?.delta?.content || '';
                 if (content) {
                     currentSection += content;
+                    lastChunkTime = Date.now();
                     
                     // Check for section markers
                     if (currentSection.includes('[SECTION_END]')) {
@@ -219,10 +223,19 @@ Keep each section focused and concise. Do not combine sections.`
                         content.includes('؛') || 
                         content.includes('،')
                     ) {
-                        console.log(`Sending partial section ${sectionCount + 1}`);
-                        sendEvent({ chunk: currentSection });
-                        currentSection = '';
+                        // Only send if we have a complete sentence or thought
+                        if (currentSection.match(/[.!?؟।\n]$/)) {
+                            console.log(`Sending partial section ${sectionCount + 1}`);
+                            sendEvent({ chunk: currentSection });
+                            currentSection = '';
+                        }
                     }
+                }
+
+                // Check for stalled stream
+                if (Date.now() - lastChunkTime > 5000) {
+                    console.log('Stream stalled, attempting to continue...');
+                    lastChunkTime = Date.now(); // Reset timer
                 }
             }
 

@@ -3,12 +3,7 @@
   "builds": [
     {
       "src": "api/index.js",
-      "use": "@vercel/node",
-      "config": {
-        "maxDuration": 10,
-        "memory": 1024,
-        "regions": ["iad1"]
-      }
+      "use": "@vercel/node"
     },
     {
       "src": "public/**",
@@ -19,11 +14,7 @@
     {
       "src": "/api/(.*)",
       "dest": "/api/index.js",
-      "headers": {
-        "Access-Control-Allow-Origin": "*",
-        "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
-        "Access-Control-Allow-Headers": "Content-Type"
-      }
+      "methods": ["GET", "POST", "OPTIONS"]
     },
     {
       "src": "/",
@@ -33,5 +24,10 @@
       "src": "/(.*)",
       "dest": "/public/$1"
     }
-  ]
+  ],
+  "functions": {
+    "api/index.js": {
+      "maxDuration": 60
+    }
+  }
 }
