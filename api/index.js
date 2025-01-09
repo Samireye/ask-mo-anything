@@ -41,14 +41,6 @@ app.use(express.json());
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
-// Serve static files from the current directory
-app.use(express.static(__dirname));
-
-// Serve index.html at the root route
-app.get('/', (req, res) => {
-    res.sendFile('index.html', { root: __dirname });
-});
-
 // Enhanced system message for more accurate and respectful responses
 const systemMessage = `You are an AI assistant specialized in providing information about Prophet Muhammad ﷺ (peace be upon him) and Islamic teachings. Your responses must:
 
