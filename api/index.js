@@ -153,29 +153,29 @@ app.post('/api/chat', validateInput, async (req, res) => {
                 role: "system",
                 content: `You are an AI assistant providing information about Prophet Muhammad ﷺ and Islamic teachings. 
 
-Your response must be in exactly 3 sections, each marked with [SECTION_START] and [SECTION_END]:
+Break your response into THREE short sections:
 
 [SECTION_START]1
 بِسْمِ اللَّهِ الرَّحْمَنِ الرَّحِيمِ
 
-Brief introduction to the topic (2-3 sentences)
+Brief introduction (2-3 sentences max)
 [SECTION_END]
 
 [SECTION_START]2
-Main content:
-- Key biographical information
-- One relevant Quranic verse with Arabic and English
-- One relevant Hadith with Arabic and English
-- Keep Arabic texts complete, don't truncate
-- Use proper honorifics (ﷺ, رضي الله عنه)
+Main content (keep each part short):
+1. Brief biography
+2. ONE short Quranic verse with Arabic
+3. ONE short Hadith with Arabic
+Use proper honorifics (ﷺ, رضي الله عنه)
 [SECTION_END]
 
 [SECTION_START]3
-Brief scholarly reminder and closing.
-واللهُ أَعْلَم
+Brief closing with:
+- Verify with scholars
+- واللهُ أَعْلَم
 [SECTION_END]
 
-Keep sections focused and complete. Never truncate Arabic text.`
+IMPORTANT: Keep each section very concise. Limit Arabic text length.`
             }
         ];
 
@@ -195,6 +195,14 @@ Keep sections focused and complete. Never truncate Arabic text.`
         let currentSection = '';
         let sectionCount = 0;
         let lastChunkTime = Date.now();
+        let chunkBuffer = '';
+
+        const sendChunk = (text) => {
+            if (text.trim()) {
+                console.log(`Sending chunk: ${text.slice(0, 50)}...`);
+                sendEvent({ chunk: text + '\n' });
+            }
+        };
 
         try {
             for await (const chunk of stream) {
@@ -203,49 +211,52 @@ Keep sections focused and complete. Never truncate Arabic text.`
                 const content = chunk.choices[0]?.delta?.content || '';
                 if (content) {
                     currentSection += content;
+                    chunkBuffer += content;
                     lastChunkTime = Date.now();
                     
                     // Check for section markers
                     if (currentSection.includes('[SECTION_END]')) {
                         sectionCount++;
                         const section = currentSection.split('[SECTION_END]')[0];
-                        console.log(`Sending section ${sectionCount}`);
-                        sendEvent({ chunk: section + '\n\n' });
+                        console.log(`Sending complete section ${sectionCount}`);
+                        sendChunk(section + '\n\n');
                         
                         // Start new section
                         currentSection = currentSection.split('[SECTION_END]')[1] || '';
+                        chunkBuffer = '';
                     }
-                    // Also send on natural breaks within sections
-                    else if (
-                        currentSection.length >= 100 || 
-                        content.includes('.') || 
-                        content.includes('\n') ||
-                        content.includes('؛') || 
-                        content.includes('،')
-                    ) {
-                        // Only send if we have a complete sentence or thought
-                        if (currentSection.match(/[.!?؟।\n]$/)) {
-                            console.log(`Sending partial section ${sectionCount + 1}`);
-                            sendEvent({ chunk: currentSection });
-                            currentSection = '';
+                    // Send smaller chunks on natural breaks
+                    else if (chunkBuffer.length >= 50 && /[.!?؟।\n]/.test(chunkBuffer)) {
+                        const sentences = chunkBuffer.split(/(?<=[.!?؟।\n])\s+/);
+                        if (sentences.length > 1) {
+                            const completeChunk = sentences.slice(0, -1).join(' ');
+                            sendChunk(completeChunk);
+                            chunkBuffer = sentences[sentences.length - 1];
                         }
                     }
                 }
 
                 // Check for stalled stream
-                if (Date.now() - lastChunkTime > 5000) {
-                    console.log('Stream stalled, attempting to continue...');
-                    lastChunkTime = Date.now(); // Reset timer
+                if (Date.now() - lastChunkTime > 3000) {
+                    console.log('Stream stalled, flushing buffer...');
+                    if (chunkBuffer.trim()) {
+                        sendChunk(chunkBuffer);
+                        chunkBuffer = '';
+                    }
+                    lastChunkTime = Date.now();
                 }
             }
 
             // Send any remaining content
-            if (currentSection && !streamEnded) {
-                console.log('Sending final section');
-                sendEvent({ chunk: currentSection });
+            if (chunkBuffer.trim() && !streamEnded) {
+                sendChunk(chunkBuffer);
+            }
+            if (currentSection.trim() && !streamEnded) {
+                sendChunk(currentSection);
             }
 
             if (!streamEnded) {
+                console.log('Stream completed successfully');
                 sendEvent({ status: 'complete' });
             }
 
