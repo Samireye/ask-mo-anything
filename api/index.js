@@ -136,15 +136,6 @@ app.post('/api/chat', validateInput, async (req, res) => {
         }
     };
 
-    // Set up response timeout
-    const timeoutId = setTimeout(() => {
-        console.log('Response timeout reached');
-        if (!streamEnded) {
-            sendEvent({ error: 'Response timeout', message: 'The response took too long to generate.' });
-            endStream();
-        }
-    }, 50000);
-
     try {
         console.log('Starting chat request processing');
         const openai = new OpenAI({
@@ -156,112 +147,60 @@ app.post('/api/chat', validateInput, async (req, res) => {
         const { message } = req.body;
         console.log('Received message:', message);
 
-        // Split the system message into parts
+        // Split the system message into parts and add completion marker
         const systemMessages = [
             {
                 role: "system",
-                content: `You are an AI assistant providing information about Prophet Muhammad ﷺ and Islamic teachings. Your responses must follow these strict requirements:
+                content: `You are an AI assistant providing information about Prophet Muhammad ﷺ and Islamic teachings. Your responses must:
 
-1. Sources requirement (Quran, Hadith, Sira, Tafsir)
-2. Proper honorifics and respectful language
-3. Citation requirements:
-   - Original Arabic text for ALL Quranic verses and hadith
-   - Proper Arabic typography and Unicode
-   - Correct harakat (diacritical marks)`
-            },
-            {
-                role: "system",
-                content: `Format your response as follows:
 1. Start with "بِسْمِ اللَّهِ الرَّحْمَنِ الرَّحِيمِ"
-2. Relevant Quranic verses and hadith with proper citations
-3. Arabic text alongside English translations
-4. Appropriate honorifics
-5. A reminder to verify with scholars`
-            },
-            {
-                role: "system",
-                content: `Structured Formatting:
-- Arabic text first
-- Transliteration (when helpful)
-- English translation
-- Source citation
+2. Include Arabic text with proper Unicode and diacritical marks
+3. Provide transliteration and English translation
+4. Use proper honorifics (ﷺ, رضي الله عنه)
+5. End with "واللهُ أَعْلَم" (And Allah knows best)
 
-Better Organization:
-- Using markdown for formatting
-- Clear sections with proper spacing
-- Consistent presentation format`
-            },
-            {
-                role: "system",
-                content: `Enhanced Opening/Closing:
-- Arabic Bismillah (بِسْمِ اللَّهِ الرَّحْمَنِ الرَّحِيمِ)
-- Closing phrases in both Arabic and English
-
-Remember: Base all responses on authentic sources only. Direct complex questions to qualified scholars. Maintain appropriate Islamic etiquette at all times.`
+IMPORTANT: Your response must be structured in this exact order:
+1. Bismillah
+2. Brief introduction
+3. Relevant Quranic verses (Arabic, transliteration, translation)
+4. Relevant Hadith (Arabic, transliteration, translation)
+5. Additional context
+6. Reminder to verify with scholars
+7. Closing with "واللهُ أَعْلَم"`
             }
         ];
 
-        sendEvent({ status: 'processing' });
-
-        const stream = await openai.chat.completions.create({
+        // First, get a complete response
+        const completion = await openai.chat.completions.create({
             model: "gpt-4",
             messages: [...systemMessages, { role: "user", content: message }],
             temperature: 0.7,
-            max_tokens: 800,
-            stream: true,
-            presence_penalty: 0,
-            frequency_penalty: 0
+            max_tokens: 1000,
+            stream: false
         });
 
-        console.log('Stream created, beginning processing');
-        let fullResponse = '';
-        let chunkCount = 0;
-        let currentChunkSize = 0;
-        const MAX_CHUNK_SIZE = 500; // Maximum characters per chunk
+        const fullResponse = completion.choices[0].message.content;
+        
+        // Send the response in chunks
+        const chunks = fullResponse.split(/([.!?])\s+/);
+        
+        sendEvent({ status: 'processing' });
+        
+        for (let i = 0; i < chunks.length; i++) {
+            if (streamEnded) break;
+            
+            const chunk = chunks[i];
+            if (chunk.trim()) {
+                console.log(`Sending chunk ${i + 1}/${chunks.length}`);
+                sendEvent({ chunk });
+                // Add a small delay between chunks
+                await new Promise(resolve => setTimeout(resolve, 100));
+            }
+        }
 
-        try {
-            for await (const chunk of stream) {
-                if (streamEnded) break;
-                
-                const content = chunk.choices[0]?.delta?.content || '';
-                if (content) {
-                    chunkCount++;
-                    currentChunkSize += content.length;
-                    fullResponse += content;
-                    
-                    // Send chunk and reset counter if we hit the size limit
-                    if (currentChunkSize >= MAX_CHUNK_SIZE) {
-                        console.log(`Sending chunk ${chunkCount} (${currentChunkSize} chars)`);
-                        sendEvent({ chunk: fullResponse });
-                        currentChunkSize = 0;
-                        fullResponse = '';
-                    } else {
-                        // Send smaller updates to keep connection alive
-                        if (content.includes('.') || content.includes('\n')) {
-                            console.log(`Sending partial chunk ${chunkCount}`);
-                            sendEvent({ chunk: fullResponse });
-                            fullResponse = '';
-                            currentChunkSize = 0;
-                        }
-                    }
-                }
-            }
-
-            // Send any remaining content
-            if (fullResponse && !streamEnded) {
-                console.log('Sending final chunk');
-                sendEvent({ chunk: fullResponse });
-            }
-
-            console.log('Stream processing complete');
-            if (!streamEnded) {
-                sendEvent({ status: 'complete' });
-            }
-        } catch (streamError) {
-            console.error('Error processing stream:', streamError);
-            if (!streamEnded) {
-                sendEvent({ error: 'Stream processing error', message: streamError.message });
-            }
+        // Send completion marker
+        if (!streamEnded) {
+            sendEvent({ chunk: '\n\nواللهُ أَعْلَم', status: 'complete' });
         }
 
     } catch (error) {
@@ -276,7 +215,6 @@ Remember: Base all responses on authentic sources only. Direct complex questions
             }
         }
     } finally {
-        clearTimeout(timeoutId);
         endStream();
         console.log('Request processing finished');
     }
