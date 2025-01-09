@@ -9,13 +9,15 @@ import rateLimit from 'express-rate-limit';
 // Load environment variables
 dotenv.config();
 
-// Debug environment variables
-console.log('Environment variables loaded');
-console.log('OPENAI_API_KEY exists:', !!process.env.OPENAI_API_KEY);
-console.log('OPENAI_API_KEY prefix:', process.env.OPENAI_API_KEY?.substring(0, 7));
-console.log('OPENAI_API_KEY length:', process.env.OPENAI_API_KEY?.length);
+// Validate environment variables
+if (!process.env.OPENAI_API_KEY) {
+    throw new Error('OPENAI_API_KEY environment variable is not set');
+}
 
 const app = express();
+
+// Trust proxy - required for rate limiting on Vercel
+app.set('trust proxy', 1);
 
 // Security headers middleware
 app.use((req, res, next) => {
@@ -28,6 +30,18 @@ app.use((req, res, next) => {
     res.setHeader('X-XSS-Protection', '1; mode=block');
     next();
 });
+
+// Rate limiting setup
+const limiter = rateLimit({
+    windowMs: 15 * 60 * 1000,
+    max: 100,
+    standardHeaders: true,
+    legacyHeaders: false,
+    trustProxy: true
+});
+
+// Apply rate limiting to all routes
+app.use(limiter);
 
 // CORS configuration
 app.use(cors({
@@ -102,15 +116,6 @@ const validateInput = (req, res, next) => {
     next();
 };
 
-// Rate limiting setup
-const limiter = rateLimit({
-    windowMs: 15 * 60 * 1000,
-    max: 100
-});
-
-// Apply rate limiting to all requests
-app.use(limiter);
-
 app.post('/api/chat', validateInput, async (req, res) => {
     try {
         // Initialize OpenAI for each request
@@ -160,12 +165,5 @@ app.use((err, req, res, next) => {
     });
 });
 
-// Use port provided by Vercel or default to 3000
-const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => {
-    console.log(`Server running on port ${PORT}`);
-}).on('error', (error) => {
-    console.error('Server failed to start:', error);
-});
-
+// Export the app for serverless deployment
 export default app;
