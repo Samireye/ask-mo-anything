@@ -68,15 +68,15 @@ const systemMessage = `You are an AI assistant specialized in providing informat
 
 // Chat endpoint
 app.post('/api/chat', validateInput, async (req, res) => {
-    // Set response timeout
-    res.setTimeout(80000); // 80 second timeout
+    // Set a shorter response timeout to avoid API Gateway timeout
+    res.setTimeout(30000); // 30 second timeout
 
     try {
         // Initialize OpenAI for each request
         const openai = new OpenAI({
             apiKey: process.env.OPENAI_API_KEY,
-            maxRetries: 2,
-            timeout: 60000 // 60 second timeout
+            maxRetries: 1, // Reduce retries to respond faster
+            timeout: 25000 // 25 second timeout
         });
 
         const { message } = req.body;
@@ -84,8 +84,8 @@ app.post('/api/chat', validateInput, async (req, res) => {
         // Create a timeout promise
         const timeoutPromise = new Promise((_, reject) => {
             setTimeout(() => {
-                reject(new Error('Request timed out after 60 seconds'));
-            }, 60000);
+                reject(new Error('Request timed out'));
+            }, 25000);
         });
 
         // Race between the OpenAI request and timeout
@@ -97,33 +97,34 @@ app.post('/api/chat', validateInput, async (req, res) => {
                     { role: "user", content: message }
                 ],
                 temperature: 0.7,
-                max_tokens: 1000
+                max_tokens: 500, // Reduced tokens for faster response
+                presence_penalty: 0,
+                frequency_penalty: 0
             }),
             timeoutPromise
         ]);
 
-        if (!completion.choices || completion.choices.length === 0) {
-            return res.status(500).json({ 
-                error: 'No response generated',
-                message: 'The AI model did not generate a response'
-            });
+        if (!completion?.choices?.[0]?.message?.content) {
+            throw new Error('No response generated');
         }
 
-        const response = completion.choices[0].message.content;
-        return res.json({ response });
+        return res.json({ 
+            response: completion.choices[0].message.content,
+            status: 'success'
+        });
 
     } catch (error) {
         console.error('Error in chat endpoint:', error);
         
         // Handle specific error types
-        if (error.message.includes('timed out')) {
+        if (error.message?.includes('timed out') || error.code === 'ETIMEDOUT') {
             return res.status(504).json({
                 error: 'Request timed out',
                 message: 'The request took too long to complete. Please try again.'
             });
         }
 
-        if (error.status === 429) {
+        if (error.status === 429 || error.code === 'rate_limit_exceeded') {
             return res.status(429).json({
                 error: 'Rate limit exceeded',
                 message: 'Too many requests. Please wait a moment and try again.'
@@ -132,7 +133,8 @@ app.post('/api/chat', validateInput, async (req, res) => {
 
         return res.status(error.status || 500).json({
             error: 'An error occurred',
-            message: error.message || 'Internal server error'
+            message: error.message || 'Internal server error',
+            status: 'error'
         });
     }
 });
