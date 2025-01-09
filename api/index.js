@@ -110,7 +110,6 @@ function processMessageText(text) {
 
 // Chat endpoint
 app.post('/api/chat', validateInput, async (req, res) => {
-    // Set headers for streaming
     res.setHeader('Content-Type', 'text/event-stream');
     res.setHeader('Cache-Control', 'no-cache');
     res.setHeader('Connection', 'keep-alive');
@@ -118,7 +117,8 @@ app.post('/api/chat', validateInput, async (req, res) => {
 
     const sendEvent = (data) => {
         try {
-            res.write(`data: ${JSON.stringify(data)}\n\n`);
+            const event = `data: ${JSON.stringify(data)}\n\n`;
+            res.write(event);
         } catch (error) {
             console.error('Error sending event:', error);
         }
@@ -143,29 +143,35 @@ app.post('/api/chat', validateInput, async (req, res) => {
             sendEvent({ error: 'Response timeout', message: 'The response took too long to generate.' });
             endStream();
         }
-    }, 50000); // 50 second timeout
+    }, 50000);
 
     try {
         console.log('Starting chat request processing');
         const openai = new OpenAI({
             apiKey: process.env.OPENAI_API_KEY,
-            maxRetries: 2,
-            timeout: 45000 // 45 second timeout
+            maxRetries: 1,
+            timeout: 45000
         });
 
         const { message } = req.body;
         console.log('Received message:', message);
 
+        // Split the system message into parts
+        const systemMessages = [
+            { role: "system", content: "You are an AI assistant providing information about Prophet Muhammad ﷺ and Islamic teachings." },
+            { role: "system", content: "Always start responses with 'بِسْمِ اللَّهِ الرَّحْمَنِ الرَّحِيمِ'" },
+            { role: "system", content: "Include relevant Quranic verses and hadith with proper citations, Arabic text, and translations." },
+            { role: "system", content: "Maintain respectful language and use proper honorifics (ﷺ, رضي الله عنه)." },
+            { role: "system", content: "End with a reminder to verify with qualified scholars." }
+        ];
+
         sendEvent({ status: 'processing' });
 
         const stream = await openai.chat.completions.create({
             model: "gpt-4",
-            messages: [
-                { role: "system", content: systemMessage },
-                { role: "user", content: message }
-            ],
+            messages: [...systemMessages, { role: "user", content: message }],
             temperature: 0.7,
-            max_tokens: 750,
+            max_tokens: 600,
             stream: true,
             presence_penalty: 0,
             frequency_penalty: 0
@@ -174,6 +180,8 @@ app.post('/api/chat', validateInput, async (req, res) => {
         console.log('Stream created, beginning processing');
         let fullResponse = '';
         let chunkCount = 0;
+        let currentChunkSize = 0;
+        const MAX_CHUNK_SIZE = 500; // Maximum characters per chunk
 
         try {
             for await (const chunk of stream) {
@@ -182,16 +190,36 @@ app.post('/api/chat', validateInput, async (req, res) => {
                 const content = chunk.choices[0]?.delta?.content || '';
                 if (content) {
                     chunkCount++;
+                    currentChunkSize += content.length;
                     fullResponse += content;
-                    console.log(`Processing chunk ${chunkCount}`);
-                    sendEvent({ chunk: content });
+                    
+                    // Send chunk and reset counter if we hit the size limit
+                    if (currentChunkSize >= MAX_CHUNK_SIZE) {
+                        console.log(`Sending chunk ${chunkCount} (${currentChunkSize} chars)`);
+                        sendEvent({ chunk: fullResponse });
+                        currentChunkSize = 0;
+                        fullResponse = '';
+                    } else {
+                        // Send smaller updates to keep connection alive
+                        if (content.includes('.') || content.includes('\n')) {
+                            console.log(`Sending partial chunk ${chunkCount}`);
+                            sendEvent({ chunk: fullResponse });
+                            fullResponse = '';
+                            currentChunkSize = 0;
+                        }
+                    }
                 }
+            }
+
+            // Send any remaining content
+            if (fullResponse && !streamEnded) {
+                console.log('Sending final chunk');
+                sendEvent({ chunk: fullResponse });
             }
 
             console.log('Stream processing complete');
             if (!streamEnded) {
-                const processedResponse = processMessageText(fullResponse);
-                sendEvent({ response: processedResponse, status: 'complete' });
+                sendEvent({ status: 'complete' });
             }
         } catch (streamError) {
             console.error('Error processing stream:', streamError);

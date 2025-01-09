@@ -364,7 +364,7 @@
             
             try {
                 const controller = new AbortController();
-                const timeoutId = setTimeout(() => controller.abort(), 60000); // 60 second timeout
+                const timeoutId = setTimeout(() => controller.abort(), 60000);
 
                 const response = await fetch('/api/chat', {
                     method: 'POST',
@@ -384,19 +384,15 @@
 
                 const reader = response.body.getReader();
                 const decoder = new TextDecoder();
-                let botResponse = '';
+                let fullResponse = '';
                 let isComplete = false;
                 let lastUpdate = Date.now();
 
-                while (!isComplete) {
+                while (!isComplete && Date.now() - lastUpdate < 10000) {
                     const { value, done } = await reader.read();
                     
                     if (done) {
                         console.log('Stream complete');
-                        if (botResponse && !isComplete) {
-                            loadingMessage.className = 'message bot-message';
-                            loadingMessage.innerHTML = processMessageText(botResponse);
-                        }
                         break;
                     }
 
@@ -411,14 +407,14 @@
 
                                 if (data.status === 'processing') {
                                     loadingMessage.textContent = 'Processing...';
-                                } else if (data.chunk) {
-                                    botResponse += data.chunk;
-                                    loadingMessage.innerHTML = processMessageText(botResponse);
-                                } else if (data.response) {
+                                } else if (data.status === 'complete') {
                                     isComplete = true;
                                     loadingMessage.className = 'message bot-message';
-                                    loadingMessage.innerHTML = data.response;
                                     break;
+                                } else if (data.chunk) {
+                                    fullResponse += data.chunk;
+                                    loadingMessage.className = 'message bot-message';
+                                    loadingMessage.innerHTML = processMessageText(fullResponse);
                                 } else if (data.error) {
                                     isComplete = true;
                                     loadingMessage.className = 'message error-message';
@@ -431,16 +427,12 @@
                             }
                         }
                     }
+                }
 
-                    // Check for stalled connection
-                    if (Date.now() - lastUpdate > 10000) {
-                        console.log('Connection stalled');
-                        if (botResponse) {
-                            loadingMessage.className = 'message bot-message';
-                            loadingMessage.innerHTML = processMessageText(botResponse);
-                        }
-                        break;
-                    }
+                // Final display of response
+                if (fullResponse) {
+                    loadingMessage.className = 'message bot-message';
+                    loadingMessage.innerHTML = processMessageText(fullResponse);
                 }
                 
             } catch (error) {
