@@ -364,7 +364,7 @@
             
             try {
                 const controller = new AbortController();
-                const timeoutId = setTimeout(() => controller.abort(), 60000);
+                const timeoutId = setTimeout(() => controller.abort(), 30000);
 
                 const response = await fetch('/api/chat', {
                     method: 'POST',
@@ -387,56 +387,40 @@
                 let fullResponse = '';
                 let isComplete = false;
                 let lastUpdate = Date.now();
-                let noUpdateCount = 0;
-                const MAX_NO_UPDATE = 3; // Allow 3 attempts without updates
 
                 while (!isComplete) {
+                    if (Date.now() - lastUpdate > 5000) { 
+                        console.log('Response stalled');
+                        break;
+                    }
+
                     const { value, done } = await reader.read();
                     
                     if (done) {
-                        console.log('Stream ended');
-                        // Only consider complete if we have a substantial response
-                        if (fullResponse.length > 100 && fullResponse.includes('بِسْمِ اللَّهِ الرَّحْمَنِ الرَّحِيمِ')) {
-                            isComplete = true;
-                        } else {
-                            // If response is too short or missing bismillah, try to reconnect
-                            if (noUpdateCount < MAX_NO_UPDATE) {
-                                console.log('Incomplete response, reconnecting...');
-                                noUpdateCount++;
-                                continue;
-                            }
-                        }
+                        console.log('Stream complete');
                         break;
                     }
 
                     const chunk = decoder.decode(value);
-                    const lines = chunk.split('\n');
+                    lastUpdate = Date.now();
 
+                    const lines = chunk.split('\n');
                     for (const line of lines) {
                         if (line.startsWith('data: ')) {
                             try {
                                 const data = JSON.parse(line.slice(6));
-                                lastUpdate = Date.now();
-                                noUpdateCount = 0; // Reset counter on successful update
-
+                                
                                 if (data.status === 'processing') {
                                     loadingMessage.textContent = 'Processing...';
                                 } else if (data.status === 'complete') {
-                                    // Only mark as complete if we have a substantial response
-                                    if (fullResponse.length > 100 && fullResponse.includes('بِسْمِ اللَّهِ الرَّحْمَنِ الرَّحِيمِ')) {
-                                        isComplete = true;
-                                        loadingMessage.className = 'message bot-message';
-                                        break;
-                                    }
+                                    isComplete = true;
+                                    break;
                                 } else if (data.chunk) {
                                     fullResponse += data.chunk;
                                     loadingMessage.className = 'message bot-message';
                                     loadingMessage.innerHTML = processMessageText(fullResponse);
                                 } else if (data.error) {
-                                    isComplete = true;
-                                    loadingMessage.className = 'message error-message';
-                                    loadingMessage.textContent = `Error: ${data.message}`;
-                                    break;
+                                    throw new Error(data.message || 'Unknown error');
                                 }
                             } catch (e) {
                                 console.error('Error parsing SSE data:', e);
@@ -444,32 +428,11 @@
                             }
                         }
                     }
-
-                    // Check for stalled connection
-                    if (Date.now() - lastUpdate > 5000) { // Reduced from 10000 to 5000
-                        console.log('Connection stalled');
-                        if (noUpdateCount < MAX_NO_UPDATE) {
-                            console.log('Attempting to continue...');
-                            noUpdateCount++;
-                            lastUpdate = Date.now(); // Reset timer
-                            continue;
-                        } else {
-                            console.log('Max attempts reached');
-                            break;
-                        }
-                    }
                 }
 
-                // Final check of response
                 if (fullResponse) {
-                    if (fullResponse.length > 100 && fullResponse.includes('بِسْمِ اللَّهِ الرَّحْمَنِ الرَّحِيمِ')) {
-                        loadingMessage.className = 'message bot-message';
-                        loadingMessage.innerHTML = processMessageText(fullResponse);
-                    } else {
-                        // Response is incomplete, show error
-                        loadingMessage.className = 'message error-message';
-                        loadingMessage.textContent = 'The response was incomplete. Please try your question again.';
-                    }
+                    loadingMessage.className = 'message bot-message';
+                    loadingMessage.innerHTML = processMessageText(fullResponse);
                 }
                 
             } catch (error) {

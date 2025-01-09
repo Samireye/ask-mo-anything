@@ -151,58 +151,81 @@ app.post('/api/chat', validateInput, async (req, res) => {
         const systemMessages = [
             {
                 role: "system",
-                content: `You are an AI assistant providing information about Prophet Muhammad ﷺ and Islamic teachings. Your responses must:
+                content: `You are an AI assistant providing information about Prophet Muhammad ﷺ and Islamic teachings. Format your response in these sections:
 
-1. Start with "بِسْمِ اللَّهِ الرَّحْمَنِ الرَّحِيمِ"
-2. Include Arabic text with proper Unicode and diacritical marks
-3. Provide transliteration and English translation
-4. Use proper honorifics (ﷺ, رضي الله عنه)
-5. End with "واللهُ أَعْلَم" (And Allah knows best)
+1. Opening: Start with "بِسْمِ اللَّهِ الرَّحْمَنِ الرَّحِيمِ" followed by a brief introduction.
 
-IMPORTANT: Your response must be structured in this exact order:
-1. Bismillah
-2. Brief introduction
-3. Relevant Quranic verses (Arabic, transliteration, translation)
-4. Relevant Hadith (Arabic, transliteration, translation)
-5. Additional context
-6. Reminder to verify with scholars
-7. Closing with "واللهُ أَعْلَم"`
+2. Main Content: 
+- If citing Quran: Include verse number, Arabic text, then English
+- If citing Hadith: Include narrator, Arabic text, then English
+- Keep Arabic texts short and focused
+- Use proper honorifics (ﷺ, رضي الله عنه)
+
+3. Closing:
+- Brief reminder to verify with scholars
+- End with "واللهُ أَعْلَم" (And Allah knows best)
+
+Keep each section concise and focused. Prioritize accuracy over length.`
             }
         ];
 
-        // First, get a complete response
-        const completion = await openai.chat.completions.create({
+        sendEvent({ status: 'processing' });
+
+        const stream = await openai.chat.completions.create({
             model: "gpt-4",
             messages: [...systemMessages, { role: "user", content: message }],
             temperature: 0.7,
-            max_tokens: 1000,
-            stream: false
+            max_tokens: 600,
+            stream: true,
+            presence_penalty: 0,
+            frequency_penalty: 0
         });
 
-        const fullResponse = completion.choices[0].message.content;
-        
-        // Send the response in chunks
-        const chunks = fullResponse.split(/([.!?])\s+/);
-        
-        sendEvent({ status: 'processing' });
-        
-        for (let i = 0; i < chunks.length; i++) {
-            if (streamEnded) break;
-            
-            const chunk = chunks[i];
-            if (chunk.trim()) {
-                console.log(`Sending chunk ${i + 1}/${chunks.length}`);
-                sendEvent({ chunk });
-                // Add a small delay between chunks
-                await new Promise(resolve => setTimeout(resolve, 100));
+        console.log('Stream created, beginning processing');
+        let currentChunk = '';
+        let chunkCount = 0;
+
+        try {
+            for await (const chunk of stream) {
+                if (streamEnded) break;
+                
+                const content = chunk.choices[0]?.delta?.content || '';
+                if (content) {
+                    currentChunk += content;
+                    
+                    // Send chunk on natural breaks
+                    if (
+                        currentChunk.length >= 100 || 
+                        content.includes('.') || 
+                        content.includes('\n') ||
+                        content.includes('؛') || // Arabic semicolon
+                        content.includes('،')    // Arabic comma
+                    ) {
+                        chunkCount++;
+                        console.log(`Sending chunk ${chunkCount}`);
+                        sendEvent({ chunk: currentChunk });
+                        currentChunk = '';
+                    }
+                }
+            }
+
+            // Send any remaining content
+            if (currentChunk && !streamEnded) {
+                console.log('Sending final chunk');
+                sendEvent({ chunk: currentChunk });
+            }
+
+            // Ensure we end with the closing phrase
+            if (!streamEnded) {
+                sendEvent({ chunk: '\n\nواللهُ أَعْلَم', status: 'complete' });
+            }
+
+        } catch (streamError) {
+            console.error('Error processing stream:', streamError);
+            if (!streamEnded) {
+                sendEvent({ error: 'Stream processing error', message: streamError.message });
             }
         }
-
-        // Send completion marker
-        if (!streamEnded) {
-            sendEvent({ chunk: '\n\nواللهُ أَعْلَم', status: 'complete' });
-        }
-
     } catch (error) {
         console.error('Error in chat endpoint:', error);
         if (!streamEnded) {
