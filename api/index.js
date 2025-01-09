@@ -16,7 +16,26 @@ console.log('OPENAI_API_KEY prefix:', process.env.OPENAI_API_KEY?.substring(0, 7
 console.log('OPENAI_API_KEY length:', process.env.OPENAI_API_KEY?.length);
 
 const app = express();
-app.use(cors());
+
+// Security headers middleware
+app.use((req, res, next) => {
+    res.setHeader(
+        'Content-Security-Policy',
+        "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline'; font-src 'self' data:;"
+    );
+    res.setHeader('X-Content-Type-Options', 'nosniff');
+    res.setHeader('X-Frame-Options', 'DENY');
+    res.setHeader('X-XSS-Protection', '1; mode=block');
+    next();
+});
+
+// CORS configuration
+app.use(cors({
+    origin: ['https://ask-mo-anything.vercel.app', 'http://localhost:3000', 'http://localhost:3001'],
+    methods: ['GET', 'POST'],
+    allowedHeaders: ['Content-Type', 'Authorization']
+}));
+
 app.use(express.json());
 
 const __filename = fileURLToPath(import.meta.url);
