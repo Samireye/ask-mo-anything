@@ -2,8 +2,6 @@ import express from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
 import OpenAI from 'openai';
-import { fileURLToPath } from 'url';
-import { dirname } from 'path';
 import rateLimit from 'express-rate-limit';
 
 // Load environment variables
@@ -19,17 +17,14 @@ const app = express();
 // Trust proxy - required for rate limiting on Vercel
 app.set('trust proxy', 1);
 
-// Security headers middleware
-app.use((req, res, next) => {
-    res.setHeader(
-        'Content-Security-Policy',
-        "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline'; font-src 'self' data:;"
-    );
-    res.setHeader('X-Content-Type-Options', 'nosniff');
-    res.setHeader('X-Frame-Options', 'DENY');
-    res.setHeader('X-XSS-Protection', '1; mode=block');
-    next();
-});
+// CORS configuration
+app.use(cors({
+    origin: ['https://ask-mo-anything.vercel.app', 'http://localhost:3000', 'http://localhost:3001'],
+    methods: ['GET', 'POST'],
+    allowedHeaders: ['Content-Type', 'Authorization']
+}));
+
+app.use(express.json());
 
 // Rate limiting setup
 const limiter = rateLimit({
@@ -43,17 +38,14 @@ const limiter = rateLimit({
 // Apply rate limiting to all routes
 app.use(limiter);
 
-// CORS configuration
-app.use(cors({
-    origin: ['https://ask-mo-anything.vercel.app', 'http://localhost:3000', 'http://localhost:3001'],
-    methods: ['GET', 'POST'],
-    allowedHeaders: ['Content-Type', 'Authorization']
-}));
-
-app.use(express.json());
-
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = dirname(__filename);
+// Input validation middleware
+const validateInput = (req, res, next) => {
+    const { message } = req.body;
+    if (!message || typeof message !== 'string' || message.trim().length === 0) {
+        return res.status(400).json({ error: 'Invalid input. Message is required.' });
+    }
+    next();
+};
 
 // Enhanced system message for more accurate and respectful responses
 const systemMessage = `You are an AI assistant specialized in providing information about Prophet Muhammad ﷺ (peace be upon him) and Islamic teachings. Your responses must:
@@ -64,58 +56,17 @@ const systemMessage = `You are an AI assistant specialized in providing informat
    - Reliable Sira (biographical) sources
    - Respected Tafsir (Quranic exegesis)
 
-2. Follow these strict guidelines for citations and text:
-   - ALWAYS include the original Arabic text for every Quranic verse and hadith
-   - Format Arabic text in a clear, readable way using proper Arabic typography
-   - Place the Arabic text first, followed by transliteration (if relevant), then English translation
-   - For Quranic verses: Include Arabic text, verse numbers, and recognized English translation
-   - For Hadith: Include Arabic text, full isnad (chain of narration), and translation
-   - Use proper Unicode for Arabic text, not images or ASCII art
-   - Ensure correct harakat (diacritical marks) in Arabic quotations
+2. Include proper Arabic text where relevant, followed by transliteration and translation.
 
-3. Follow these presentation guidelines:
-   - Always use respectful language and proper honorifics (ﷺ, رضي الله عنه, etc.)
-   - Format responses with clear sections and spacing for readability
-   - Use markdown formatting for better organization:
-     * Bold for section headings
-     * Blockquotes for Arabic text and translations
-     * Italics for transliterations
-   - Clearly distinguish between Quranic verses, Hadith, and scholarly opinions
-   - Acknowledge when there are differing opinions among scholars
-   - Maintain academic accuracy while being accessible
-   - Explicitly state when information is from secondary sources
+3. Be respectful and use appropriate honorifics (ﷺ for Prophet Muhammad, رضي الله عنه/عنها for companions).
 
-4. Important boundaries:
-   - Do not issue religious rulings (fatawa)
-   - Direct complex fiqh questions to qualified scholars
-   - Acknowledge limitations on controversial or complex topics
-   - Maintain appropriate adab (Islamic etiquette) at all times
-   - Encourage verification with qualified scholars
+4. Encourage verification with qualified scholars for complex matters.
 
-5. Response structure:
-   - Begin with "بِسْمِ اللَّهِ الرَّحْمَنِ الرَّحِيمِ" followed by its transliteration and translation
-   - Organize content in clear sections
-   - Present Arabic text and translations in a consistent format:
-     > Arabic text
-     > Transliteration (when helpful)
-     > English translation
-     > Source citation
-   - End with appropriate Islamic closing phrases in both Arabic and English
+5. Acknowledge when a topic requires more scholarly expertise.
 
-Remember: Your role is to provide accurate information while encouraging users to seek knowledge from qualified scholars for detailed guidance. Always prioritize accuracy in Arabic text and citations over quantity of information.`;
+6. Provide clear citations for all information.`;
 
-// Input validation middleware
-const validateInput = (req, res, next) => {
-    const { message } = req.body;
-    if (!message || typeof message !== 'string' || message.trim().length === 0) {
-        return res.status(400).json({ error: 'Please provide a valid question.' });
-    }
-    if (message.length > 500) {
-        return res.status(400).json({ error: 'Question is too long. Please limit to 500 characters.' });
-    }
-    next();
-};
-
+// Chat endpoint
 app.post('/api/chat', validateInput, async (req, res) => {
     try {
         // Initialize OpenAI for each request
