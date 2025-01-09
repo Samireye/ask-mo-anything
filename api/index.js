@@ -72,7 +72,7 @@ app.post('/api/chat', validateInput, async (req, res) => {
         // Initialize OpenAI for each request
         const openai = new OpenAI({
             apiKey: process.env.OPENAI_API_KEY,
-            timeout: 30000, // 30 second timeout
+            timeout: 50000, // 50 second timeout
             maxRetries: 3
         });
 
@@ -89,7 +89,6 @@ app.post('/api/chat', validateInput, async (req, res) => {
         });
 
         if (!completion.choices || completion.choices.length === 0) {
-            console.error('No completion choices returned');
             return res.status(500).json({ error: 'No response generated' });
         }
 
@@ -99,10 +98,11 @@ app.post('/api/chat', validateInput, async (req, res) => {
     } catch (error) {
         console.error('Error in chat endpoint:', error);
         
-        // Send structured error response
-        return res.status(500).json({
+        // Send a properly formatted JSON error response
+        return res.status(error.status || 500).json({
             error: 'An error occurred while processing your request',
-            details: error.message
+            message: error.message,
+            code: error.code || 'INTERNAL_SERVER_ERROR'
         });
     }
 });

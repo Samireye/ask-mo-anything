@@ -279,105 +279,55 @@
             }
         });
 
-        function createLoadingMessage() {
-            const loadingDiv = document.createElement('div');
-            loadingDiv.className = 'message bot-message loading';
-            loadingDiv.innerHTML = `
-                Thinking
-                <div class="loading-dots">
-                    <span></span>
-                    <span></span>
-                    <span></span>
-                </div>
-            `;
-            return loadingDiv;
-        }
-
         async function sendMessage() {
             const message = userInput.value.trim();
-            if (message === '') return;
-
-            // Disable input and button while processing
-            userInput.disabled = true;
-            sendButton.disabled = true;
-
-            // Add user message
-            addMessage(message, 'user-message');
+            
+            if (!message) return;
+            
+            // Clear input and show loading state
             userInput.value = '';
-
+            const userMessage = document.createElement('div');
+            userMessage.className = 'message user-message';
+            userMessage.textContent = message;
+            chatMessages.appendChild(userMessage);
+            
+            // Add loading message
+            const loadingMessage = document.createElement('div');
+            loadingMessage.className = 'message bot-message loading';
+            loadingMessage.textContent = 'Thinking...';
+            chatMessages.appendChild(loadingMessage);
+            
             try {
-                // Show loading state
-                const loadingMessage = createLoadingMessage();
-                chatMessages.appendChild(loadingMessage);
-                chatMessages.scrollTop = chatMessages.scrollHeight;
-                
-                // Make API call to our backend
                 const response = await fetch('/api/chat', {
                     method: 'POST',
                     headers: {
-                        'Content-Type': 'application/json'
+                        'Content-Type': 'application/json',
                     },
                     body: JSON.stringify({ message })
                 });
-
+                
                 if (!response.ok) {
-                    const errorData = await response.json();
-                    throw new Error(errorData.error || 'Failed to get response');
+                    const errorData = await response.json().catch(() => ({
+                        error: 'An unexpected error occurred',
+                        message: response.statusText
+                    }));
+                    throw new Error(errorData.message || errorData.error);
                 }
-
+                
                 const data = await response.json();
                 
-                // Remove loading message
-                chatMessages.removeChild(loadingMessage);
+                // Replace loading message with actual response
+                loadingMessage.className = 'message bot-message';
+                loadingMessage.textContent = data.response;
                 
-                // Add AI response
-                if (data.response) {
-                    addMessage(data.response, 'ai-message');
-                } else {
-                    throw new Error('Invalid response format');
-                }
             } catch (error) {
-                console.error('Error:', error);
-                // Remove loading message if it exists
-                const loadingMessage = document.querySelector('.loading');
-                if (loadingMessage) {
-                    chatMessages.removeChild(loadingMessage);
-                }
-                // Add error message to chat
-                addMessage('Sorry, there was an error processing your request. Please try again.', 'error-message');
-            } finally {
-                // Re-enable send button
-                sendButton.disabled = false;
-                chatMessages.scrollTop = chatMessages.scrollHeight;
+                // Replace loading message with error
+                loadingMessage.className = 'message error-message';
+                loadingMessage.textContent = `Error: ${error.message}`;
             }
-        }
-
-        function addMessage(text, className) {
-            const messageDiv = document.createElement('div');
-            messageDiv.className = `message ${className}`;
             
-            // Process the text to handle Arabic text and citations
-            const processedText = processMessageText(text);
-            messageDiv.innerHTML = processedText;
-            
-            chatMessages.appendChild(messageDiv);
+            // Scroll to bottom
             chatMessages.scrollTop = chatMessages.scrollHeight;
-            return messageDiv;
-        }
-
-        function processMessageText(text) {
-            // Split the text into paragraphs
-            const paragraphs = text.split('\n');
-            
-            return paragraphs.map(paragraph => {
-                // Handle Arabic text (text between Arabic quotation marks)
-                paragraph = paragraph.replace(/「([^」]+)」/g, '<div class="arabic-text">$1</div>');
-                
-                // Handle citations (text between square brackets)
-                paragraph = paragraph.replace(/\[(.*?)\]/g, '<div class="citation">[$1]</div>');
-                
-                return paragraph;
-            }).join('<br>');
         }
     </script>
 </body>
