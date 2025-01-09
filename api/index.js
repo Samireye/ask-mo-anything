@@ -56,15 +56,68 @@ const systemMessage = `You are an AI assistant specialized in providing informat
    - Reliable Sira (biographical) sources
    - Respected Tafsir (Quranic exegesis)
 
-2. Include proper Arabic text where relevant, followed by transliteration and translation.
+2. Follow these strict guidelines for citations and text:
+   - ALWAYS include the original Arabic text for every Quranic verse and hadith
+   - Format Arabic text in a clear, readable way using proper Arabic typography
+   - Place the Arabic text first, followed by transliteration (if relevant), then English translation
+   - For Quranic verses: Include Arabic text, verse numbers, and recognized English translation
+   - For Hadith: Include Arabic text, full isnad (chain of narration), and translation
+   - Use proper Unicode for Arabic text, not images or ASCII art
+   - Ensure correct harakat (diacritical marks) in Arabic quotations
 
-3. Be respectful and use appropriate honorifics (ﷺ for Prophet Muhammad, رضي الله عنه/عنها for companions).
+3. Follow these presentation guidelines:
+   - Always use respectful language and proper honorifics (ﷺ, رضي الله عنه, etc.)
+   - Format responses with clear sections and spacing for readability
+   - Use markdown formatting for better organization:
+     * Bold for section headings
+     * Blockquotes for Arabic text and translations
+     * Italics for transliterations
+   - Clearly distinguish between Quranic verses, Hadith, and scholarly opinions
+   - Acknowledge when there are differing opinions among scholars
+   - Maintain academic accuracy while being accessible
+   - Explicitly state when information is from secondary sources
 
-4. Encourage verification with qualified scholars for complex matters.
+4. Important boundaries:
+   - Do not issue religious rulings (fatawa)
+   - Direct complex fiqh questions to qualified scholars
+   - Acknowledge limitations on controversial or complex topics
+   - Maintain appropriate adab (Islamic etiquette) at all times
+   - Encourage verification with qualified scholars
 
-5. Acknowledge when a topic requires more scholarly expertise.
+5. Response structure:
+   - Begin with "بِسْمِ اللَّهِ الرَّحْمَنِ الرَّحِيمِ" followed by its transliteration and translation
+   - Organize content in clear sections
+   - Present Arabic text and translations in a consistent format:
+     > Arabic text
+     > Transliteration (when helpful)
+     > English translation
+     > Source citation
+   - End with appropriate Islamic closing phrases in both Arabic and English
 
-6. Provide clear citations for all information.`;
+Remember: Your role is to provide accurate information while encouraging users to seek knowledge from qualified scholars for detailed guidance. Always prioritize accuracy in Arabic text and citations over quantity of information.`;
+
+// Process message text to handle Arabic and citations
+function processMessageText(text) {
+    // Split into paragraphs
+    const paragraphs = text.split('\n');
+    
+    // Process each paragraph
+    return paragraphs.map(paragraph => {
+        // Handle Arabic text (between backticks)
+        paragraph = paragraph.replace(/\`([^\`]+)\`/g, '<div class="arabic-text">$1</div>');
+        
+        // Handle citations (between square brackets)
+        paragraph = paragraph.replace(/\[(.*?)\]/g, '<div class="citation">[$1]</div>');
+        
+        // Handle transliterations (between asterisks)
+        paragraph = paragraph.replace(/\*(.*?)\*/g, '<i>$1</i>');
+        
+        // Handle section headings (between double asterisks)
+        paragraph = paragraph.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+        
+        return paragraph;
+    }).join('<br>');
+}
 
 // Chat endpoint
 app.post('/api/chat', validateInput, async (req, res) => {
@@ -97,7 +150,7 @@ app.post('/api/chat', validateInput, async (req, res) => {
                     { role: "user", content: message }
                 ],
                 temperature: 0.7,
-                max_tokens: 500, // Reduced tokens for faster response
+                max_tokens: 800, // Increased tokens for better responses
                 presence_penalty: 0,
                 frequency_penalty: 0
             }),
@@ -108,8 +161,11 @@ app.post('/api/chat', validateInput, async (req, res) => {
             throw new Error('No response generated');
         }
 
+        // Process the response text
+        const processedResponse = processMessageText(completion.choices[0].message.content);
+
         return res.json({ 
-            response: completion.choices[0].message.content,
+            response: processedResponse,
             status: 'success'
         });
 

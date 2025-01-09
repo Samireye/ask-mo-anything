@@ -232,6 +232,73 @@
                 width: 100%;
             }
         }
+
+        /* Add styles for Arabic text and citations */
+        .arabic-text {
+            font-family: 'Traditional Arabic', 'Scheherazade', serif;
+            font-size: 1.2em;
+            direction: rtl;
+            text-align: right;
+            margin: 10px 0;
+            padding: 10px;
+            background-color: #f8f9fa;
+            border-right: 3px solid #198754;
+        }
+
+        .citation {
+            font-size: 0.9em;
+            color: #6c757d;
+            margin: 5px 0;
+        }
+
+        .message {
+            margin: 10px;
+            padding: 15px;
+            border-radius: 10px;
+            max-width: 80%;
+            word-wrap: break-word;
+        }
+
+        .user-message {
+            background-color: #e9ecef;
+            margin-left: auto;
+        }
+
+        .bot-message {
+            background-color: #f8f9fa;
+            margin-right: auto;
+        }
+
+        .error-message {
+            background-color: #f8d7da;
+            color: #842029;
+            margin-right: auto;
+        }
+
+        .loading {
+            background-color: #e2e3e5;
+            color: #41464b;
+        }
+
+        /* Add styles for markdown-like formatting */
+        .bot-message strong {
+            display: block;
+            margin-top: 15px;
+            margin-bottom: 10px;
+            color: #198754;
+        }
+
+        .bot-message i {
+            color: #6c757d;
+            font-style: italic;
+        }
+
+        .bot-message blockquote {
+            border-left: 3px solid #198754;
+            margin: 10px 0;
+            padding-left: 10px;
+            color: #495057;
+        }
     </style>
 </head>
 <body>
