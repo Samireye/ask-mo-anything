@@ -151,21 +151,29 @@ app.post('/api/chat', validateInput, async (req, res) => {
         const systemMessages = [
             {
                 role: "system",
-                content: `You are an AI assistant providing information about Prophet Muhammad ﷺ and Islamic teachings. Format your response in these sections:
+                content: `You are an AI assistant providing information about Prophet Muhammad ﷺ and Islamic teachings. 
 
-1. Opening: Start with "بِسْمِ اللَّهِ الرَّحْمَنِ الرَّحِيمِ" followed by a brief introduction.
+Your response must be in exactly 3 sections, each marked with [SECTION_START] and [SECTION_END]:
 
-2. Main Content: 
-- If citing Quran: Include verse number, Arabic text, then English
-- If citing Hadith: Include narrator, Arabic text, then English
-- Keep Arabic texts short and focused
+[SECTION_START]1
+بِسْمِ اللَّهِ الرَّحْمَنِ الرَّحِيمِ
+
+Brief introduction to the topic
+[SECTION_END]
+
+[SECTION_START]2
+Main content:
+- If citing Quran: verse number, Arabic, English (keep verses short)
+- If citing Hadith: narrator, Arabic, English (keep hadith short)
 - Use proper honorifics (ﷺ, رضي الله عنه)
+[SECTION_END]
 
-3. Closing:
-- Brief reminder to verify with scholars
-- End with "واللهُ أَعْلَم" (And Allah knows best)
+[SECTION_START]3
+Please verify this information with qualified scholars.
+واللهُ أَعْلَم
+[SECTION_END]
 
-Keep each section concise and focused. Prioritize accuracy over length.`
+Keep each section focused and concise. Do not combine sections.`
             }
         ];
 
@@ -182,8 +190,8 @@ Keep each section concise and focused. Prioritize accuracy over length.`
         });
 
         console.log('Stream created, beginning processing');
-        let currentChunk = '';
-        let chunkCount = 0;
+        let currentSection = '';
+        let sectionCount = 0;
 
         try {
             for await (const chunk of stream) {
@@ -191,33 +199,41 @@ Keep each section concise and focused. Prioritize accuracy over length.`
                 
                 const content = chunk.choices[0]?.delta?.content || '';
                 if (content) {
-                    currentChunk += content;
+                    currentSection += content;
                     
-                    // Send chunk on natural breaks
-                    if (
-                        currentChunk.length >= 100 || 
+                    // Check for section markers
+                    if (currentSection.includes('[SECTION_END]')) {
+                        sectionCount++;
+                        const section = currentSection.split('[SECTION_END]')[0];
+                        console.log(`Sending section ${sectionCount}`);
+                        sendEvent({ chunk: section + '\n\n' });
+                        
+                        // Start new section
+                        currentSection = currentSection.split('[SECTION_END]')[1] || '';
+                    }
+                    // Also send on natural breaks within sections
+                    else if (
+                        currentSection.length >= 100 || 
                         content.includes('.') || 
                         content.includes('\n') ||
-                        content.includes('؛') || // Arabic semicolon
-                        content.includes('،')    // Arabic comma
+                        content.includes('؛') || 
+                        content.includes('،')
                     ) {
-                        chunkCount++;
-                        console.log(`Sending chunk ${chunkCount}`);
-                        sendEvent({ chunk: currentChunk });
-                        currentChunk = '';
+                        console.log(`Sending partial section ${sectionCount + 1}`);
+                        sendEvent({ chunk: currentSection });
+                        currentSection = '';
                     }
                 }
             }
 
             // Send any remaining content
-            if (currentChunk && !streamEnded) {
-                console.log('Sending final chunk');
-                sendEvent({ chunk: currentChunk });
+            if (currentSection && !streamEnded) {
+                console.log('Sending final section');
+                sendEvent({ chunk: currentSection });
             }
 
-            // Ensure we end with the closing phrase
             if (!streamEnded) {
-                sendEvent({ chunk: '\n\nواللهُ أَعْلَم', status: 'complete' });
+                sendEvent({ status: 'complete' });
             }
 
         } catch (streamError) {

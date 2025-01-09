@@ -364,7 +364,7 @@
             
             try {
                 const controller = new AbortController();
-                const timeoutId = setTimeout(() => controller.abort(), 30000);
+                const timeoutId = setTimeout(() => controller.abort(), 20000);
 
                 const response = await fetch('/api/chat', {
                     method: 'POST',
@@ -387,9 +387,10 @@
                 let fullResponse = '';
                 let isComplete = false;
                 let lastUpdate = Date.now();
+                let sectionsReceived = 0;
 
-                while (!isComplete) {
-                    if (Date.now() - lastUpdate > 5000) { 
+                while (!isComplete && sectionsReceived < 3) {
+                    if (Date.now() - lastUpdate > 3000) { 
                         console.log('Response stalled');
                         break;
                     }
@@ -416,6 +417,11 @@
                                     isComplete = true;
                                     break;
                                 } else if (data.chunk) {
+                                    if (data.chunk.includes('بِسْمِ اللَّهِ الرَّحْمَنِ الرَّحِيمِ')) {
+                                        sectionsReceived++;
+                                    } else if (data.chunk.includes('واللهُ أَعْلَم')) {
+                                        sectionsReceived++;
+                                    }
                                     fullResponse += data.chunk;
                                     loadingMessage.className = 'message bot-message';
                                     loadingMessage.innerHTML = processMessageText(fullResponse);
@@ -433,6 +439,9 @@
                 if (fullResponse) {
                     loadingMessage.className = 'message bot-message';
                     loadingMessage.innerHTML = processMessageText(fullResponse);
+                } else {
+                    loadingMessage.className = 'message error-message';
+                    loadingMessage.textContent = 'The response was incomplete. Please try again.';
                 }
                 
             } catch (error) {
