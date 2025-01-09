@@ -1,0 +1,361 @@
+<!DOCTYPE html>
+<html lang="en" dir="ltr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ask Mo Anything - Islamic Knowledge Bot</title>
+    <link href="https://fonts.googleapis.com/css2?family=Amiri:wght@400;700&family=Roboto:wght@300;400;500;700&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --primary-color: #1e6f5c;
+            --secondary-color: #2a9d8f;
+            --background-color: #f8f9fa;
+            --text-color: #2c3e50;
+            --arabic-font: 'Amiri', serif;
+            --english-font: 'Roboto', sans-serif;
+        }
+
+        body {
+            background: var(--background-color);
+            color: var(--text-color);
+            font-family: var(--english-font);
+            line-height: 1.6;
+        }
+
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        .header {
+            text-align: center;
+            padding: 30px 0;
+            margin-bottom: 30px;
+            background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+            color: white;
+            border-radius: 15px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+
+        .header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+        }
+
+        .header .arabic-title {
+            font-family: var(--arabic-font);
+            font-size: 1.8em;
+            margin-top: 10px;
+        }
+
+        .disclaimer {
+            background: #fff;
+            border-left: 4px solid var(--primary-color);
+            padding: 20px;
+            margin-bottom: 30px;
+            border-radius: 5px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+        }
+
+        .disclaimer ul {
+            margin-left: 20px;
+            margin-top: 10px;
+        }
+
+        .disclaimer li {
+            margin-bottom: 5px;
+        }
+
+        .chat-container {
+            background: white;
+            border-radius: 15px;
+            padding: 20px;
+            height: 600px;
+            display: flex;
+            flex-direction: column;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+
+        .chat-messages {
+            flex-grow: 1;
+            overflow-y: auto;
+            margin-bottom: 20px;
+            padding: 15px;
+        }
+
+        .message {
+            margin-bottom: 20px;
+            padding: 15px;
+            border-radius: 15px;
+            max-width: 85%;
+            position: relative;
+            animation: fadeIn 0.3s ease-in;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .user-message {
+            background: #e3f2fd;
+            margin-left: auto;
+            border-bottom-right-radius: 5px;
+        }
+
+        .bot-message {
+            background: #f8f9fa;
+            border-bottom-left-radius: 5px;
+        }
+
+        .arabic-text {
+            font-family: var(--arabic-font);
+            font-size: 1.2em;
+            line-height: 1.8;
+            margin: 10px 0;
+            text-align: right;
+            direction: rtl;
+        }
+
+        .citation {
+            font-size: 0.9em;
+            color: #666;
+            margin-top: 5px;
+            font-style: italic;
+        }
+
+        .input-container {
+            display: flex;
+            gap: 15px;
+            padding: 15px;
+            background: #f8f9fa;
+            border-radius: 10px;
+        }
+
+        #user-input {
+            flex-grow: 1;
+            padding: 15px;
+            border: 2px solid #e0e0e0;
+            border-radius: 10px;
+            font-size: 16px;
+            transition: border-color 0.3s ease;
+        }
+
+        #user-input:focus {
+            outline: none;
+            border-color: var(--primary-color);
+        }
+
+        button {
+            padding: 15px 30px;
+            background: var(--primary-color);
+            color: white;
+            border: none;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-weight: 500;
+        }
+
+        button:hover {
+            background: var(--secondary-color);
+            transform: translateY(-2px);
+        }
+
+        button:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+
+        .loading {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            color: #666;
+        }
+
+        .loading-dots {
+            display: flex;
+            gap: 5px;
+        }
+
+        .loading-dots span {
+            width: 8px;
+            height: 8px;
+            background: #666;
+            border-radius: 50%;
+            animation: bounce 1.4s infinite ease-in-out;
+        }
+
+        .loading-dots span:nth-child(1) { animation-delay: -0.32s; }
+        .loading-dots span:nth-child(2) { animation-delay: -0.16s; }
+
+        @keyframes bounce {
+            0%, 80%, 100% { transform: scale(0); }
+            40% { transform: scale(1); }
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                padding: 10px;
+            }
+
+            .message {
+                max-width: 90%;
+            }
+
+            .input-container {
+                flex-direction: column;
+            }
+
+            button {
+                width: 100%;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>Ask Mo Anything</h1>
+            <div class="arabic-title">اسأل عن النبي محمد ﷺ</div>
+            <p>An AI Assistant for Islamic Knowledge</p>
+        </div>
+
+        <div class="disclaimer">
+            <strong>Important Notice:</strong>
+            <p>This AI assistant provides information about Prophet Muhammad ﷺ and Islamic teachings based on authentic sources. Please note:</p>
+            <ul>
+                <li>This is an AI tool and should not be considered a replacement for proper Islamic scholarship</li>
+                <li>For religious rulings (fatawa), please consult qualified Islamic scholars</li>
+                <li>Verify all information with authentic Islamic sources</li>
+                <li>Treat all religious content with proper respect and adab (etiquette)</li>
+            </ul>
+        </div>
+
+        <div class="chat-container">
+            <div class="chat-messages" id="chat-messages">
+                <div class="message bot-message">
+                    <div class="arabic-text">السَّلاَمُ عَلَيْكُمْ وَرَحْمَةُ اللهِ وَبَرَكَاتُهُ</div>
+                    Welcome! I'm here to help answer your questions about Prophet Muhammad ﷺ and Islamic teachings. What would you like to know?
+                </div>
+            </div>
+            <div class="input-container">
+                <input type="text" id="user-input" placeholder="Type your question here..." autocomplete="off">
+                <button onclick="sendMessage()" id="send-button">Send</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const chatMessages = document.getElementById('chat-messages');
+        const userInput = document.getElementById('user-input');
+        const sendButton = document.getElementById('send-button');
+
+        userInput.addEventListener('keypress', function(e) {
+            if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                sendMessage();
+            }
+        });
+
+        function createLoadingMessage() {
+            const loadingDiv = document.createElement('div');
+            loadingDiv.className = 'message bot-message loading';
+            loadingDiv.innerHTML = `
+                Thinking
+                <div class="loading-dots">
+                    <span></span>
+                    <span></span>
+                    <span></span>
+                </div>
+            `;
+            return loadingDiv;
+        }
+
+        async function sendMessage() {
+            const message = userInput.value.trim();
+            if (message === '') return;
+
+            // Disable input and button while processing
+            userInput.disabled = true;
+            sendButton.disabled = true;
+
+            // Add user message
+            addMessage(message, 'user-message');
+            userInput.value = '';
+
+            try {
+                // Show loading state
+                const loadingMessage = createLoadingMessage();
+                chatMessages.appendChild(loadingMessage);
+                chatMessages.scrollTop = chatMessages.scrollHeight;
+                
+                // Make API call to our backend
+                const response = await fetch('http://localhost:3001/api/chat', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ message })
+                });
+
+                const data = await response.json();
+
+                // Remove loading message
+                loadingMessage.remove();
+
+                if (!response.ok) {
+                    throw new Error(data.error || 'An error occurred');
+                }
+
+                // Add AI response
+                addMessage(data.response, 'bot-message');
+            } catch (error) {
+                console.error('Error:', error);
+                addMessage('I apologize, but I encountered an error. Please try again later.', 'bot-message error');
+            } finally {
+                // Re-enable input and button
+                userInput.disabled = false;
+                sendButton.disabled = false;
+                userInput.focus();
+            }
+        }
+
+        function addMessage(text, className) {
+            const messageDiv = document.createElement('div');
+            messageDiv.className = `message ${className}`;
+            
+            // Process the text to handle Arabic text and citations
+            const processedText = processMessageText(text);
+            messageDiv.innerHTML = processedText;
+            
+            chatMessages.appendChild(messageDiv);
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+            return messageDiv;
+        }
+
+        function processMessageText(text) {
+            // Split the text into paragraphs
+            const paragraphs = text.split('\n');
+            
+            return paragraphs.map(paragraph => {
+                // Handle Arabic text (text between Arabic quotation marks)
+                paragraph = paragraph.replace(/「([^」]+)」/g, '<div class="arabic-text">$1</div>');
+                
+                // Handle citations (text between square brackets)
+                paragraph = paragraph.replace(/\[(.*?)\]/g, '<div class="citation">[$1]</div>');
+                
+                return paragraph;
+            }).join('<br>');
+        }
+    </script>
+</body>
+</html>

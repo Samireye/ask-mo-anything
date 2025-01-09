@@ -1,0 +1,29 @@
+{
+  "name": "askmoanything",
+  "version": "1.0.0",
+  "description": "An AI chatbot providing information about Prophet Muhammad (peace be upon him) and Islamic teachings",
+  "type": "module",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "nodemon server.js"
+  },
+  "keywords": [
+    "islam",
+    "chatbot",
+    "ai",
+    "islamic-knowledge"
+  ],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "cors": "^2.8.5",
+    "dotenv": "^16.0.3",
+    "express": "^4.18.2",
+    "express-rate-limit": "^6.7.0",
+    "openai": "^4.0.0"
+  },
+  "devDependencies": {
+    "nodemon": "^2.0.22"
+  }
+}
