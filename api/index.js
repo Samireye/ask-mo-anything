@@ -215,7 +215,8 @@ app.post('/api/chat', validateInput, async (req, res) => {
     }
 });
 
-const PORT = process.env.PORT || 3001;
+// Use port provided by Vercel or default to 3000
+const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
     console.log(`Server running on port ${PORT}`);
 }).on('error', (error) => {
