@@ -93,77 +93,65 @@ function processMessageText(text) {
 
 // Chat endpoint
 app.post('/api/chat', validateInput, async (req, res) => {
-    // Set a shorter response timeout
-    res.setTimeout(8000); // 8 second timeout
+    // Set headers for streaming
+    res.setHeader('Content-Type', 'text/event-stream');
+    res.setHeader('Cache-Control', 'no-cache');
+    res.setHeader('Connection', 'keep-alive');
 
     try {
         // Initialize OpenAI for each request
         const openai = new OpenAI({
             apiKey: process.env.OPENAI_API_KEY,
-            maxRetries: 0, // No retries to ensure fast response
-            timeout: 7000 // 7 second timeout
+            maxRetries: 2,
+            timeout: 60000 // 60 second timeout
         });
 
         const { message } = req.body;
 
-        // Create a timeout promise
-        const timeoutPromise = new Promise((_, reject) => {
-            setTimeout(() => {
-                reject(new Error('Request timed out'));
-            }, 7000);
+        // Send initial response to keep connection alive
+        res.write('data: {"status": "processing"}\n\n');
+
+        // Create the completion with streaming
+        const stream = await openai.chat.completions.create({
+            model: "gpt-4",
+            messages: [
+                { role: "system", content: systemMessage },
+                { role: "user", content: message }
+            ],
+            temperature: 0.7,
+            max_tokens: 800,
+            stream: true // Enable streaming
         });
 
-        // Race between the OpenAI request and timeout
-        const completion = await Promise.race([
-            openai.chat.completions.create({
-                model: "gpt-4",
-                messages: [
-                    { role: "system", content: systemMessage },
-                    { role: "user", content: message }
-                ],
-                temperature: 0.7,
-                max_tokens: 400, // Reduced tokens for faster response
-                presence_penalty: 0,
-                frequency_penalty: 0
-            }),
-            timeoutPromise
-        ]);
+        let fullResponse = '';
 
-        if (!completion?.choices?.[0]?.message?.content) {
-            throw new Error('No response generated');
+        // Process the stream
+        for await (const chunk of stream) {
+            const content = chunk.choices[0]?.delta?.content || '';
+            if (content) {
+                fullResponse += content;
+                // Send each chunk to keep connection alive
+                res.write(`data: {"chunk": ${JSON.stringify(content)}}\n\n`);
+            }
         }
 
-        // Process the response text
-        const processedResponse = processMessageText(completion.choices[0].message.content);
-
-        return res.json({ 
-            response: processedResponse,
-            status: 'success'
-        });
+        // Process and send the final response
+        const processedResponse = processMessageText(fullResponse);
+        res.write(`data: {"response": ${JSON.stringify(processedResponse)}, "status": "complete"}\n\n`);
+        res.end();
 
     } catch (error) {
         console.error('Error in chat endpoint:', error);
         
         // Handle specific error types
         if (error.message?.includes('timed out') || error.code === 'ETIMEDOUT') {
-            return res.status(504).json({
-                error: 'Request timed out',
-                message: 'The request took too long to complete. Please try again.'
-            });
+            res.write(`data: {"error": "Request timed out", "message": "The request took too long to complete. Please try again."}\n\n`);
+        } else if (error.status === 429 || error.code === 'rate_limit_exceeded') {
+            res.write(`data: {"error": "Rate limit exceeded", "message": "Too many requests. Please wait a moment and try again."}\n\n`);
+        } else {
+            res.write(`data: {"error": "An error occurred", "message": "${error.message || 'Internal server error'}"}\n\n`);
         }
-
-        if (error.status === 429 || error.code === 'rate_limit_exceeded') {
-            return res.status(429).json({
-                error: 'Rate limit exceeded',
-                message: 'Too many requests. Please wait a moment and try again.'
-            });
-        }
-
-        return res.status(error.status || 500).json({
-            error: 'An error occurred',
-            message: error.message || 'Internal server error',
-            status: 'error'
-        });
+        res.end();
     }
 });
 
