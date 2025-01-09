@@ -7,8 +7,8 @@
   "scripts": {
     "start": "node api/index.js",
     "dev": "nodemon api/index.js",
-    "build": "cp -r public .",
-    "vercel-build": "npm run build"
+    "build": "echo 'Build step complete'",
+    "vercel-build": "echo 'Vercel build complete'"
   },
   "keywords": [
     "islam",
