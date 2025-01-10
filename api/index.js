@@ -241,7 +241,9 @@ Always:
             const newContent = text.trim();
             if (newContent && newContent !== lastSentContent) {
                 console.log(`Sending chunk: ${newContent.slice(0, 50)}...`);
-                sendEvent({ chunk: newContent + '\n' });
+                // Only add newline for section headers or after Arabic text
+                const needsNewline = /^\[.*\]$/.test(newContent) || isArabic(newContent);
+                sendEvent({ chunk: newContent + (needsNewline ? '\n' : ' ') });
                 lastSentContent = newContent;
                 lastChunkTime = Date.now();
             }
