@@ -151,31 +151,24 @@ app.post('/api/chat', validateInput, async (req, res) => {
         const systemMessages = [
             {
                 role: "system",
-                content: `You are an AI assistant for Islamic knowledge. Format responses exactly as follows:
+                content: `You are an AI assistant for Islamic knowledge. Respond in this format:
 
 بِسْمِ اللَّهِ الرَّحْمَنِ الرَّحِيمِ
 
-[INTRO]
-One clear sentence introducing the topic.
+1. Brief introduction (1-2 sentences)
 
-[QURAN]
-{Surah:Verse} 
-{Arabic}
-"English translation"
+2. Evidence:
+- Quran {Surah:Verse} with Arabic and English
+- Hadith {Source} with Arabic and English
 
-[HADITH]
-{Source} 
-{Arabic}
-"English translation"
-
-[SUMMARY]
+3. Conclusion:
 - Brief ruling/explanation
 - Consult scholars
 - واللهُ أَعْلَم
 
-Related: List 2 follow-up questions
+4. Related questions (2-3)
 
-Keep all Arabic text. Use ﷺ and رضي الله عنه. Be concise but complete.`
+Keep Arabic text together on one line. Use ﷺ and رضي الله عنه. Be concise but complete.`
             }
         ];
 
@@ -196,15 +189,18 @@ Keep all Arabic text. Use ﷺ and رضي الله عنه. Be concise but complet
         let lastChunkTime = Date.now();
         let chunkBuffer = '';
         let lastSentContent = '';
+        let arabicBuffer = '';
 
         const sendChunk = (text) => {
             const newContent = text.trim();
             if (newContent && newContent !== lastSentContent) {
                 console.log(`Sending chunk: ${newContent.slice(0, 50)}...`);
-                sendEvent({ chunk: newContent + '\n\n' });
+                sendEvent({ chunk: newContent + '\n' });
                 lastSentContent = newContent;
             }
         };
+
+        const isArabic = (text) => /[\u0600-\u06FF\u0750-\u077F\u08A0-\u08FF\uFB50-\uFDFF\uFE70-\uFEFF]/.test(text);
 
         try {
             for await (const chunk of stream) {
@@ -213,18 +209,23 @@ Keep all Arabic text. Use ﷺ and رضي الله عنه. Be concise but complet
                 const content = chunk.choices[0]?.delta?.content || '';
                 if (content) {
                     currentContent += content;
-                    chunkBuffer += content;
+                    
+                    // Handle Arabic text specially
+                    if (isArabic(content)) {
+                        arabicBuffer += content;
+                    } else {
+                        // If we have Arabic text buffered and hit non-Arabic
+                        if (arabicBuffer) {
+                            sendChunk(arabicBuffer);
+                            arabicBuffer = '';
+                        }
+                        chunkBuffer += content;
+                    }
+
                     lastChunkTime = Date.now();
                     
-                    // Send on section markers or Arabic text
-                    if (content.includes('[') || /[\u0600-\u06FF]/.test(content)) {
-                        if (chunkBuffer.trim()) {
-                            sendChunk(chunkBuffer);
-                            chunkBuffer = '';
-                        }
-                    }
                     // Send on natural breaks
-                    else if (chunkBuffer.length >= 100 && /[.!?؟\n]/.test(chunkBuffer)) {
+                    if (!arabicBuffer && chunkBuffer.length >= 100 && /[.!?؟\n]/.test(chunkBuffer)) {
                         const parts = chunkBuffer.split(/(?<=[.!?؟\n])\s+/);
                         if (parts.length > 1) {
                             sendChunk(parts.slice(0, -1).join(' '));
@@ -235,6 +236,10 @@ Keep all Arabic text. Use ﷺ and رضي الله عنه. Be concise but complet
 
                 // Check for stalled stream
                 if (Date.now() - lastChunkTime > 2000) {
+                    if (arabicBuffer) {
+                        sendChunk(arabicBuffer);
+                        arabicBuffer = '';
+                    }
                     if (chunkBuffer.trim()) {
                         sendChunk(chunkBuffer);
                         chunkBuffer = '';
@@ -244,6 +249,9 @@ Keep all Arabic text. Use ﷺ and رضي الله عنه. Be concise but complet
             }
 
             // Send any remaining content
+            if (arabicBuffer) {
+                sendChunk(arabicBuffer);
+            }
             if (chunkBuffer.trim() && !streamEnded) {
                 sendChunk(chunkBuffer);
             }
