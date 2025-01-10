@@ -151,24 +151,60 @@ app.post('/api/chat', validateInput, async (req, res) => {
         const systemMessages = [
             {
                 role: "system",
-                content: `You are an AI assistant for Islamic knowledge. Respond in this format:
+                content: `You are an AI assistant providing comprehensive information about Prophet Muhammad ﷺ and Islamic teachings.
+
+Your response must follow this exact format:
 
 بِسْمِ اللَّهِ الرَّحْمَنِ الرَّحِيمِ
 
-1. Brief introduction (1-2 sentences)
+[INTRODUCTION]
+- Brief overview of the topic
+- Historical or contextual background
+- Key concepts or terms explained
 
-2. Evidence:
-- Quran {Surah:Verse} with Arabic and English
-- Hadith {Source} with Arabic and English
+[QURAN]
+Include at least two relevant verses:
+For each verse:
+- Surah name and number:verse
+- Complete Arabic text
+- Word-by-word translation if relevant
+- Full English translation
+- Brief tafsir or explanation
 
-3. Conclusion:
-- Brief ruling/explanation
-- Consult scholars
+[HADITH]
+Include at least two relevant hadith:
+For each hadith:
+- Complete narrator chain
+- Source (e.g., Bukhari, Muslim)
+- Complete Arabic text
+- English translation
+- Brief explanation of context/meaning
+
+[SCHOLARLY OPINIONS]
+- Views from major schools of thought
+- Key scholarly interpretations
+- Contemporary relevance
+
+[PRACTICAL GUIDANCE]
+- How this applies today
+- Common misconceptions addressed
+- Practical implementation tips
+
+[CONCLUSION]
+- Summary of main points
+- Importance of seeking knowledge
+- Reminder to verify with scholars
 - واللهُ أَعْلَم
 
-4. Related questions (2-3)
+[RELATED TOPICS]
+List 3-4 related questions for further learning
 
-Keep Arabic text together on one line. Use ﷺ and رضي الله عنه. Be concise but complete.`
+Always:
+- Use proper honorifics (ﷺ, رضي الله عنه)
+- Keep Arabic text complete and accurate
+- Cite authentic sources
+- Encourage scholarly verification
+- Be comprehensive yet clear`
             }
         ];
 
@@ -178,7 +214,7 @@ Keep Arabic text together on one line. Use ﷺ and رضي الله عنه. Be co
             model: "gpt-4",
             messages: [...systemMessages, { role: "user", content: message }],
             temperature: 0.7,
-            max_tokens: 600,
+            max_tokens: 2000,
             stream: true,
             presence_penalty: 0,
             frequency_penalty: 0
@@ -190,6 +226,7 @@ Keep Arabic text together on one line. Use ﷺ and رضي الله عنه. Be co
         let chunkBuffer = '';
         let lastSentContent = '';
         let arabicBuffer = '';
+        let inArabicBlock = false;
 
         const sendChunk = (text) => {
             const newContent = text.trim();
@@ -210,22 +247,38 @@ Keep Arabic text together on one line. Use ﷺ and رضي الله عنه. Be co
                 if (content) {
                     currentContent += content;
                     
-                    // Handle Arabic text specially
+                    // Handle Arabic text
                     if (isArabic(content)) {
+                        if (!inArabicBlock) {
+                            if (chunkBuffer.trim()) {
+                                sendChunk(chunkBuffer);
+                                chunkBuffer = '';
+                            }
+                            inArabicBlock = true;
+                        }
                         arabicBuffer += content;
                     } else {
-                        // If we have Arabic text buffered and hit non-Arabic
-                        if (arabicBuffer) {
-                            sendChunk(arabicBuffer);
-                            arabicBuffer = '';
+                        if (inArabicBlock) {
+                            if (arabicBuffer.trim()) {
+                                sendChunk(arabicBuffer);
+                                arabicBuffer = '';
+                            }
+                            inArabicBlock = false;
                         }
                         chunkBuffer += content;
                     }
 
                     lastChunkTime = Date.now();
                     
+                    // Send on section markers
+                    if (content.includes('[') && content.includes(']')) {
+                        if (chunkBuffer.trim()) {
+                            sendChunk(chunkBuffer);
+                            chunkBuffer = '';
+                        }
+                    }
                     // Send on natural breaks
-                    if (!arabicBuffer && chunkBuffer.length >= 100 && /[.!?؟\n]/.test(chunkBuffer)) {
+                    else if (!inArabicBlock && chunkBuffer.length >= 150 && /[.!?؟\n]/.test(chunkBuffer)) {
                         const parts = chunkBuffer.split(/(?<=[.!?؟\n])\s+/);
                         if (parts.length > 1) {
                             sendChunk(parts.slice(0, -1).join(' '));
@@ -235,10 +288,11 @@ Keep Arabic text together on one line. Use ﷺ and رضي الله عنه. Be co
                 }
 
                 // Check for stalled stream
-                if (Date.now() - lastChunkTime > 2000) {
-                    if (arabicBuffer) {
+                if (Date.now() - lastChunkTime > 5000) {
+                    if (arabicBuffer.trim()) {
                         sendChunk(arabicBuffer);
                         arabicBuffer = '';
+                        inArabicBlock = false;
                     }
                     if (chunkBuffer.trim()) {
                         sendChunk(chunkBuffer);
@@ -249,7 +303,7 @@ Keep Arabic text together on one line. Use ﷺ and رضي الله عنه. Be co
             }
 
             // Send any remaining content
-            if (arabicBuffer) {
+            if (arabicBuffer.trim()) {
                 sendChunk(arabicBuffer);
             }
             if (chunkBuffer.trim() && !streamEnded) {
