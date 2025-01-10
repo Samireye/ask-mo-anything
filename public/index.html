@@ -122,7 +122,7 @@
 
         .section-header {
             font-weight: bold;
-            margin: 10px 0;
+            margin: 15px 0 10px 0;
             color: #1976d2;
             font-size: 1.1em;
         }
@@ -132,12 +132,16 @@
             font-size: 1.3em;
             line-height: 1.8;
             direction: rtl;
-            display: block;
-            margin: 10px 0;
+            margin: 15px 0;
             text-align: right;
-            background-color: #fafafa;
-            padding: 10px;
-            border-radius: 5px;
+            color: #444;
+        }
+
+        .arabic-symbol {
+            font-family: "Traditional Arabic", "Arabic Typesetting", Arial, sans-serif;
+            font-size: 1.2em;
+            color: #444;
+            margin: 0 3px;
         }
 
         .input-container {
@@ -384,9 +388,13 @@
         function processMessageText(text) {
             if (!text) return '';
             
-            // Handle Arabic text
-            text = text.replace(/([\u0600-\u06FF\u0750-\u077F\u08A0-\u08FF\uFB50-\uFDFF\uFE70-\uFEFF]+)/g, 
-                '<span class="arabic-text" lang="ar">$1</span>');
+            // Handle Arabic text - only wrap full Arabic sentences/verses
+            text = text.replace(/([.!?؟\n])([\u0600-\u06FF\u0750-\u077F\u08A0-\u08FF\uFB50-\uFDFF\uFE70-\uFEFF])/g, '$1\n$2');
+            text = text.replace(/([\u0600-\u06FF\u0750-\u077F\u08A0-\u08FF\uFB50-\uFDFF\uFE70-\uFEFF][^.!?؟\n]*[.!?؟\n])/g, 
+                '<div class="arabic-text" lang="ar">$1</div>');
+            
+            // Handle special symbols like ﷺ and ﷻ
+            text = text.replace(/(ﷺ|ﷻ)/g, '<span class="arabic-symbol">$1</span>');
             
             return text;
         }
