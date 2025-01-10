@@ -57,6 +57,35 @@
             margin-top: 10px;
         }
 
+        .header-image-container {
+            max-width: 700px;
+            margin: 30px auto;
+            position: relative;
+        }
+
+        .header-image {
+            width: 100%;
+            height: auto;
+            border-radius: 15px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+            transition: transform 0.3s ease;
+        }
+
+        .header-image:hover {
+            transform: scale(1.02);
+        }
+
+        .image-disclaimer {
+            font-size: 0.9em;
+            color: #666;
+            margin-top: 12px;
+            font-style: italic;
+            text-align: center;
+            padding: 8px;
+            background: rgba(255, 255, 255, 0.9);
+            border-radius: 8px;
+        }
+
         .disclaimer {
             background: #fff;
             border-left: 4px solid var(--primary-color);
@@ -194,7 +223,11 @@
         <div class="header">
             <h1>Ask Mo Anything</h1>
             <div class="arabic-title">اسأل عن النبي محمد ﷺ</div>
-            <p>An AI Assistant for Islamic Knowledge</p>
+        </div>
+
+        <div class="header-image-container">
+            <img src="/images/islamic-art.png" alt="Islamic Art - Artistic Illustration" class="header-image">
+            <p class="image-disclaimer">Note: This is an artistic illustration and not a depiction of Prophet Muhammad (peace be upon him)</p>
         </div>
 
         <div class="disclaimer">
