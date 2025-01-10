@@ -151,31 +151,25 @@ app.post('/api/chat', validateInput, async (req, res) => {
         const systemMessages = [
             {
                 role: "system",
-                content: `You are an AI assistant providing information about Prophet Muhammad ﷺ and Islamic teachings. 
+                content: `You are an AI assistant providing information about Prophet Muhammad ﷺ and Islamic teachings.
 
-Break your response into THREE short sections:
+Provide your response in this exact format:
 
-[SECTION_START]1
 بِسْمِ اللَّهِ الرَّحْمَنِ الرَّحِيمِ
 
-Brief introduction (2-3 sentences max)
-[SECTION_END]
+[INTRO]
+Brief introduction to the topic (2-3 sentences)
 
-[SECTION_START]2
-Main content (keep each part short):
-1. Brief biography
-2. ONE short Quranic verse with Arabic
-3. ONE short Hadith with Arabic
+[EVIDENCE]
+- Relevant Quranic verse with Arabic text and translation
+- Relevant Hadith with Arabic text and translation
 Use proper honorifics (ﷺ, رضي الله عنه)
-[SECTION_END]
 
-[SECTION_START]3
-Brief closing with:
-- Verify with scholars
-- واللهُ أَعْلَم
-[SECTION_END]
+[CLOSING]
+Please verify this information with qualified scholars.
+واللهُ أَعْلَم
 
-IMPORTANT: Keep each section very concise. Limit Arabic text length.`
+Keep responses focused and accurate. Include complete Arabic text but keep it concise.`
             }
         ];
 
@@ -192,15 +186,18 @@ IMPORTANT: Keep each section very concise. Limit Arabic text length.`
         });
 
         console.log('Stream created, beginning processing');
-        let currentSection = '';
-        let sectionCount = 0;
+        let currentContent = '';
         let lastChunkTime = Date.now();
         let chunkBuffer = '';
+        let lastSentContent = '';
 
         const sendChunk = (text) => {
-            if (text.trim()) {
-                console.log(`Sending chunk: ${text.slice(0, 50)}...`);
-                sendEvent({ chunk: text + '\n' });
+            // Avoid sending duplicate content
+            const newContent = text.trim();
+            if (newContent && newContent !== lastSentContent) {
+                console.log(`Sending chunk: ${newContent.slice(0, 50)}...`);
+                sendEvent({ chunk: newContent + '\n' });
+                lastSentContent = newContent;
             }
         };
 
@@ -210,23 +207,19 @@ IMPORTANT: Keep each section very concise. Limit Arabic text length.`
                 
                 const content = chunk.choices[0]?.delta?.content || '';
                 if (content) {
-                    currentSection += content;
+                    currentContent += content;
                     chunkBuffer += content;
                     lastChunkTime = Date.now();
                     
-                    // Check for section markers
-                    if (currentSection.includes('[SECTION_END]')) {
-                        sectionCount++;
-                        const section = currentSection.split('[SECTION_END]')[0];
-                        console.log(`Sending complete section ${sectionCount}`);
-                        sendChunk(section + '\n\n');
-                        
-                        // Start new section
-                        currentSection = currentSection.split('[SECTION_END]')[1] || '';
-                        chunkBuffer = '';
+                    // Send on section markers
+                    if (content.includes('[') && content.includes(']')) {
+                        if (chunkBuffer.trim()) {
+                            sendChunk(chunkBuffer);
+                            chunkBuffer = '';
+                        }
                     }
-                    // Send smaller chunks on natural breaks
-                    else if (chunkBuffer.length >= 50 && /[.!?؟।\n]/.test(chunkBuffer)) {
+                    // Send on natural breaks
+                    else if (chunkBuffer.length >= 100 && /[.!?؟।\n]/.test(chunkBuffer)) {
                         const sentences = chunkBuffer.split(/(?<=[.!?؟।\n])\s+/);
                         if (sentences.length > 1) {
                             const completeChunk = sentences.slice(0, -1).join(' ');
@@ -238,7 +231,6 @@ IMPORTANT: Keep each section very concise. Limit Arabic text length.`
 
                 // Check for stalled stream
                 if (Date.now() - lastChunkTime > 3000) {
-                    console.log('Stream stalled, flushing buffer...');
                     if (chunkBuffer.trim()) {
                         sendChunk(chunkBuffer);
                         chunkBuffer = '';
@@ -250,9 +242,6 @@ IMPORTANT: Keep each section very concise. Limit Arabic text length.`
             // Send any remaining content
             if (chunkBuffer.trim() && !streamEnded) {
                 sendChunk(chunkBuffer);
-            }
-            if (currentSection.trim() && !streamEnded) {
-                sendChunk(currentSection);
             }
 
             if (!streamEnded) {
