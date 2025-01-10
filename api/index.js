@@ -151,37 +151,31 @@ app.post('/api/chat', validateInput, async (req, res) => {
         const systemMessages = [
             {
                 role: "system",
-                content: `You are an AI assistant providing information about Prophet Muhammad ﷺ and Islamic teachings.
-
-Your response MUST include ALL of these elements in order:
+                content: `You are an AI assistant for Islamic knowledge. Format responses exactly as follows:
 
 بِسْمِ اللَّهِ الرَّحْمَنِ الرَّحِيمِ
 
 [INTRO]
-Brief introduction to the topic (2-3 sentences)
+One clear sentence introducing the topic.
 
 [QURAN]
-At least one relevant Quranic verse:
-- Surah and verse number
-- Complete Arabic text
-- English translation
-- Brief explanation
+{Surah:Verse} 
+{Arabic}
+"English translation"
 
 [HADITH]
-At least one relevant Hadith:
-- Narrator and collection
-- Complete Arabic text
-- English translation
-- Brief explanation
+{Source} 
+{Arabic}
+"English translation"
 
-[CONCLUSION]
-- Summary of ruling/topic
-- Importance of consulting scholars
-- 2-3 relevant follow-up questions
+[SUMMARY]
+- Brief ruling/explanation
+- Consult scholars
 - واللهُ أَعْلَم
 
-Use proper honorifics (ﷺ, رضي الله عنه). Keep Arabic text complete and accurate.
-Focus on authenticity and clarity. Encourage verification with scholars.`
+Related: List 2 follow-up questions
+
+Keep all Arabic text. Use ﷺ and رضي الله عنه. Be concise but complete.`
             }
         ];
 
@@ -191,7 +185,7 @@ Focus on authenticity and clarity. Encourage verification with scholars.`
             model: "gpt-4",
             messages: [...systemMessages, { role: "user", content: message }],
             temperature: 0.7,
-            max_tokens: 800,
+            max_tokens: 600,
             stream: true,
             presence_penalty: 0,
             frequency_penalty: 0
@@ -202,13 +196,12 @@ Focus on authenticity and clarity. Encourage verification with scholars.`
         let lastChunkTime = Date.now();
         let chunkBuffer = '';
         let lastSentContent = '';
-        let sectionComplete = false;
 
         const sendChunk = (text) => {
             const newContent = text.trim();
             if (newContent && newContent !== lastSentContent) {
                 console.log(`Sending chunk: ${newContent.slice(0, 50)}...`);
-                sendEvent({ chunk: newContent + '\n\n' });  // Add extra newline for readability
+                sendEvent({ chunk: newContent + '\n\n' });
                 lastSentContent = newContent;
             }
         };
@@ -223,27 +216,25 @@ Focus on authenticity and clarity. Encourage verification with scholars.`
                     chunkBuffer += content;
                     lastChunkTime = Date.now();
                     
-                    // Send on section markers
-                    if (content.includes('[') && content.includes(']')) {
+                    // Send on section markers or Arabic text
+                    if (content.includes('[') || /[\u0600-\u06FF]/.test(content)) {
                         if (chunkBuffer.trim()) {
                             sendChunk(chunkBuffer);
                             chunkBuffer = '';
-                            sectionComplete = true;
                         }
                     }
-                    // Send on natural breaks, but only if we've completed a section
-                    else if (sectionComplete && chunkBuffer.length >= 150 && /[.!?؟।\n]/.test(chunkBuffer)) {
-                        const sentences = chunkBuffer.split(/(?<=[.!?؟।\n])\s+/);
-                        if (sentences.length > 1) {
-                            const completeChunk = sentences.slice(0, -1).join(' ');
-                            sendChunk(completeChunk);
-                            chunkBuffer = sentences[sentences.length - 1];
+                    // Send on natural breaks
+                    else if (chunkBuffer.length >= 100 && /[.!?؟\n]/.test(chunkBuffer)) {
+                        const parts = chunkBuffer.split(/(?<=[.!?؟\n])\s+/);
+                        if (parts.length > 1) {
+                            sendChunk(parts.slice(0, -1).join(' '));
+                            chunkBuffer = parts[parts.length - 1];
                         }
                     }
                 }
 
                 // Check for stalled stream
-                if (Date.now() - lastChunkTime > 3000) {
+                if (Date.now() - lastChunkTime > 2000) {
                     if (chunkBuffer.trim()) {
                         sendChunk(chunkBuffer);
                         chunkBuffer = '';
