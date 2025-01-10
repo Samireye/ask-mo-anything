@@ -16,8 +16,9 @@
     "ai",
     "islamic-knowledge"
   ],
-  "author": "",
-  "license": "ISC",
+  "author": "Samir Shah",
+  "license": "UNLICENSED",
+  "private": true,
   "dependencies": {
     "cors": "^2.8.5",
     "dotenv": "^16.0.3",
