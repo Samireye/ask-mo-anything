@@ -153,23 +153,35 @@ app.post('/api/chat', validateInput, async (req, res) => {
                 role: "system",
                 content: `You are an AI assistant providing information about Prophet Muhammad ﷺ and Islamic teachings.
 
-Provide your response in this exact format:
+Your response MUST include ALL of these elements in order:
 
 بِسْمِ اللَّهِ الرَّحْمَنِ الرَّحِيمِ
 
 [INTRO]
 Brief introduction to the topic (2-3 sentences)
 
-[EVIDENCE]
-- Relevant Quranic verse with Arabic text and translation
-- Relevant Hadith with Arabic text and translation
-Use proper honorifics (ﷺ, رضي الله عنه)
+[QURAN]
+At least one relevant Quranic verse:
+- Surah and verse number
+- Complete Arabic text
+- English translation
+- Brief explanation
 
-[CLOSING]
-Please verify this information with qualified scholars.
-واللهُ أَعْلَم
+[HADITH]
+At least one relevant Hadith:
+- Narrator and collection
+- Complete Arabic text
+- English translation
+- Brief explanation
 
-Keep responses focused and accurate. Include complete Arabic text but keep it concise.`
+[CONCLUSION]
+- Summary of ruling/topic
+- Importance of consulting scholars
+- 2-3 relevant follow-up questions
+- واللهُ أَعْلَم
+
+Use proper honorifics (ﷺ, رضي الله عنه). Keep Arabic text complete and accurate.
+Focus on authenticity and clarity. Encourage verification with scholars.`
             }
         ];
 
@@ -190,13 +202,13 @@ Keep responses focused and accurate. Include complete Arabic text but keep it co
         let lastChunkTime = Date.now();
         let chunkBuffer = '';
         let lastSentContent = '';
+        let sectionComplete = false;
 
         const sendChunk = (text) => {
-            // Avoid sending duplicate content
             const newContent = text.trim();
             if (newContent && newContent !== lastSentContent) {
                 console.log(`Sending chunk: ${newContent.slice(0, 50)}...`);
-                sendEvent({ chunk: newContent + '\n' });
+                sendEvent({ chunk: newContent + '\n\n' });  // Add extra newline for readability
                 lastSentContent = newContent;
             }
         };
@@ -216,10 +228,11 @@ Keep responses focused and accurate. Include complete Arabic text but keep it co
                         if (chunkBuffer.trim()) {
                             sendChunk(chunkBuffer);
                             chunkBuffer = '';
+                            sectionComplete = true;
                         }
                     }
-                    // Send on natural breaks
-                    else if (chunkBuffer.length >= 100 && /[.!?؟।\n]/.test(chunkBuffer)) {
+                    // Send on natural breaks, but only if we've completed a section
+                    else if (sectionComplete && chunkBuffer.length >= 150 && /[.!?؟।\n]/.test(chunkBuffer)) {
                         const sentences = chunkBuffer.split(/(?<=[.!?؟।\n])\s+/);
                         if (sentences.length > 1) {
                             const completeChunk = sentences.slice(0, -1).join(' ');
