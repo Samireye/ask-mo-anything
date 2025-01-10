@@ -254,7 +254,7 @@
             </div>
             <div class="input-container">
                 <input type="text" id="user-input" placeholder="Type your question here..." autocomplete="off">
-                <button onclick="sendMessage()" id="send-button">Send</button>
+                <button onclick="sendMessage(userInput.value)" id="send-button">Send</button>
             </div>
         </div>
     </div>
@@ -267,27 +267,13 @@
         userInput.addEventListener('keypress', function(e) {
             if (e.key === 'Enter' && !e.shiftKey) {
                 e.preventDefault();
-                sendMessage();
+                sendMessage(userInput.value);
             }
         });
 
-        async function sendMessage() {
-            const message = userInput.value.trim();
-            
-            if (!message) return;
-            
-            userInput.value = '';
-            const userMessage = document.createElement('div');
-            userMessage.className = 'message user-message';
-            userMessage.textContent = message;
-            chatMessages.appendChild(userMessage);
-            
-            const loadingMessage = document.createElement('div');
-            loadingMessage.className = 'message assistant-message loading';
-            loadingMessage.textContent = 'Thinking...';
-            chatMessages.appendChild(loadingMessage);
-            
+        async function sendMessage(message) {
             try {
+                console.log('Sending message:', message);
                 const response = await fetch('/api/chat', {
                     method: 'POST',
                     headers: {
@@ -304,11 +290,14 @@
                 const decoder = new TextDecoder();
                 let responseComplete = false;
                 let timeoutId;
+                let lastChunkTime = Date.now();
 
+                console.log('Starting stream processing');
                 const resetTimeout = () => {
                     if (timeoutId) clearTimeout(timeoutId);
                     timeoutId = setTimeout(() => {
                         if (!responseComplete) {
+                            console.error('Client timeout - no response for 60 seconds');
                             appendMessage("The response was incomplete. Please try asking your question again.", "error");
                             reader.cancel();
                         }
@@ -320,10 +309,17 @@
                     const { done, value } = await reader.read();
 
                     if (done) {
+                        console.log('Stream complete');
                         clearTimeout(timeoutId);
                         break;
                     }
 
+                    const timeSinceLastChunk = Date.now() - lastChunkTime;
+                    if (timeSinceLastChunk > 10000) {
+                        console.log(`No chunks received for ${timeSinceLastChunk}ms`);
+                    }
+
+                    lastChunkTime = Date.now();
                     const chunk = decoder.decode(value);
                     const lines = chunk.split('\n');
 
@@ -332,6 +328,7 @@
 
                         const message = line.replace(/^data: /, '');
                         if (message === '[DONE]') {
+                            console.log('Received [DONE] message');
                             responseComplete = true;
                             clearTimeout(timeoutId);
                             break;
@@ -340,11 +337,13 @@
                         try {
                             const parsed = JSON.parse(message);
                             if (parsed.error) {
+                                console.error('Received error:', parsed.error);
                                 appendMessage(parsed.error, "error");
                                 clearTimeout(timeoutId);
                                 return;
                             }
                             if (parsed.status === 'complete') {
+                                console.log('Received complete status');
                                 responseComplete = true;
                                 clearTimeout(timeoutId);
                                 break;
@@ -353,12 +352,12 @@
                                 appendMessage(parsed.chunk, "assistant");
                             }
                         } catch (e) {
-                            console.error("Error parsing message:", e);
+                            console.error("Error parsing message:", e, message);
                         }
                     }
                 }
             } catch (error) {
-                console.error('Error:', error);
+                console.error('Error in sendMessage:', error);
                 appendMessage("An error occurred. Please try again.", "error");
             }
             

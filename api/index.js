@@ -209,137 +209,165 @@ Always:
 
         sendEvent({ status: 'processing' });
 
-        const stream = await openai.chat.completions.create({
-            model: "gpt-4",
-            messages: [...systemMessages, { role: "user", content: message }],
-            temperature: 0.7,
-            max_tokens: 3000,
-            stream: true,
-            presence_penalty: 0,
-            frequency_penalty: 0
-        });
-
-        console.log('Stream created, beginning processing');
-        let currentContent = '';
-        let lastChunkTime = Date.now();
-        let chunkBuffer = '';
-        let lastSentContent = '';
-        let arabicBuffer = '';
-        let inArabicBlock = false;
-        let timeoutTimer = null;
-
-        // Set a timeout for the entire response
-        const responseTimeout = setTimeout(() => {
-            console.error('Response timeout');
-            if (!streamEnded) {
-                sendEvent({ error: 'Response timeout', message: 'The response took too long. Please try again.' });
-                endStream();
-            }
-        }, 180000); // 3 minutes
-
-        const sendChunk = (text) => {
-            const newContent = text.trim();
-            if (newContent && newContent !== lastSentContent) {
-                console.log(`Sending chunk: ${newContent.slice(0, 50)}...`);
-                // Only add newline for section headers or after Arabic text
-                const needsNewline = /^\[.*\]$/.test(newContent) || isArabic(newContent);
-                sendEvent({ chunk: newContent + (needsNewline ? '\n' : ' ') });
-                lastSentContent = newContent;
-                lastChunkTime = Date.now();
-            }
-        };
-
-        const isArabic = (text) => /[\u0600-\u06FF\u0750-\u077F\u08A0-\u08FF\uFB50-\uFDFF\uFE70-\uFEFF]/.test(text);
-
         try {
-            for await (const chunk of stream) {
-                if (streamEnded) {
-                    clearTimeout(responseTimeout);
-                    break;
+            console.log('Creating OpenAI stream...');
+            const stream = await openai.chat.completions.create({
+                model: "gpt-4",
+                messages: [...systemMessages, { role: "user", content: message }],
+                temperature: 0.7,
+                max_tokens: 3000,
+                stream: true,
+                presence_penalty: 0,
+                frequency_penalty: 0
+            });
+
+            console.log('Stream created successfully');
+            let currentContent = '';
+            let lastChunkTime = Date.now();
+            let chunkBuffer = '';
+            let lastSentContent = '';
+            let arabicBuffer = '';
+            let inArabicBlock = false;
+            let chunkCount = 0;
+
+            // Set a timeout for the entire response
+            const responseTimeout = setTimeout(() => {
+                console.error('Response timeout reached');
+                if (!streamEnded) {
+                    console.log('Sending timeout error event');
+                    sendEvent({ error: 'Response timeout', message: 'The response took too long. Please try again.' });
+                    endStream();
                 }
-                
-                const content = chunk.choices[0]?.delta?.content || '';
-                if (content) {
-                    currentContent += content;
+            }, 180000); // 3 minutes
+
+            const sendChunk = (text) => {
+                const newContent = text.trim();
+                if (newContent && newContent !== lastSentContent) {
+                    console.log(`Sending chunk ${++chunkCount}: ${newContent.slice(0, 50)}...`);
+                    // Only add newline for section headers or after Arabic text
+                    const needsNewline = /^\[.*\]$/.test(newContent) || isArabic(newContent);
+                    sendEvent({ chunk: newContent + (needsNewline ? '\n' : ' ') });
+                    lastSentContent = newContent;
+                    lastChunkTime = Date.now();
+                }
+            };
+
+            const isArabic = (text) => /[\u0600-\u06FF\u0750-\u077F\u08A0-\u08FF\uFB50-\uFDFF\uFE70-\uFEFF]/.test(text);
+
+            try {
+                console.log('Starting stream processing...');
+                for await (const chunk of stream) {
+                    if (streamEnded) {
+                        console.log('Stream ended early');
+                        clearTimeout(responseTimeout);
+                        break;
+                    }
                     
-                    // Handle Arabic text
-                    if (isArabic(content)) {
-                        if (!inArabicBlock) {
+                    const content = chunk.choices[0]?.delta?.content || '';
+                    if (content) {
+                        currentContent += content;
+                        
+                        // Handle Arabic text
+                        if (isArabic(content)) {
+                            console.log('Starting Arabic block');
+                            if (!inArabicBlock) {
+                                if (chunkBuffer.trim()) {
+                                    sendChunk(chunkBuffer);
+                                    chunkBuffer = '';
+                                }
+                                inArabicBlock = true;
+                            }
+                            arabicBuffer += content;
+                        } else {
+                            if (inArabicBlock) {
+                                console.log('Ending Arabic block');
+                                if (arabicBuffer.trim()) {
+                                    sendChunk(arabicBuffer);
+                                    arabicBuffer = '';
+                                }
+                                inArabicBlock = false;
+                            }
+                            chunkBuffer += content;
+                        }
+                        
+                        // Send on section markers
+                        if (content.includes('[') && content.includes(']')) {
+                            console.log('Found section marker');
                             if (chunkBuffer.trim()) {
                                 sendChunk(chunkBuffer);
                                 chunkBuffer = '';
                             }
-                            inArabicBlock = true;
                         }
-                        arabicBuffer += content;
-                    } else {
-                        if (inArabicBlock) {
-                            if (arabicBuffer.trim()) {
-                                sendChunk(arabicBuffer);
-                                arabicBuffer = '';
+                        // Send on natural breaks
+                        else if (!inArabicBlock && chunkBuffer.length >= 150 && /[.!?؟\n]/.test(chunkBuffer)) {
+                            const parts = chunkBuffer.split(/(?<=[.!?؟\n])\s+/);
+                            if (parts.length > 1) {
+                                sendChunk(parts.slice(0, -1).join(' '));
+                                chunkBuffer = parts[parts.length - 1];
                             }
+                        }
+
+                        // Log progress every 10 chunks
+                        if (chunkCount % 10 === 0) {
+                            console.log(`Processed ${chunkCount} chunks so far`);
+                        }
+                    }
+
+                    // Check for stalled chunks
+                    const timeSinceLastChunk = Date.now() - lastChunkTime;
+                    if (timeSinceLastChunk > 10000) {
+                        console.log(`No chunks received for ${timeSinceLastChunk}ms`);
+                        if (arabicBuffer.trim()) {
+                            sendChunk(arabicBuffer);
+                            arabicBuffer = '';
                             inArabicBlock = false;
                         }
-                        chunkBuffer += content;
-                    }
-                    
-                    // Send on section markers
-                    if (content.includes('[') && content.includes(']')) {
                         if (chunkBuffer.trim()) {
                             sendChunk(chunkBuffer);
                             chunkBuffer = '';
                         }
                     }
-                    // Send on natural breaks
-                    else if (!inArabicBlock && chunkBuffer.length >= 150 && /[.!?؟\n]/.test(chunkBuffer)) {
-                        const parts = chunkBuffer.split(/(?<=[.!?؟\n])\s+/);
-                        if (parts.length > 1) {
-                            sendChunk(parts.slice(0, -1).join(' '));
-                            chunkBuffer = parts[parts.length - 1];
-                        }
-                    }
                 }
 
-                // Check for stalled chunks
-                if (Date.now() - lastChunkTime > 10000) {
-                    if (arabicBuffer.trim()) {
-                        sendChunk(arabicBuffer);
-                        arabicBuffer = '';
-                        inArabicBlock = false;
-                    }
-                    if (chunkBuffer.trim()) {
-                        sendChunk(chunkBuffer);
-                        chunkBuffer = '';
-                    }
+                console.log('Stream processing completed');
+
+                // Send any remaining content
+                if (arabicBuffer.trim()) {
+                    console.log('Sending remaining Arabic buffer');
+                    sendChunk(arabicBuffer);
                 }
-            }
+                if (chunkBuffer.trim() && !streamEnded) {
+                    console.log('Sending remaining chunk buffer');
+                    sendChunk(chunkBuffer);
+                }
 
-            // Send any remaining content
-            if (arabicBuffer.trim()) {
-                sendChunk(arabicBuffer);
-            }
-            if (chunkBuffer.trim() && !streamEnded) {
-                sendChunk(chunkBuffer);
-            }
+                if (!streamEnded) {
+                    console.log('Stream completed successfully');
+                    clearTimeout(responseTimeout);
+                    sendEvent({ status: 'complete' });
+                }
 
-            if (!streamEnded) {
-                console.log('Stream completed successfully');
+            } catch (streamError) {
+                console.error('Stream processing error:', streamError);
                 clearTimeout(responseTimeout);
-                sendEvent({ status: 'complete' });
+                if (!streamEnded) {
+                    sendEvent({ error: 'Stream processing error', message: streamError.message });
+                }
             }
 
-        } catch (streamError) {
-            clearTimeout(responseTimeout);
-            console.error('Error processing stream:', streamError);
+        } catch (error) {
+            console.error('Error creating stream:', error);
             if (!streamEnded) {
-                sendEvent({ error: 'Stream processing error', message: streamError.message });
+                sendEvent({ error: 'Error creating stream', message: error.message });
             }
+        } finally {
+            console.log('Request processing finished');
+            endStream();
         }
-
     } catch (error) {
-        console.error('Error creating stream:', error);
+        console.error('Error processing chat request:', error);
         if (!streamEnded) {
-            sendEvent({ error: 'Error creating stream', message: error.message });
+            sendEvent({ error: 'Error processing chat request', message: error.message });
         }
     } finally {
         endStream();
