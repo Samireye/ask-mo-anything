@@ -140,8 +140,7 @@ app.post('/api/chat', validateInput, async (req, res) => {
         console.log('Starting chat request processing');
         const openai = new OpenAI({
             apiKey: process.env.OPENAI_API_KEY,
-            maxRetries: 1,
-            timeout: 45000
+            maxRetries: 1
         });
 
         const { message } = req.body;
@@ -214,7 +213,7 @@ Always:
             model: "gpt-4",
             messages: [...systemMessages, { role: "user", content: message }],
             temperature: 0.7,
-            max_tokens: 2000,
+            max_tokens: 3000,
             stream: true,
             presence_penalty: 0,
             frequency_penalty: 0
@@ -227,6 +226,16 @@ Always:
         let lastSentContent = '';
         let arabicBuffer = '';
         let inArabicBlock = false;
+        let timeoutTimer = null;
+
+        // Set a timeout for the entire response
+        const responseTimeout = setTimeout(() => {
+            console.error('Response timeout');
+            if (!streamEnded) {
+                sendEvent({ error: 'Response timeout', message: 'The response took too long. Please try again.' });
+                endStream();
+            }
+        }, 180000); // 3 minutes
 
         const sendChunk = (text) => {
             const newContent = text.trim();
@@ -234,6 +243,7 @@ Always:
                 console.log(`Sending chunk: ${newContent.slice(0, 50)}...`);
                 sendEvent({ chunk: newContent + '\n' });
                 lastSentContent = newContent;
+                lastChunkTime = Date.now();
             }
         };
 
@@ -241,7 +251,10 @@ Always:
 
         try {
             for await (const chunk of stream) {
-                if (streamEnded) break;
+                if (streamEnded) {
+                    clearTimeout(responseTimeout);
+                    break;
+                }
                 
                 const content = chunk.choices[0]?.delta?.content || '';
                 if (content) {
@@ -267,8 +280,6 @@ Always:
                         }
                         chunkBuffer += content;
                     }
-
-                    lastChunkTime = Date.now();
                     
                     // Send on section markers
                     if (content.includes('[') && content.includes(']')) {
@@ -287,8 +298,8 @@ Always:
                     }
                 }
 
-                // Check for stalled stream
-                if (Date.now() - lastChunkTime > 5000) {
+                // Check for stalled chunks
+                if (Date.now() - lastChunkTime > 10000) {
                     if (arabicBuffer.trim()) {
                         sendChunk(arabicBuffer);
                         arabicBuffer = '';
@@ -298,7 +309,6 @@ Always:
                         sendChunk(chunkBuffer);
                         chunkBuffer = '';
                     }
-                    lastChunkTime = Date.now();
                 }
             }
 
@@ -312,29 +322,25 @@ Always:
 
             if (!streamEnded) {
                 console.log('Stream completed successfully');
+                clearTimeout(responseTimeout);
                 sendEvent({ status: 'complete' });
             }
 
         } catch (streamError) {
+            clearTimeout(responseTimeout);
             console.error('Error processing stream:', streamError);
             if (!streamEnded) {
                 sendEvent({ error: 'Stream processing error', message: streamError.message });
             }
         }
+
     } catch (error) {
-        console.error('Error in chat endpoint:', error);
+        console.error('Error creating stream:', error);
         if (!streamEnded) {
-            if (error.message?.includes('timed out') || error.code === 'ETIMEDOUT') {
-                sendEvent({ error: 'Request timed out', message: 'The request took too long to complete. Please try again.' });
-            } else if (error.status === 429 || error.code === 'rate_limit_exceeded') {
-                sendEvent({ error: 'Rate limit exceeded', message: 'Too many requests. Please wait a moment and try again.' });
-            } else {
-                sendEvent({ error: 'An error occurred', message: error.message || 'Internal server error' });
-            }
+            sendEvent({ error: 'Error creating stream', message: error.message });
         }
     } finally {
         endStream();
-        console.log('Request processing finished');
     }
 });
 
