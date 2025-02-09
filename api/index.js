@@ -119,6 +119,59 @@ function processMessageText(text) {
     }).join('<br>');
 }
 
+// Function to get current Hijri date
+function getCurrentHijriDate() {
+    try {
+        const today = new Date();
+        console.log('Converting date:', today);
+        
+        // Julian date calculation
+        const jd = Math.floor((today.getTime() / 86400000) + 2440587.5);
+        
+        // Chronological Julian Date
+        const cjd = jd - 1948440;
+        
+        // Islamic Calendar Calculation
+        const quotient = Math.floor(cjd / 10631);
+        const remainder = cjd % 10631;
+        
+        const year = quotient * 30 + Math.floor(remainder / 354.36667);
+        const monthDays = remainder % 354.36667;
+        
+        // Calculate month
+        const monthArray = [0, 30, 59, 89, 118, 148, 177, 207, 236, 266, 295, 325];
+        let month = 0;
+        for (let i = 11; i >= 0; i--) {
+            if (monthDays >= monthArray[i]) {
+                month = i + 1;
+                break;
+            }
+        }
+        
+        const day = Math.ceil(monthDays - monthArray[month - 1]);
+        
+        const monthNames = [
+            'Muharram', 'Safar', 'Rabi al-Awwal', 'Rabi al-Thani',
+            'Jumada al-Awwal', 'Jumada al-Thani', 'Rajab', 'Shaban',
+            'Ramadan', 'Shawwal', 'Dhu al-Qadah', 'Dhu al-Hijjah'
+        ];
+        
+        const result = {
+            day,
+            month,
+            year: year + 1,
+            monthName: monthNames[month - 1],
+            format: `${day} ${monthNames[month - 1]} ${year + 1}`
+        };
+        
+        console.log('Formatted result:', result);
+        return result;
+    } catch (error) {
+        console.error('Error getting Hijri date:', error);
+        throw error;
+    }
+}
+
 // Chat endpoint
 app.post('/api/chat', validateInput, async (req, res) => {
     res.setHeader('Content-Type', 'text/event-stream');
@@ -149,6 +202,48 @@ app.post('/api/chat', validateInput, async (req, res) => {
 
     try {
         console.log('Starting chat request processing');
+
+        // Check if message is asking about Islamic date
+        const dateKeywords = [
+            'islamic date',
+            'hijri date',
+            'islamic calendar',
+            'what date is it',
+            'current islamic date',
+            'current hijri date'
+        ];
+
+        const isDateQuery = dateKeywords.some(keyword => 
+            req.body.message.toLowerCase().includes(keyword.toLowerCase())
+        );
+
+        if (isDateQuery) {
+            try {
+                const hijriDate = getCurrentHijriDate();
+                console.log('Got Hijri date:', hijriDate);
+                
+                const response = `Today's date in the Islamic calendar is ${hijriDate.day} ${hijriDate.monthName} ${hijriDate.year} AH (${hijriDate.format}).`;
+                console.log('Sending response:', response);
+                
+                // Send the response as a chunk
+                sendEvent({
+                    chunk: response,
+                    status: 'streaming'
+                });
+                
+                // Send completion event
+                sendEvent({
+                    status: 'complete'
+                });
+                return;
+            } catch (error) {
+                console.error('Error handling date query:', error);
+                sendEvent({
+                    error: 'Failed to get Islamic calendar date: ' + error.message
+                });
+                return;
+            }
+        }
         const openai = new OpenAI({
             apiKey: process.env.OPENAI_API_KEY,
             maxRetries: 1
