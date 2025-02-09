@@ -774,24 +774,27 @@
                                     
                                     // If it's a RELATED TOPICS section
                                     if (sectionName === 'RELATED TOPICS') {
-                                        // Append any existing message
-                                        if (currentMessage && currentMessage.innerHTML.trim()) {
+                                        // Only create new message and topics container if we don't already have one
+                                        if (currentSection !== 'RELATED TOPICS') {
+                                            // Append any existing message
+                                            if (currentMessage && currentMessage.innerHTML.trim()) {
+                                                chatMessages.appendChild(currentMessage);
+                                            }
+                                            // Create a new message for topics
+                                            currentMessage = document.createElement('div');
+                                            currentMessage.className = 'message bot-message';
+                                            currentSection = 'RELATED TOPICS';
+                                            
+                                            // Create topics container
+                                            const topicsDiv = document.createElement('div');
+                                            topicsDiv.className = 'related-topics';
+                                            const header = document.createElement('div');
+                                            header.className = 'related-topics-header';
+                                            header.textContent = 'Related Questions:';
+                                            topicsDiv.appendChild(header);
+                                            currentMessage.appendChild(topicsDiv);
                                             chatMessages.appendChild(currentMessage);
                                         }
-                                        // Create a new message for topics
-                                        currentMessage = document.createElement('div');
-                                        currentMessage.className = 'message bot-message';
-                                        currentSection = 'RELATED TOPICS';
-                                        
-                                        // Create topics container
-                                        const topicsDiv = document.createElement('div');
-                                        topicsDiv.className = 'related-topics';
-                                        const header = document.createElement('div');
-                                        header.className = 'related-topics-header';
-                                        header.textContent = 'Related Questions:';
-                                        topicsDiv.appendChild(header);
-                                        currentMessage.appendChild(topicsDiv);
-                                        chatMessages.appendChild(currentMessage);
                                     } else {
                                         // For other sections
                                         if (currentMessage && currentMessage.innerHTML.trim()) {
@@ -810,51 +813,46 @@
                                     if (currentSection === 'RELATED TOPICS') {
                                         const topicsDiv = currentMessage.querySelector('.related-topics');
                                         if (topicsDiv) {
-                                            // Initialize or get topic buffer
-                                            if (!topicsDiv.topicBuffer) {
-                                                topicsDiv.topicBuffer = '';
-                                                topicsDiv.isAccumulatingTopic = false;
+                                            // Initialize buffers if needed
+                                            if (!topicsDiv.currentTopic) {
+                                                topicsDiv.currentTopic = '';
                                                 topicsDiv.honorificPending = false;
                                             }
                                             
-                                            // Start accumulating if it looks like the start of a topic
-                                            if (chunk.match(/^\d+\.|^What|^How|^Why|^When|^Where|^Who|^Which|^Did|^Is|^Are|^Can|^Could|^Should|^Would|^Tell/i)) {
-                                                topicsDiv.isAccumulatingTopic = true;
-                                                topicsDiv.topicBuffer = chunk;
-                                            } else if (chunk.includes('ﷺ')) {
-                                                // Handle honorific
-                                                if (topicsDiv.isAccumulatingTopic) {
-                                                    topicsDiv.topicBuffer += ' ﷺ ';
-                                                    topicsDiv.honorificPending = true;
-                                                }
-                                            } else if (topicsDiv.isAccumulatingTopic) {
-                                                // If we just had an honorific, add a space
+                                            // Handle honorific or normal text
+                                            if (chunk.includes('ﷺ')) {
+                                                topicsDiv.currentTopic += ' (PBUH) ';
+                                                topicsDiv.honorificPending = true;
+                                            } else {
                                                 if (topicsDiv.honorificPending) {
-                                                    topicsDiv.topicBuffer += ' ';
+                                                    topicsDiv.currentTopic += ' ' + chunk;
                                                     topicsDiv.honorificPending = false;
+                                                } else {
+                                                    topicsDiv.currentTopic += chunk;
                                                 }
-                                                // Continue accumulating
-                                                topicsDiv.topicBuffer += chunk;
                                             }
                                             
-                                            // Check if we have a complete topic
-                                            if (topicsDiv.isAccumulatingTopic && !topicsDiv.honorificPending && topicsDiv.topicBuffer.match(/[?.]\s*$/)) {
-                                                // Clean up the topic text
-                                                const cleanTopic = topicsDiv.topicBuffer
-                                                    .replace(/^\d+\.\s*/, '')  // Remove leading numbers
-                                                    .replace(/\s+/g, ' ')       // Normalize whitespace
-                                                    .trim();
+                                            // Check if we have any complete questions
+                                            const questionMatches = topicsDiv.currentTopic.match(/\d+\.[^?]*\?/g);
+                                            if (questionMatches && !topicsDiv.honorificPending) {
+                                                for (const question of questionMatches) {
+                                                    // Clean up the question text
+                                                    const cleanQuestion = question
+                                                        .replace(/^\d+\.\s*/, '')  // Remove leading numbers
+                                                        .replace(/\s+/g, ' ')       // Normalize whitespace
+                                                        .trim();
+                                                    
+                                                    // Create button for the question
+                                                    const button = document.createElement('button');
+                                                    button.className = 'related-topic-tile';
+                                                    button.textContent = cleanQuestion;
+                                                    button.onclick = () => selectTopic(cleanQuestion);
+                                                    topicsDiv.appendChild(button);
+                                                }
                                                 
-                                                const button = document.createElement('button');
-                                                button.className = 'related-topic-tile';
-                                                button.textContent = cleanTopic;
-                                                button.onclick = () => selectTopic(cleanTopic);
-                                                topicsDiv.appendChild(button);
-                                                
-                                                // Reset for next topic
-                                                topicsDiv.isAccumulatingTopic = false;
-                                                topicsDiv.honorificPending = false;
-                                                topicsDiv.topicBuffer = '';
+                                                // Keep any remaining partial question
+                                                const lastQuestionEnd = topicsDiv.currentTopic.lastIndexOf('?') + 1;
+                                                topicsDiv.currentTopic = topicsDiv.currentTopic.substring(lastQuestionEnd);
                                             }
                                         }
                                     } else {
