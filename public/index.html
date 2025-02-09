@@ -819,9 +819,15 @@
                                                 topicsDiv.honorificPending = false;
                                             }
                                             
-                                            // Handle honorific or normal text
-                                            if (chunk.includes('ﷺ')) {
+                                            // Handle honorifics or normal text
+                                            if (chunk.includes('ﷺ')) {  // Prophet Muhammad (PBUH)
                                                 topicsDiv.currentTopic += ' (PBUH) ';
+                                                topicsDiv.honorificPending = true;
+                                            } else if (chunk.includes('رضي الله عنه') || chunk.includes('رضي الله عنها')) {  // RA
+                                                topicsDiv.currentTopic += ' (RA) ';
+                                                topicsDiv.honorificPending = true;
+                                            } else if (chunk.includes('عليه السلام')) {  // AS
+                                                topicsDiv.currentTopic += ' (AS) ';
                                                 topicsDiv.honorificPending = true;
                                             } else {
                                                 if (topicsDiv.honorificPending) {
