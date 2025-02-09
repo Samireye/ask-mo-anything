@@ -30,6 +30,109 @@
             line-height: 1.6;
         }
 
+        .related-topics {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            margin: 20px 0;
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 15px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+        }
+
+        .related-topics-header {
+            font-size: 1.1em;
+            color: var(--primary-color);
+            margin-bottom: 15px;
+            font-weight: 600;
+            padding-bottom: 10px;
+            border-bottom: 2px solid var(--primary-color);
+            width: fit-content;
+        }
+
+        .related-topic-tile {
+            align-self: flex-start;
+            background: white;
+            border: 1px solid #e0e0e0;
+            border-radius: 12px;
+            padding: 12px 20px 12px 45px;
+            cursor: pointer;
+            transition: all 0.25s ease;
+            color: var(--text-color);
+            font-size: 0.95em;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+            position: relative;
+            text-align: left;
+            width: 100%;
+            max-width: 600px;
+            line-height: 1.4;
+            margin: 0;
+        }
+
+        .related-topic-tile::before {
+            content: '→';
+            position: absolute;
+            left: 20px;
+            color: var(--primary-color);
+            font-weight: bold;
+            opacity: 0.7;
+            font-size: 1.2em;
+            transition: all 0.25s ease;
+        }
+
+        .related-topic-tile:hover {
+            background: var(--primary-color);
+            color: white;
+            border-color: var(--primary-color);
+            transform: translateX(8px);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        }
+
+        .related-topic-tile:hover::before {
+            color: white;
+            opacity: 1;
+            transform: translateX(3px);
+        }
+
+        .related-topic-tile:active {
+            transform: translateX(8px) scale(0.98);
+            box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+        }
+
+        .arabic-text {
+            font-family: var(--arabic-font);
+            line-height: 2;
+            direction: rtl;
+            font-size: 1.1em;
+            margin: 10px 0;
+            text-align: right;
+            background: rgba(30, 111, 92, 0.05);
+            padding: 15px;
+            border-radius: 8px;
+            display: block;
+            unicode-bidi: embed;
+        }
+
+        .arabic-inline {
+            font-family: var(--arabic-font);
+            font-size: 1em;
+            display: inline-block !important;
+            direction: rtl;
+            padding: 0;
+            margin: 0 0.15em;
+            line-height: inherit;
+            vertical-align: baseline;
+            unicode-bidi: isolate;
+        }
+
+        .section-heading {
+            color: var(--primary-color);
+            font-weight: 500;
+            margin-top: 1em;
+            margin-bottom: 0.5em;
+        }
+
         .container {
             max-width: 1000px;
             margin: 0 auto;
@@ -100,46 +203,151 @@
             margin-top: 10px;
         }
 
+        .suggested-topics {
+            margin-bottom: 30px;
+        }
+
+        .suggested-topics h2 {
+            color: var(--text-color);
+            margin-bottom: 20px;
+            font-size: 1.8em;
+            font-weight: 500;
+            text-align: center;
+        }
+
+        .topic-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 20px;
+            margin: 0 auto;
+            max-width: 1000px;
+        }
+
+        .topic-card {
+            background: white;
+            border-radius: 12px;
+            padding: 20px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .topic-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.15);
+        }
+
+        .topic-icon {
+            width: 50px;
+            height: 50px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 2em;
+            color: var(--primary-color);
+            margin-bottom: 5px;
+        }
+
+        .topic-title {
+            color: var(--text-color);
+            font-size: 1.2em;
+            font-weight: 500;
+            margin-bottom: 8px;
+        }
+
+        .topic-description {
+            color: #666;
+            font-size: 0.9em;
+            line-height: 1.4;
+        }
+
+        .related-topics {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin: 15px 0;
+        }
+
+        .related-topic-tile {
+            background: white;
+            color: var(--text-color);
+            padding: 8px 16px;
+            border-radius: 20px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            font-size: 0.9em;
+            text-align: center;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+            border: 1px solid #e0e0e0;
+            white-space: normal;
+            line-height: 1.4;
+        }
+
+        .related-topic-tile:hover {
+            background-color: var(--primary-color);
+            color: white;
+            transform: translateY(-1px);
+            box-shadow: 0 2px 4px rgba(0,0,0,0.15);
+            border-color: var(--primary-color);
+        }
+
         .disclaimer li {
             margin-bottom: 5px;
         }
 
         .chat-container {
-            max-width: 800px;
-            margin: 0 auto;
+            flex: 1;
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
             padding: 20px;
-            font-family: Arial, sans-serif;
-            height: 100vh;
+            margin-bottom: 20px;
+            overflow-y: auto;
+            height: calc(100vh - 300px);
+            min-height: 400px;
             display: flex;
             flex-direction: column;
         }
 
         .chat-messages {
-            flex-grow: 1;
+            flex: 1;
             overflow-y: auto;
             padding: 20px;
             margin-bottom: 20px;
+            display: flex;
+            flex-direction: column;
         }
 
         .message {
-            margin: 10px 0;
-            padding: 15px;
-            border-radius: 10px;
-            line-height: 1.5;
+            margin-bottom: 15px;
+            padding: 15px 20px;
+            border-radius: 12px;
             max-width: 85%;
             word-wrap: break-word;
+            line-height: 1.5;
+            font-size: 1.1em;
         }
 
         .user-message {
-            background-color: #e3f2fd;
+            background-color: var(--primary-color);
+            color: white;
+            align-self: flex-end;
             margin-left: auto;
-            margin-right: 10px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
         }
 
-        .assistant-message {
-            background-color: #f5f5f5;
+        .bot-message {
+            background-color: #f8f9fa;
+            color: var(--text-color);
+            align-self: flex-start;
             margin-right: auto;
-            margin-left: 10px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+            border: 1px solid #eee;
         }
 
         .error-message {
@@ -175,32 +383,55 @@
 
         .input-container {
             display: flex;
-            gap: 10px;
-            padding: 20px;
+            gap: 15px;
+            padding: 15px;
             background: white;
-            border-top: 1px solid #eee;
+            border-radius: 12px;
+            box-shadow: 0 -2px 10px rgba(0,0,0,0.05);
+            margin-top: auto;
         }
 
         #user-input {
-            flex-grow: 1;
-            padding: 12px;
-            border: 1px solid #ddd;
-            border-radius: 5px;
-            font-size: 16px;
+            flex: 1;
+            padding: 12px 15px;
+            border: 1px solid #e0e0e0;
+            border-radius: 8px;
+            resize: none;
+            font-size: 1em;
+            font-family: inherit;
+            height: 60px;
+            transition: border-color 0.2s ease;
+            line-height: 1.4;
+        }
+
+        #user-input:focus {
+            outline: none;
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 2px rgba(30,111,92,0.1);
         }
 
         #send-button {
             padding: 12px 24px;
-            background-color: #1976d2;
+            background-color: var(--primary-color);
             color: white;
             border: none;
-            border-radius: 5px;
+            border-radius: 8px;
             cursor: pointer;
-            font-size: 16px;
+            font-size: 1em;
+            transition: all 0.2s ease;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
         }
 
         #send-button:hover {
-            background-color: #1565c0;
+            background-color: var(--secondary-color);
+            transform: translateY(-1px);
+            box-shadow: 0 3px 6px rgba(0,0,0,0.15);
+        }
+
+        @media (max-width: 900px) {
+            .topic-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
         }
 
         @media (max-width: 600px) {
@@ -241,34 +472,199 @@
             </ul>
         </div>
 
+        <div class="suggested-topics">
+            <h2>Explore Islamic Knowledge</h2>
+            <div class="topic-grid">
+                <div class="topic-card" data-topic="Tell me about the Islamic calendar and important dates">
+                    <div class="topic-icon">📅</div>
+                    <div class="topic-title">Islamic Calendar</div>
+                    <div class="topic-description">Learn about Hijri months, important dates, and their significance</div>
+                </div>
+                <div class="topic-card" data-topic="What are the Five Pillars of Islam?">
+                    <div class="topic-icon">🕌</div>
+                    <div class="topic-title">Five Pillars of Islam</div>
+                    <div class="topic-description">Explore the fundamental practices of Islam</div>
+                </div>
+                <div class="topic-card" data-topic="Tell me about the life and teachings of Prophet Muhammad ﷺ">
+                    <div class="topic-icon">📚</div>
+                    <div class="topic-title">Prophetic Biography</div>
+                    <div class="topic-description">Discover the life and teachings of Prophet Muhammad ﷺ</div>
+                </div>
+                <div class="topic-card" data-topic="What are the prayer times and how do we perform salah correctly?">
+                    <div class="topic-icon">🌟</div>
+                    <div class="topic-title">Daily Prayers</div>
+                    <div class="topic-description">Understanding Salah times and proper prayer methods</div>
+                </div>
+                <div class="topic-card" data-topic="Tell me about some important verses from the Quran">
+                    <div class="topic-icon">📖</div>
+                    <div class="topic-title">Quran Studies</div>
+                    <div class="topic-description">Learn about Quranic verses, chapters, and their meanings</div>
+                </div>
+                <div class="topic-card" data-topic="What does the Quran teach us about morals and ethics?">
+                    <div class="topic-icon">❤️</div>
+                    <div class="topic-title">Islamic Ethics</div>
+                    <div class="topic-description">Explore Islamic morals, values, and character building</div>
+                </div>
+            </div>
+        </div>
+
         <div class="chat-container">
             <div class="chat-messages" id="chat-messages">
-                <div class="message assistant-message">
+                <div class="message bot-message">
                     <div lang="ar">السَّلاَمُ عَلَيْكُمْ وَرَحْمَةُ اللهِ وَبَرَكَاتُهُ</div>
                     Welcome! I'm here to help answer your questions about Prophet Muhammad ﷺ and Islamic teachings. What would you like to know?
                 </div>
             </div>
             <div class="input-container">
-                <input type="text" id="user-input" placeholder="Type your question here..." autocomplete="off">
-                <button onclick="sendMessage(userInput.value)" id="send-button">Send</button>
+                <textarea id="user-input" placeholder="Type your question here..." rows="2"></textarea>
+                <button id="send-button">Send</button>
             </div>
         </div>
     </div>
 
     <script>
-        const chatMessages = document.getElementById('chat-messages');
-        const userInput = document.getElementById('user-input');
-        const sendButton = document.getElementById('send-button');
+        // Global variables
+        let chatMessages;
+        let userInput;
+        let sendButton;
+        
+        // Process message text
+        function processMessageText(text) {
+            if (!text) return '';
+            
+            let processedText = text;
+            let relatedTopicsHtml = '';
+            
+            // Extract and process related topics
+            const topicsMatch = processedText.match(/\[RELATED TOPICS\]([\s\S]*?)(?=\[|$)/i);
+            if (topicsMatch) {
+                const topicsSection = topicsMatch[1];
+                processedText = processedText.replace(topicsMatch[0], '');
+                
+                // Split into lines and collect all questions
+                const topics = [];
+                const lines = topicsSection.split('\n');
+                
+                for (let i = 0; i < lines.length; i++) {
+                    const line = lines[i].trim();
+                    if (!line) continue;
+                    
+                    // Handle numbered questions and their continuations
+                    if (line.match(/^\d+\./)) {
+                        let fullQuestion = line;
+                        while (i + 1 < lines.length && !lines[i + 1].trim().match(/^\d+\.\s*|\[/)) {
+                            i++;
+                            fullQuestion += ' ' + lines[i].trim();
+                        }
+                        topics.push(fullQuestion.replace(/^\d+\.\s*/, ''));
+                    }
+                    // Handle standalone questions
+                    else if (line.match(/^(What|How|Why|When|Where|Who|Which|Did|Is|Are|Can|Could|Should|Would|Tell)/i)) {
+                        topics.push(line);
+                    }
+                }
 
-        userInput.addEventListener('keypress', function(e) {
-            if (e.key === 'Enter' && !e.shiftKey) {
-                e.preventDefault();
-                sendMessage(userInput.value);
+                // Create quick-reply buttons for topics
+                if (topics.length > 0) {
+                    relatedTopicsHtml = `<div class="related-topics">
+                        <div class="related-topics-header">Related Questions:</div>
+                        ${topics.map(topic => {
+                            // Clean up the topic text and add RTL marks
+                            const clean = topic
+                                .replace(/ﷺ/g, '(PBUH)\u200F')
+                                .replace(/(رضي الله عنه|رضي الله عنها)/g, '(RA)\u200F')
+                                .replace(/\s+/g, ' ')
+                                .trim();
+                            
+                            // Create quick-reply button
+                            const escapedTopic = clean.replace(/["']/g, '\\$&');
+                            return `<button class="related-topic-tile" onclick="selectTopic('${escapedTopic}')">${clean}</button>`;
+                        }).join('')}
+                    </div>`;
+                }
             }
+
+            // Add empty Arabic character for alignment
+            const arblank = '&#1564;';
+            
+            // Process the main text
+            processedText = processedText
+                // Handle sections
+                .replace(/\[(CONCLUSION|HADITH|SCHOLARLY OPINIONS|PRACTICAL GUIDANCE)\]([^\[]*)/gi, 
+                    '<div class="section-heading">[$1]</div>$2')
+                // Handle honorifics inline with proper spacing and RTL marks
+                .replace(/(ﷺ|رضي الله عنه|رضي الله عنها)/g, 
+                    match => ` ${arblank}<span class="arabic-inline" style="display:inline" lang="ar">${match}</span>\u200F `)
+                // Handle longer Arabic passages (excluding honorifics)
+                .replace(/(?<!ﷺ|رضي الله عنه|رضي الله عنها)([\u0600-\u06FF\u0750-\u077F\u08A0-\u08FF\uFB50-\uFDFF\uFE70-\uFEFF\u064B-\u0652][^\s]*(?:\s+[\u0600-\u06FF\u0750-\u077F\u08A0-\u08FF\uFB50-\uFDFF\uFE70-\uFEFF\u064B-\u0652][^\s]*){2,})/g, 
+                    (_, match) => `<div class="arabic-text" lang="ar">${match}</div>`)
+                // Handle remaining single Arabic words (excluding honorifics)
+                .replace(/(?<!ﷺ|رضي الله عنه|رضي الله عنها)([\u0600-\u06FF\u0750-\u077F\u08A0-\u08FF\uFB50-\uFDFF\uFE70-\uFEFF\u064B-\u0652]+)/g, 
+                    (_, match) => `<span class="arabic-inline" lang="ar">${match}</span>`)
+                // Clean up any double spaces
+                .replace(/\s+/g, ' ');
+            
+            // Add related topics back at the end
+            return processedText + relatedTopicsHtml;
+        }
+        
+        // Helper functions
+        function scrollToBottom() {
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+        }
+        
+        function appendErrorMessage(message) {
+            const errorDiv = document.createElement('div');
+            errorDiv.className = 'message error-message';
+            errorDiv.textContent = message;
+            chatMessages.appendChild(errorDiv);
+            scrollToBottom();
+        }
+        
+        // Initialize after DOM is loaded
+        document.addEventListener('DOMContentLoaded', () => {
+            chatMessages = document.getElementById('chat-messages');
+            userInput = document.getElementById('user-input');
+            sendButton = document.getElementById('send-button');
+
+            // Handle Enter key
+            userInput.addEventListener('keypress', function(e) {
+                if (e.key === 'Enter' && !e.shiftKey) {
+                    e.preventDefault();
+                    sendMessage();
+                }
+            });
+
+            // Handle button click
+            sendButton.addEventListener('click', function() {
+                sendMessage();
+            });
+
+            // Handle topic card clicks
+            document.querySelectorAll('.topic-card').forEach(card => {
+                card.addEventListener('click', function() {
+                    const topic = this.getAttribute('data-topic');
+                    if (topic) {
+                        userInput.value = topic;
+                        sendMessage();
+                    }
+                });
+            });
         });
 
+        function selectTopic(topic) {
+            // Handle escaped quotes in the topic
+            const unescapedTopic = topic
+                .replace(/\\'/g, "'")
+                .replace(/\\\"/g, '"');
+            userInput.value = unescapedTopic;
+            sendMessage(unescapedTopic);
+        }
+
         async function sendMessage(message) {
-            if (!message.trim()) return;
+            // If no message provided, get it from the input
+            if (!message) message = userInput.value;
+            if (!message || !message.trim()) return;
             
             // Clear input and show user message
             userInput.value = '';
@@ -280,13 +676,13 @@
 
             // Show thinking message
             const loadingMessage = document.createElement('div');
-            loadingMessage.className = 'message assistant-message';
+            loadingMessage.className = 'message bot-message';
             loadingMessage.textContent = 'Thinking...';
             chatMessages.appendChild(loadingMessage);
             scrollToBottom();
 
             let currentMessage = document.createElement('div');
-            currentMessage.className = 'message assistant-message';
+            currentMessage.className = 'message bot-message';
             let currentSection = '';
             
             try {
@@ -374,24 +770,106 @@
                                 // Check for new section
                                 const sectionMatch = chunk.match(/^\[(.*?)\]/);
                                 if (sectionMatch) {
-                                    if (currentMessage.textContent.trim()) {
-                                        chatMessages.appendChild(currentMessage);
+                                    const sectionName = sectionMatch[1];
+                                    
+                                    // If it's a RELATED TOPICS section
+                                    if (sectionName === 'RELATED TOPICS') {
+                                        // Append any existing message
+                                        if (currentMessage && currentMessage.innerHTML.trim()) {
+                                            chatMessages.appendChild(currentMessage);
+                                        }
+                                        // Create a new message for topics
                                         currentMessage = document.createElement('div');
-                                        currentMessage.className = 'message assistant-message';
-                                    }
-                                    currentSection = sectionMatch[1];
-                                    const header = document.createElement('div');
-                                    header.className = 'section-header';
-                                    header.textContent = chunk;
-                                    currentMessage.appendChild(header);
-                                } else {
-                                    // Add content to current message
-                                    if (!currentMessage.parentNode) {
+                                        currentMessage.className = 'message bot-message';
+                                        currentSection = 'RELATED TOPICS';
+                                        
+                                        // Create topics container
+                                        const topicsDiv = document.createElement('div');
+                                        topicsDiv.className = 'related-topics';
+                                        const header = document.createElement('div');
+                                        header.className = 'related-topics-header';
+                                        header.textContent = 'Related Questions:';
+                                        topicsDiv.appendChild(header);
+                                        currentMessage.appendChild(topicsDiv);
                                         chatMessages.appendChild(currentMessage);
+                                    } else {
+                                        // For other sections
+                                        if (currentMessage && currentMessage.innerHTML.trim()) {
+                                            chatMessages.appendChild(currentMessage);
+                                        }
+                                        currentMessage = document.createElement('div');
+                                        currentMessage.className = 'message bot-message';
+                                        currentSection = sectionName;
+                                        const header = document.createElement('div');
+                                        header.className = 'section-header';
+                                        header.textContent = chunk;
+                                        currentMessage.appendChild(header);
                                     }
-                                    const content = document.createElement('span');
-                                    content.innerHTML = processMessageText(chunk);
-                                    currentMessage.appendChild(content);
+                                } else {
+                                    // Handle non-section content
+                                    if (currentSection === 'RELATED TOPICS') {
+                                        const topicsDiv = currentMessage.querySelector('.related-topics');
+                                        if (topicsDiv) {
+                                            // Initialize or get topic buffer
+                                            if (!topicsDiv.topicBuffer) {
+                                                topicsDiv.topicBuffer = '';
+                                                topicsDiv.isAccumulatingTopic = false;
+                                                topicsDiv.honorificPending = false;
+                                            }
+                                            
+                                            // Start accumulating if it looks like the start of a topic
+                                            if (chunk.match(/^\d+\.|^What|^How|^Why|^When|^Where|^Who|^Which|^Did|^Is|^Are|^Can|^Could|^Should|^Would|^Tell/i)) {
+                                                topicsDiv.isAccumulatingTopic = true;
+                                                topicsDiv.topicBuffer = chunk;
+                                            } else if (chunk.includes('ﷺ')) {
+                                                // Handle honorific
+                                                if (topicsDiv.isAccumulatingTopic) {
+                                                    topicsDiv.topicBuffer += ' ﷺ ';
+                                                    topicsDiv.honorificPending = true;
+                                                }
+                                            } else if (topicsDiv.isAccumulatingTopic) {
+                                                // If we just had an honorific, add a space
+                                                if (topicsDiv.honorificPending) {
+                                                    topicsDiv.topicBuffer += ' ';
+                                                    topicsDiv.honorificPending = false;
+                                                }
+                                                // Continue accumulating
+                                                topicsDiv.topicBuffer += chunk;
+                                            }
+                                            
+                                            // Check if we have a complete topic
+                                            if (topicsDiv.isAccumulatingTopic && !topicsDiv.honorificPending && topicsDiv.topicBuffer.match(/[?.]\s*$/)) {
+                                                // Clean up the topic text
+                                                const cleanTopic = topicsDiv.topicBuffer
+                                                    .replace(/^\d+\.\s*/, '')  // Remove leading numbers
+                                                    .replace(/\s+/g, ' ')       // Normalize whitespace
+                                                    .trim();
+                                                
+                                                const button = document.createElement('button');
+                                                button.className = 'related-topic-tile';
+                                                button.textContent = cleanTopic;
+                                                button.onclick = () => selectTopic(cleanTopic);
+                                                topicsDiv.appendChild(button);
+                                                
+                                                // Reset for next topic
+                                                topicsDiv.isAccumulatingTopic = false;
+                                                topicsDiv.honorificPending = false;
+                                                topicsDiv.topicBuffer = '';
+                                            }
+                                        }
+                                    } else {
+                                        // Regular content
+                                        if (!currentMessage) {
+                                            currentMessage = document.createElement('div');
+                                            currentMessage.className = 'message bot-message';
+                                        }
+                                        const content = document.createElement('span');
+                                        content.innerHTML = processMessageText(chunk);
+                                        currentMessage.appendChild(content);
+                                        if (!currentMessage.parentNode) {
+                                            chatMessages.appendChild(currentMessage);
+                                        }
+                                    }
                                 }
                                 scrollToBottom();
                             }
@@ -418,19 +896,6 @@
             scrollToBottom();
         }
 
-        function processMessageText(text) {
-            if (!text) return '';
-            
-            // Handle Arabic text - only wrap full Arabic sentences/verses
-            text = text.replace(/([.!?؟\n])([\u0600-\u06FF\u0750-\u077F\u08A0-\u08FF\uFB50-\uFDFF\uFE70-\uFEFF])/g, '$1\n$2');
-            text = text.replace(/([\u0600-\u06FF\u0750-\u077F\u08A0-\u08FF\uFB50-\uFDFF\uFE70-\uFEFF][^.!?؟\n]*[.!?؟\n])/g, 
-                '<div class="arabic-text" lang="ar">$1</div>');
-            
-            // Handle special symbols like ﷺ and ﷻ
-            text = text.replace(/(ﷺ|ﷻ)/g, '<span class="arabic-symbol">$1</span>');
-            
-            return text;
-        }
     </script>
 </body>
 </html>

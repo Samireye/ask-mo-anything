@@ -4,26 +4,57 @@ An AI-powered chatbot that provides information about Prophet Muhammad ﷺ (peac
 
 ## Features
 
-- 🤖 AI-powered responses based on authentic Islamic sources
-- 🎯 Accurate citations from the Quran and Hadith
-- 🌐 Support for both English and Arabic text
-- ⚡ Real-time chat interface
-- 🔒 Rate limiting for API protection
-- 📱 Responsive design for all devices
+- Interactive chat interface
+- Responses based on authentic Islamic sources
+- Mobile-responsive design
+- Clear disclaimers and ethical guidelines
 
 ## Important Notice
 
-This application is designed to be an educational tool and should not be considered a replacement for:
-- Proper Islamic scholarship
-- Religious rulings (fatawa)
-- Direct consultation with qualified Islamic scholars
+This AI assistant is designed to be:
+1. Educational in nature
+2. Based on authentic sources
+3. Respectful of Islamic teachings and etiquette
+4. A supplement to, not replacement for, proper Islamic scholarship
 
-Always verify information with authentic Islamic sources and scholars.
+## Future Enhancements
 
-## Prerequisites
+To make this a production-ready application, the following enhancements would be needed:
 
-- Node.js (v14 or higher)
-- npm (Node Package Manager)
+1. Integration with a custom knowledge base containing:
+   - Quran translations and interpretations
+   - Authentic Hadith collections
+   - Sira (Prophet's biography)
+   - Reliable Tafsir (Quranic interpretations)
+
+2. Advanced Natural Language Processing to:
+   - Understand complex Islamic queries
+   - Provide accurate, source-based responses
+   - Handle multiple languages (Arabic, English, etc.)
+
+3. Source citation system to:
+   - Reference specific verses, hadith, or scholarly works
+   - Provide links to authentic sources
+   - Enable further reading and verification
+
+4. Content verification system to:
+   - Ensure accuracy of responses
+   - Filter out inappropriate content
+   - Maintain Islamic etiquette
+
+## Ethical Considerations
+
+When implementing the AI system, special attention should be paid to:
+1. Accuracy of religious information
+2. Proper respect for religious content
+3. Clear disclaimers about AI limitations
+4. Guidance to seek qualified scholars for serious inquiries
+5. Protection against misuse or disrespect
+
+## Technical Requirements
+
+- Modern web browser
+- Node.js and npm installed
 - OpenAI API key
 
 ## Installation

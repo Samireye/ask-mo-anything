@@ -26,6 +26,17 @@ app.use(cors({
 
 app.use(express.json());
 
+// Set port
+const port = process.env.PORT || 3001;
+
+// Serve static files from the public directory
+app.use(express.static('public'));
+
+// Root route
+app.get('/', (req, res) => {
+    res.sendFile('index.html', { root: './public' });
+});
+
 // Rate limiting setup
 const limiter = rateLimit({
     windowMs: 15 * 60 * 1000,
@@ -196,10 +207,17 @@ For each hadith:
 - واللهُ أَعْلَم
 
 [RELATED TOPICS]
-List 3-4 related questions for further learning
+
+1. What did Prophet Muhammad (PBUH) say about...
+2. How did Prophet Muhammad (PBUH) handle...
+3. What guidance did Prophet Muhammad (PBUH) give...
+4. What lessons can we learn from...
 
 Always:
-- Use proper honorifics (ﷺ, رضي الله عنه)
+- For Prophet Muhammad, use ﷺ in the main text
+- For companions and others:
+  * Use (RA) instead of رضي الله عنه/عنها in [RELATED TOPICS]
+  * Use رضي الله عنه/عنها inline in main text only
 - Keep Arabic text complete and accurate
 - Cite authentic sources
 - Encourage scholarly verification
@@ -381,6 +399,11 @@ app.use((err, req, res, next) => {
         error: 'An unexpected error occurred',
         details: err.message
     });
+});
+
+// Start server
+app.listen(port, () => {
+    console.log(`Server is running on port ${port}`);
 });
 
 // Export the app for serverless deployment
