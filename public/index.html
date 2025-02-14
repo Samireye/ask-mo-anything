@@ -14,6 +14,11 @@
             box-sizing: border-box;
         }
 
+        html {
+            scroll-behavior: smooth;
+            overflow-y: scroll;
+        }
+
         :root {
             --primary-color: #1e6f5c;
             --secondary-color: #2a9d8f;
@@ -308,10 +313,12 @@
             padding: 20px;
             margin-bottom: 20px;
             overflow-y: auto;
-            height: calc(100vh - 300px);
-            min-height: 400px;
+            min-height: 200px;
+            max-height: calc(100vh - 300px);
             display: flex;
             flex-direction: column;
+            transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+            will-change: min-height;
         }
 
         .chat-messages {
@@ -321,6 +328,7 @@
             margin-bottom: 20px;
             display: flex;
             flex-direction: column;
+            transition: height 0.3s ease;
         }
 
         .message {
@@ -331,6 +339,16 @@
             word-wrap: break-word;
             line-height: 1.5;
             font-size: 1.1em;
+            animation: messageAppear 0.5s ease forwards;
+            opacity: 0;
+            transform: translateY(10px);
+        }
+
+        @keyframes messageAppear {
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
         }
 
         .user-message {
@@ -399,9 +417,11 @@
             resize: none;
             font-size: 1em;
             font-family: inherit;
-            height: 60px;
-            transition: border-color 0.2s ease;
+            min-height: 45px;
+            max-height: 150px;
+            transition: all 0.2s ease;
             line-height: 1.4;
+            overflow-y: hidden;
         }
 
         #user-input:focus {
@@ -410,22 +430,114 @@
             box-shadow: 0 0 0 2px rgba(30,111,92,0.1);
         }
 
-        #send-button {
-            padding: 12px 24px;
+        .send-button {
+            padding: 8px;
             background-color: var(--primary-color);
             color: white;
             border: none;
-            border-radius: 8px;
+            border-radius: 50%;
             cursor: pointer;
-            font-size: 1em;
+            width: 40px;
+            height: 40px;
             transition: all 0.2s ease;
             box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
         }
 
-        #send-button:hover {
+        .send-button svg {
+            width: 20px;
+            height: 20px;
+            stroke: white;
+        }
+
+        .send-button:hover {
             background-color: var(--secondary-color);
             transform: translateY(-1px);
             box-shadow: 0 3px 6px rgba(0,0,0,0.15);
+        }
+
+        .input-section {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            width: 100%;
+        }
+
+        .response-indicator {
+            background-color: var(--primary-color);
+            color: white;
+            font-size: 0.9em;
+            padding: 8px 15px;
+            border-radius: 4px;
+            display: none;
+            text-align: center;
+            margin-bottom: 10px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            animation: fadeIn 0.3s ease-in-out;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(-5px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .stop-button {
+            display: none;
+            padding: 8px;
+            background: #dc3545;
+            border: none;
+            border-radius: 50%;
+            cursor: pointer;
+            margin-left: 8px;
+            width: 40px;
+            height: 40px;
+            transition: background-color 0.2s;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .stop-button svg {
+            width: 16px;
+            height: 16px;
+            stroke: white;
+        }
+
+        .stop-button:hover {
+            background: #c82333;
+        }
+
+        .thinking-message {
+            text-align: center;
+            padding: 10px;
+        }
+
+        .thinking-message .arabic-text {
+            font-family: "Traditional Arabic", "Arabic Typesetting", Arial, sans-serif;
+            font-size: 1.4em;
+            color: var(--primary-color);
+            margin-bottom: 5px;
+        }
+
+        .thinking-message .english-text {
+            color: #666;
+            margin-bottom: 10px;
+        }
+
+        .thinking-message .loading-dots {
+            display: flex;
+            justify-content: center;
+            gap: 4px;
+        }
+
+        .thinking-message .loading-dots span {
+            font-size: 24px;
+            line-height: 10px;
+            color: var(--primary-color);
+            opacity: 0.2;
+            transition: opacity 0.3s ease;
         }
 
         @media (max-width: 900px) {
@@ -515,9 +627,22 @@
                     Welcome! I'm here to help answer your questions about Prophet Muhammad ﷺ and Islamic teachings. What would you like to know?
                 </div>
             </div>
-            <div class="input-container">
-                <textarea id="user-input" placeholder="Type your question here..." rows="2"></textarea>
-                <button id="send-button">Send</button>
+            <div class="input-section">
+                <div class="response-indicator" style="display: none;">Mo is responding...</div>
+                <div class="input-container">
+                    <textarea id="user-input" placeholder="Type your question here..." rows="1"></textarea>
+                    <button id="send-button" class="send-button">
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <line x1="22" y1="2" x2="11" y2="13"></line>
+                            <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
+                        </svg>
+                    </button>
+                    <button id="stop-button" onclick="stopGeneration()" class="stop-button" style="display: none;">
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <rect x="6" y="6" width="12" height="12" rx="1" ry="1"></rect>
+                        </svg>
+                    </button>
+                </div>
             </div>
         </div>
     </div>
@@ -622,14 +747,24 @@
         }
         
         // Initialize after DOM is loaded
+        function autoResizeTextarea(textarea) {
+            textarea.style.height = 'auto';
+            textarea.style.height = (textarea.scrollHeight) + 'px';
+        }
+
         document.addEventListener('DOMContentLoaded', () => {
             chatMessages = document.getElementById('chat-messages');
             userInput = document.getElementById('user-input');
             sendButton = document.getElementById('send-button');
 
             // Handle Enter key
+            // Auto-resize textarea on input
+            userInput.addEventListener('input', function() {
+                autoResizeTextarea(this);
+            });
+
             userInput.addEventListener('keypress', function(e) {
-                if (e.key === 'Enter' && !e.shiftKey) {
+                if (e.key === 'Enter' && !e.shiftKey && !isGenerating) {
                     e.preventDefault();
                     sendMessage();
                 }
@@ -637,7 +772,9 @@
 
             // Handle button click
             sendButton.addEventListener('click', function() {
-                sendMessage();
+                if (!isGenerating) {
+                    sendMessage();
+                }
             });
 
             // Handle topic card clicks
@@ -661,31 +798,67 @@
             sendMessage(unescapedTopic);
         }
 
+        let currentReader = null;
+        let isGenerating = false;
+
+        function stopGeneration() {
+            if (currentReader) {
+                currentReader.cancel();
+                document.getElementById('stop-button').style.display = 'none';
+                document.querySelector('.send-button').style.display = 'inline-flex';
+                isGenerating = false;
+            }
+        }
+
         async function sendMessage(message) {
+            if (isGenerating) return;
+
             // If no message provided, get it from the input
             if (!message) message = userInput.value;
             if (!message || !message.trim()) return;
             
             // Clear input and show user message
             userInput.value = '';
+            document.querySelector('.response-indicator').style.display = 'block';
+            document.querySelector('.send-button').style.display = 'none';
+            document.getElementById('stop-button').style.display = 'inline-flex';
             const userMessage = document.createElement('div');
             userMessage.className = 'message user-message';
             userMessage.textContent = message;
             chatMessages.appendChild(userMessage);
             scrollToBottom();
 
-            // Show thinking message
+            // Show thinking message with Islamic theme
             const loadingMessage = document.createElement('div');
             loadingMessage.className = 'message bot-message';
-            loadingMessage.textContent = 'Thinking...';
+            loadingMessage.innerHTML = `
+                <div class="thinking-message">
+                    <div class="arabic-text">جاري البحث...</div>
+                    <div class="english-text">Searching through Islamic sources...</div>
+                    <div class="loading-dots"><span>.</span><span>.</span><span>.</span></div>
+                </div>
+            `;
             chatMessages.appendChild(loadingMessage);
             scrollToBottom();
+
+            // Add loading animation
+            const dots = loadingMessage.querySelectorAll('.loading-dots span');
+            let dotIndex = 0;
+            const loadingInterval = setInterval(() => {
+                dots.forEach(dot => dot.style.opacity = '0.2');
+                dots[dotIndex].style.opacity = '1';
+                dotIndex = (dotIndex + 1) % dots.length;
+            }, 500);
 
             let currentMessage = document.createElement('div');
             currentMessage.className = 'message bot-message';
             let currentSection = '';
             
             try {
+                isGenerating = true;
+                document.querySelector('.send-button').style.display = 'none';
+                document.getElementById('stop-button').style.display = 'inline-flex';
+
                 console.log('Sending message:', message);
                 const response = await fetch('/api/chat', {
                     method: 'POST',
@@ -702,7 +875,12 @@
                 // Remove loading message
                 loadingMessage.remove();
 
-                const reader = response.body.getReader();
+                // Show stop button and hide send button
+                document.getElementById('stop-button').style.display = 'inline-flex';
+                document.querySelector('.send-button').style.display = 'none';
+                isGenerating = true;
+
+                currentReader = response.body.getReader();
                 const decoder = new TextDecoder();
                 let responseComplete = false;
                 let timeoutId;
@@ -715,18 +893,21 @@
                         if (!responseComplete) {
                             console.error('Client timeout - no response for 60 seconds');
                             appendErrorMessage("The response was incomplete. Please try asking your question again.");
-                            reader.cancel();
+                            currentReader.cancel();
                         }
                     }, 60000);
                 };
 
                 while (true) {
                     resetTimeout();
-                    const { done, value } = await reader.read();
+                    const { done, value } = await currentReader.read();
 
                     if (done) {
                         console.log('Stream complete');
                         clearTimeout(timeoutId);
+                        document.getElementById('stop-button').style.display = 'none';
+                        document.querySelector('.send-button').style.display = 'inline-flex';
+                        isGenerating = false;
                         break;
                     }
 
@@ -799,6 +980,7 @@
                                         // For other sections
                                         if (currentMessage && currentMessage.innerHTML.trim()) {
                                             chatMessages.appendChild(currentMessage);
+                                            requestAnimationFrame(scrollToBottom);
                                         }
                                         currentMessage = document.createElement('div');
                                         currentMessage.className = 'message bot-message';
@@ -885,11 +1067,36 @@
             } catch (error) {
                 console.error('Error in sendMessage:', error);
                 appendErrorMessage("An error occurred. Please try again.");
+            } finally {
+                isGenerating = false;
+                document.querySelector('.send-button').style.display = 'inline-flex';
+                document.getElementById('stop-button').style.display = 'none';
+                document.querySelector('.response-indicator').style.display = 'none';
+                if (loadingInterval) {
+                    clearInterval(loadingInterval);
+                }
             }
         }
 
         function scrollToBottom() {
-            chatMessages.scrollTop = chatMessages.scrollHeight;
+            const container = document.querySelector('.chat-container');
+            const totalHeight = chatMessages.scrollHeight + 40; // 40px for padding
+            const maxHeight = window.innerHeight - 300;
+            
+            // Set container height based on content
+            container.style.minHeight = Math.min(totalHeight, maxHeight) + 'px';
+            
+            // Smooth scroll to bottom with a slight delay to ensure content is rendered
+            setTimeout(() => {
+                chatMessages.scrollTop = chatMessages.scrollHeight;
+                // Also scroll the page if needed
+                if (container.getBoundingClientRect().bottom > window.innerHeight) {
+                    window.scrollTo({
+                        top: document.body.scrollHeight,
+                        behavior: 'smooth'
+                    });
+                }
+            }, 10);
         }
 
         function appendErrorMessage(message) {
