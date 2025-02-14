@@ -179,6 +179,29 @@ app.post('/api/chat', validateInput, async (req, res) => {
     res.setHeader('Connection', 'keep-alive');
     res.setHeader('X-Accel-Buffering', 'no');
 
+    // Handle client disconnection
+    req.on('close', () => {
+        console.log('Client disconnected, attempting to end stream');
+        streamEnded = true;
+        try {
+            if (stream) {
+                console.log('Aborting stream...');
+                stream.abort();
+                console.log('Stream aborted successfully');
+            } else {
+                console.log('No stream to abort');
+            }
+        } catch (error) {
+            console.error('Error aborting stream:', error);
+        }
+    });
+
+    // Handle client errors
+    req.on('error', (error) => {
+        console.error('Request error:', error);
+        streamEnded = true;
+    });
+
     const sendEvent = (data) => {
         try {
             const event = `data: ${JSON.stringify(data)}\n\n`;
@@ -200,6 +223,7 @@ app.post('/api/chat', validateInput, async (req, res) => {
         }
     };
 
+    let stream;
     try {
         console.log('Starting chat request processing');
 
@@ -324,7 +348,7 @@ Always:
 
         try {
             console.log('Creating OpenAI stream...');
-            const stream = await openai.chat.completions.create({
+            stream = await openai.chat.completions.create({
                 model: "gpt-4",
                 messages: [...systemMessages, { role: "user", content: message }],
                 temperature: 0.7,
@@ -371,8 +395,14 @@ Always:
                 console.log('Starting stream processing...');
                 for await (const chunk of stream) {
                     if (streamEnded) {
-                        console.log('Stream ended early');
+                        console.log('Stream ended early, breaking loop');
                         clearTimeout(responseTimeout);
+                        try {
+                            stream.abort();
+                            console.log('Stream aborted in loop');
+                        } catch (error) {
+                            console.error('Error aborting stream in loop:', error);
+                        }
                         break;
                     }
                     
