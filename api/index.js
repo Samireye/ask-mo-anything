@@ -3,6 +3,8 @@ import cors from 'cors';
 import dotenv from 'dotenv';
 import OpenAI from 'openai';
 import rateLimit from 'express-rate-limit';
+import session from 'express-session';
+import crypto from 'crypto';
 
 // Load environment variables
 dotenv.config();
@@ -26,6 +28,14 @@ app.use(cors({
 
 app.use(express.json());
 
+// Session middleware
+app.use(session({
+    secret: process.env.SESSION_SECRET || crypto.randomBytes(32).toString('hex'),
+    resave: false,
+    saveUninitialized: true,
+    cookie: { secure: process.env.NODE_ENV === 'production' }
+}));
+
 // Set port
 const port = process.env.PORT || 3001;
 
@@ -48,6 +58,103 @@ const limiter = rateLimit({
 
 // Apply rate limiting to all routes
 app.use(limiter);
+
+// Rate limiting configuration
+const WINDOW_SIZE = 24 * 60 * 60 * 1000; // 24 hour (daily) window
+const QUESTIONS_PER_WINDOW = 7; // 7 questions per day
+const MAX_WINDOWS = 2; // Keep 2 days of history
+
+// Store for tracking questions with automatic cleanup
+class QuestionTracker {
+    constructor() {
+        this.store = new Map();
+        
+        // Cleanup expired entries every hour
+        setInterval(() => this.cleanup(), 60 * 60 * 1000);
+    }
+
+    generateKey(req) {
+        const components = [
+            req.ip,
+            req.session.id,
+            req.headers['user-agent'] || '',
+            req.headers['accept-language'] || ''
+        ];
+        return crypto.createHash('sha256').update(components.join('|')).digest('hex');
+    }
+
+    getQuestionCount(key) {
+        const data = this.store.get(key);
+        if (!data) return 0;
+        
+        const now = Date.now();
+        const currentWindow = Math.floor(now / WINDOW_SIZE);
+        
+        // Filter to only include questions from current window
+        const recentQuestions = data.filter(timestamp => 
+            Math.floor(timestamp / WINDOW_SIZE) === currentWindow
+        );
+        
+        return recentQuestions.length;
+    }
+
+    addQuestion(key) {
+        const timestamps = this.store.get(key) || [];
+        const now = Date.now();
+        
+        // Add new timestamp
+        timestamps.push(now);
+        
+        // Keep only recent windows
+        const oldestAllowed = now - (WINDOW_SIZE * MAX_WINDOWS);
+        const filtered = timestamps.filter(ts => ts > oldestAllowed);
+        
+        this.store.set(key, filtered);
+        return this.getQuestionCount(key);
+    }
+
+    cleanup() {
+        const now = Date.now();
+        const oldestAllowed = now - (WINDOW_SIZE * MAX_WINDOWS);
+        
+        for (const [key, timestamps] of this.store.entries()) {
+            const filtered = timestamps.filter(ts => ts > oldestAllowed);
+            if (filtered.length === 0) {
+                this.store.delete(key);
+            } else {
+                this.store.set(key, filtered);
+            }
+        }
+    }
+}
+
+const questionTracker = new QuestionTracker();
+
+// Middleware to check question limit
+const checkQuestionLimit = (req, res, next) => {
+    const userApiKey = req.headers['x-api-key'];
+
+    // If user has their own API key, bypass the limit
+    if (userApiKey) {
+        return next();
+    }
+
+    const userKey = questionTracker.generateKey(req);
+    const currentCount = questionTracker.getQuestionCount(userKey);
+    
+    if (currentCount >= QUESTIONS_PER_WINDOW) {
+        return res.status(429).json({
+            error: 'Question limit reached',
+            message: `You have reached the daily limit of ${QUESTIONS_PER_WINDOW} questions. Please support our project by: (1) Getting your own OpenAI API key (preferred) or (2) Supporting us on Buy Me a Coffee or Patreon`,
+            questionCount: currentCount,
+            limit: QUESTIONS_PER_WINDOW,
+            windowSize: 'day'
+        });
+    }
+
+    questionTracker.addQuestion(userKey);
+    next();
+};
 
 // Input validation middleware
 const validateInput = (req, res, next) => {
@@ -173,7 +280,7 @@ function getCurrentHijriDate() {
 }
 
 // Chat endpoint
-app.post('/api/chat', validateInput, async (req, res) => {
+app.post('/api/chat', validateInput, checkQuestionLimit, async (req, res) => {
     res.setHeader('Content-Type', 'text/event-stream');
     res.setHeader('Cache-Control', 'no-cache');
     res.setHeader('Connection', 'keep-alive');
@@ -184,9 +291,9 @@ app.post('/api/chat', validateInput, async (req, res) => {
         console.log('Client disconnected, attempting to end stream');
         streamEnded = true;
         try {
-            if (stream) {
+            if (stream && stream.controller) {
                 console.log('Aborting stream...');
-                stream.abort();
+                stream.controller.abort();
                 console.log('Stream aborted successfully');
             } else {
                 console.log('No stream to abort');
@@ -194,6 +301,7 @@ app.post('/api/chat', validateInput, async (req, res) => {
         } catch (error) {
             console.error('Error aborting stream:', error);
         }
+        endStream();
     });
 
     // Handle client errors
@@ -216,6 +324,7 @@ app.post('/api/chat', validateInput, async (req, res) => {
         if (!streamEnded) {
             streamEnded = true;
             try {
+                sendEvent({ status: 'complete' });
                 res.end();
             } catch (error) {
                 console.error('Error ending stream:', error);
@@ -348,6 +457,7 @@ Always:
 
         try {
             console.log('Creating OpenAI stream...');
+            const controller = new AbortController();
             stream = await openai.chat.completions.create({
                 model: "gpt-4",
                 messages: [...systemMessages, { role: "user", content: message }],
@@ -398,7 +508,7 @@ Always:
                         console.log('Stream ended early, breaking loop');
                         clearTimeout(responseTimeout);
                         try {
-                            stream.abort();
+                            controller.abort();
                             console.log('Stream aborted in loop');
                         } catch (error) {
                             console.error('Error aborting stream in loop:', error);
