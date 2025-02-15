@@ -144,8 +144,8 @@ const checkQuestionLimit = (req, res, next) => {
     
     if (currentCount >= QUESTIONS_PER_WINDOW) {
         return res.status(429).json({
-            error: 'Question limit reached',
-            message: `You have reached the daily limit of ${QUESTIONS_PER_WINDOW} questions. Please support our project by: (1) Getting your own OpenAI API key (preferred) or (2) Supporting us on Buy Me a Coffee or Patreon`,
+            error: 'Daily question limit reached',
+            message: `You've reached your daily limit of ${QUESTIONS_PER_WINDOW} questions. To continue using our platform, you can either get your own OpenAI API key for unlimited access or support our project on Buy Me a Coffee.`,
             questionCount: currentCount,
             limit: QUESTIONS_PER_WINDOW,
             windowSize: 'day'

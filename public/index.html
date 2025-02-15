@@ -982,6 +982,31 @@
                 });
 
                 if (!response.ok) {
+                    if (response.status === 429) {
+                        const errorData = await response.json();
+                        loadingMessage.remove();
+                        const limitMessage = document.createElement('div');
+                        limitMessage.className = 'message bot-message';
+                        limitMessage.innerHTML = `
+                            <div class="empowering-section" style="margin: 0; text-align: left;">
+                                <h3 style="color: var(--primary-color); margin-bottom: 15px;">You've reached your question limit for the day!</h3>
+                                <p>To continue using our platform, you have two options:</p>
+                                <ol style="margin: 15px 0; padding-left: 20px;">
+                                    <li>Get your own OpenAI API key (preferred) - this gives you unlimited access</li>
+                                    <li>Support our project on Buy Me a Coffee to help cover API costs</li>
+                                </ol>
+                                <p>Your support helps us maintain and improve this service for the Ummah.</p>
+                                <div class="buy-coffee-container" style="margin-top: 15px; text-align: center;">
+                                    <a href="https://buymeacoffee.com/samir.shah" target="_blank" class="buy-coffee-button">
+                                        <img src="https://cdn.buymeacoffee.com/buttons/v2/default-white.png" alt="Buy Me A Coffee">
+                                    </a>
+                                </div>
+                            </div>
+                        `;
+                        chatMessages.appendChild(limitMessage);
+                        scrollToBottom();
+                        return;
+                    }
                     throw new Error(`HTTP error! status: ${response.status}`);
                 }
 
