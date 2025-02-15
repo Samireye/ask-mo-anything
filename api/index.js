@@ -3,7 +3,6 @@ import cors from 'cors';
 import dotenv from 'dotenv';
 import OpenAI from 'openai';
 import rateLimit from 'express-rate-limit';
-import session from 'express-session';
 import crypto from 'crypto';
 
 // Load environment variables
@@ -27,14 +26,6 @@ app.use(cors({
 }));
 
 app.use(express.json());
-
-// Session middleware
-app.use(session({
-    secret: process.env.SESSION_SECRET || crypto.randomBytes(32).toString('hex'),
-    resave: false,
-    saveUninitialized: true,
-    cookie: { secure: process.env.NODE_ENV === 'production' }
-}));
 
 // Set port
 const port = process.env.PORT || 3001;
@@ -76,7 +67,6 @@ class QuestionTracker {
     generateKey(req) {
         const components = [
             req.ip,
-            req.session.id,
             req.headers['user-agent'] || '',
             req.headers['accept-language'] || ''
         ];
