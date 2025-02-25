@@ -22,7 +22,7 @@ app.set('trust proxy', 1);
 app.use(cors({
     origin: ['https://ask-mo-anything.vercel.app', 'http://localhost:3000', 'http://localhost:3001'],
     methods: ['GET', 'POST'],
-    allowedHeaders: ['Content-Type', 'Authorization']
+    allowedHeaders: ['Content-Type', 'Authorization', 'X-API-Key', 'X-Platform', 'X-Mobile-Dev']
 }));
 
 app.use(express.json());
@@ -123,6 +123,15 @@ const questionTracker = new QuestionTracker();
 // Middleware to check question limit
 const checkQuestionLimit = (req, res, next) => {
     const userApiKey = req.headers['x-api-key'];
+    const platform = req.headers['x-platform'];
+    const mobileDevKey = req.headers['x-mobile-dev'];
+
+    // If it's a mobile request with valid authentication, bypass the limit
+    if (platform === 'mobile' && 
+        ((process.env.NODE_ENV === 'development' && mobileDevKey === process.env.MOBILE_DEV_KEY) ||
+         (process.env.NODE_ENV === 'production' && userApiKey === process.env.MOBILE_API_KEY))) {
+        return next();
+    }
 
     // If user has their own API key, bypass the limit
     if (userApiKey) {
