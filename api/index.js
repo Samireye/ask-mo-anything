@@ -441,7 +441,7 @@ For each hadith:
 4. What lessons can we learn from...
 
 Always:
-- For Prophet Muhammad, use ﷺ in the main text
+- For Prophet Muhammad, use ﷺ in the main text EXCEPT in [RELATED TOPICS] where (PBUH) must be used for clickable links
 - For companions and others:
   * Use (RA) instead of رضي الله عنه/عنها in [RELATED TOPICS]
   * Use رضي الله عنه/عنها inline in main text only
@@ -567,7 +567,7 @@ Always:
 
                     // Check for stalled chunks
                     const timeSinceLastChunk = Date.now() - lastChunkTime;
-                    if (timeSinceLastChunk > 10000) {
+                    if (timeSinceLastChunk > 5000) { // Reduced from 10s to 5s for faster feedback
                         console.log(`No chunks received for ${timeSinceLastChunk}ms`);
                         if (arabicBuffer.trim()) {
                             sendChunk(arabicBuffer);
@@ -593,9 +593,23 @@ Always:
                     sendChunk(chunkBuffer);
                 }
 
+                // Force send any remaining buffers before completing
                 if (!streamEnded) {
                     console.log('Stream completed successfully');
                     clearTimeout(responseTimeout);
+                    
+                    // Force send any remaining content
+                    if (arabicBuffer.trim()) {
+                        sendChunk(arabicBuffer);
+                        arabicBuffer = '';
+                        inArabicBlock = false;
+                    }
+                    if (chunkBuffer.trim()) {
+                        sendChunk(chunkBuffer);
+                        chunkBuffer = '';
+                    }
+                    
+                    // Send complete status
                     sendEvent({ status: 'complete' });
                 }
 
