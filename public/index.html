@@ -9,6 +9,49 @@
     <link href="https://fonts.googleapis.com/css2?family=Amiri:wght@400;700&family=Roboto:wght@300;400;500;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+    <!-- Firebase SDK -->
+    <script type="module">
+        // Import Firebase modules
+        import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js';
+        import { 
+            getAuth, 
+            createUserWithEmailAndPassword, 
+            signInWithEmailAndPassword, 
+            signInWithPopup, 
+            GoogleAuthProvider, 
+            signOut, 
+            sendPasswordResetEmail,
+            onAuthStateChanged 
+        } from 'https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js';
+        import { 
+            getFirestore, 
+            doc, 
+            setDoc, 
+            getDoc, 
+            serverTimestamp 
+        } from 'https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js';
+
+        // Firebase configuration
+        const firebaseConfig = {
+            apiKey: "AIzaSyCbaHuXWm5n9IQ91JjQhR5UwgCcvPe8_VE",
+            authDomain: "ask-mo-anything-web.firebaseapp.com",
+            projectId: "ask-mo-anything-web",
+            storageBucket: "ask-mo-anything-web.firebasestorage.app",
+            messagingSenderId: "9830805398",
+            appId: "1:9830805398:web:697c4fa5f093fcfd0d37b7"
+        };
+
+        // Initialize Firebase
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+        const googleProvider = new GoogleAuthProvider();
+
+        // Make Firebase services available globally
+        window.firebaseAuth = auth;
+        window.firebaseDb = db;
+        window.googleProvider = googleProvider;
+    </script>
     <style>
         * {
             margin: 0;
@@ -512,9 +555,12 @@
 
         .header {
             text-align: center;
-            padding: 15px 0;
+            padding: 15px 20px;
             margin-bottom: 0;
             background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
             color: white;
             border-radius: 0;
             width: 100%;
@@ -525,8 +571,304 @@
         .logo-container {
             display: flex;
             align-items: center;
-            justify-content: center;
+            justify-content: flex-start;
             gap: 25px;
+        }
+        
+        .auth-container {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-right: 20px;
+        }
+        
+        .auth-button {
+            background-color: rgba(255, 255, 255, 0.15);
+            color: white;
+            border: 1px solid rgba(255, 255, 255, 0.6);
+            border-radius: 20px;
+            padding: 8px 15px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 500;
+            transition: all 0.3s ease;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+        
+        .auth-button:hover {
+            background-color: white;
+            color: var(--primary-color);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+        }
+        
+        .user-profile {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            color: white;
+            font-size: 14px;
+            background-color: rgba(255, 255, 255, 0.15);
+            border-radius: 25px;
+            padding: 6px 15px;
+            border: 1px solid rgba(255, 255, 255, 0.3);
+        }
+        
+        #user-email {
+            font-size: 14px;
+            max-width: 150px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+        
+        /* Authentication Modal Styles */
+        .auth-modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            overflow: auto;
+            background-color: rgba(0, 0, 0, 0.5);
+            backdrop-filter: blur(8px);
+            animation: fadeIn 0.3s ease;
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+        
+        .auth-modal-content {
+            background-color: white;
+            margin: 8% auto;
+            padding: 35px;
+            border-radius: 16px;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+            width: 90%;
+            max-width: 400px;
+            position: relative;
+            border-top: 4px solid var(--primary-color);
+            animation: slideDown 0.4s ease-out;
+        }
+        
+        @keyframes slideDown {
+            from { transform: translateY(-30px); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+        }
+        
+        .close-modal {
+            position: absolute;
+            right: 20px;
+            top: 15px;
+            font-size: 24px;
+            font-weight: bold;
+            cursor: pointer;
+            color: #aaa;
+        }
+        
+        .close-modal:hover {
+            color: var(--primary-color);
+        }
+        
+        .auth-form {
+            margin-top: 20px;
+        }
+        
+        .form-group {
+            margin-bottom: 20px;
+        }
+        
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 500;
+            color: var(--text-color);
+        }
+        
+        .form-group input {
+            width: 100%;
+            padding: 14px;
+            border: 1px solid #ddd;
+            border-radius: 12px;
+            font-size: 16px;
+            transition: border-color 0.3s ease, box-shadow 0.3s ease;
+        }
+        
+        .form-group input:focus {
+            outline: none;
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 3px rgba(0, 128, 128, 0.1);
+        }
+        
+        .auth-submit-button {
+            width: 100%;
+            padding: 14px;
+            background-color: var(--primary-color);
+            color: white;
+            border: none;
+            border-radius: 25px;
+            font-size: 16px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 8px rgba(0, 128, 128, 0.2);
+        }
+        
+        .auth-submit-button:hover {
+            background-color: var(--secondary-color);
+            transform: translateY(-2px);
+            box-shadow: 0 6px 12px rgba(0, 128, 128, 0.25);
+        }
+        
+        .auth-divider {
+            display: flex;
+            align-items: center;
+            margin: 20px 0;
+            color: #777;
+        }
+        
+        .auth-divider::before,
+        .auth-divider::after {
+            content: "";
+            flex: 1;
+            border-bottom: 1px solid #ddd;
+        }
+        
+        .auth-divider span {
+            padding: 0 10px;
+        }
+        
+        .google-button {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 100%;
+            padding: 14px;
+            background-color: white;
+            color: #444;
+            border: 1px solid #ddd;
+            border-radius: 25px;
+            font-size: 16px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+        }
+        
+        .google-button:hover {
+            background-color: #f5f5f5;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+        }
+        
+        .google-button img {
+            width: 18px;
+            height: 18px;
+            margin-right: 10px;
+        }
+        
+        .auth-message {
+            text-align: center;
+            margin: 15px 0;
+            color: #555;
+        }
+        
+        .auth-message a {
+            color: var(--primary-color);
+            text-decoration: none;
+        }
+        
+        .auth-message a:hover {
+            text-decoration: underline;
+        }
+        
+        .premium-badge {
+            background-color: #f39c12;
+            color: white;
+            font-size: 12px;
+            font-weight: 600;
+            padding: 3px 8px;
+            border-radius: 12px;
+            margin-left: 5px;
+            display: inline-block;
+        }
+        
+        .premium-message {
+            background-color: rgba(243, 156, 18, 0.1);
+            border-left: 3px solid #f39c12;
+            padding: 10px;
+            margin: 15px 0;
+            font-weight: 500;
+        }
+        
+        .subscription-status {
+            margin-bottom: 30px;
+            padding-bottom: 20px;
+            border-bottom: 1px solid #eee;
+        }
+        
+        .subscription-status h3 {
+            color: var(--primary-color);
+            margin-bottom: 10px;
+        }
+        
+        .current-plan {
+            display: inline-block;
+            padding: 5px 12px;
+            border-radius: 15px;
+            font-weight: 600;
+            margin: 10px 0;
+            background-color: #f1f1f1;
+        }
+        
+        .current-plan.premium {
+            background-color: #f39c12;
+            color: white;
+        }
+        
+        .api-key-section {
+            margin-top: 20px;
+        }
+        
+        .api-key-section h3 {
+            color: var(--primary-color);
+            margin-bottom: 10px;
+        }
+        
+        .api-key-input-container {
+            position: relative;
+            display: flex;
+            align-items: center;
+        }
+        
+        .toggle-password-button {
+            position: absolute;
+            right: 10px;
+            background: none;
+            border: none;
+            cursor: pointer;
+            color: #777;
+        }
+        
+        .toggle-password-button:hover {
+            color: var(--primary-color);
+        }
+        
+        .api-key-message {
+            font-size: 0.9em;
+            color: #777;
+            margin-top: 10px;
+        }
+        
+        .auth-error {
+            color: #d9534f;
+            text-align: center;
+            margin-top: 15px;
+            font-size: 14px;
         }
         
         .header-logo {
@@ -1157,6 +1499,16 @@
                     <div class="arabic-title">اسأل عن النبي محمد ﷺ</div>
                 </div>
             </div>
+            <div class="auth-container" id="auth-container">
+                <button id="login-button" class="auth-button">Sign In</button>
+                <button id="signup-button" class="auth-button">Sign Up</button>
+                <div id="user-profile" class="user-profile" style="display: none;">
+                    <i class="fas fa-user-circle" style="font-size: 18px;"></i>
+                    <span id="user-email"></span>
+                    <button id="profile-button" class="auth-button" style="padding: 5px 12px; font-size: 12px;">Profile</button>
+                    <button id="logout-button" class="auth-button" style="padding: 5px 12px; font-size: 12px;">Sign Out</button>
+                </div>
+            </div>
         </div>
     </div>
 
@@ -1306,12 +1658,74 @@
 
         <div class="empowering-section">
             <h2>Empowering Islamic Knowledge Through Technology</h2>
-            <p>To ensure continuous and reliable access to this service, we encourage using your own OpenAI API key. This gives you unlimited access and helps support the infrastructure that makes this knowledge accessible to everyone.</p>
-            <p>You can get your API key at <a href="https://platform.openai.com" target="_blank">OpenAI's website</a>, or to support our development efforts and continue accessing this platform:</p>
-            <div class="buy-coffee-container">
-                <a href="https://buymeacoffee.com/samir.shah" target="_blank" class="buy-coffee-button">
-                    <img src="https://cdn.buymeacoffee.com/buttons/v2/default-white.png" alt="Buy Me A Coffee">
-                </a>
+            <p>To ensure continuous and reliable access to this service, we offer two options: use your own OpenAI API key or subscribe to our premium plan where we cover the API costs for you.</p>
+            <p>Using your own API key gives you unlimited access while helping us maintain this platform. You can get your API key at <a href="https://platform.openai.com" target="_blank">OpenAI's website</a>, or choose from our plans below:</p>
+            <p><small><i>Note: Each question uses advanced AI technology that costs us approximately $0.10-$0.20 per response.</i></small></p>
+            
+            <!-- Pricing Section -->
+            <div class="pricing-section">
+                <h3>Choose the Right Plan for You</h3>
+                <div class="pricing-container">
+                    <!-- Free Plan -->
+                    <div class="pricing-card">
+                        <div class="pricing-header">
+                            <h4>Free</h4>
+                            <div class="pricing-cost">$0<span>/month</span></div>
+                        </div>
+                        <div class="pricing-features">
+                            <ul>
+                                <li><i class="fas fa-check"></i> 7 questions per day (using our API key)</li>
+                                <li><i class="fas fa-check"></i> <strong>Unlimited</strong> questions with your own API key</li>
+                                <li><i class="fas fa-check"></i> Access to basic Islamic knowledge</li>
+                                <li><i class="fas fa-check"></i> Ramadan special topics</li>
+                                <li><i class="fas fa-check"></i> Daily Hadith</li>
+                                <li><i class="fas fa-check"></i> Prayer times</li>
+                                <li class="feature-disabled"><i class="fas fa-times"></i> Saved conversation history</li>
+                                <li class="feature-disabled"><i class="fas fa-times"></i> Priority support</li>
+                                <li class="feature-disabled"><i class="fas fa-times"></i> Downloadable responses</li>
+                            </ul>
+                        </div>
+                        <div class="pricing-footer">
+                            <div class="pricing-note">Perfect for occasional users or those with their own API key</div>
+                            <button class="pricing-button free-button">Current Plan</button>
+                        </div>
+                    </div>
+                    
+                    <!-- Premium Plan -->
+                    <div class="pricing-card premium-card">
+                        <div class="pricing-badge">RECOMMENDED</div>
+                        <div class="pricing-header">
+                            <h4>Premium</h4>
+                            <div class="pricing-cost">$9.99<span>/month</span></div>
+                        </div>
+                        <div class="pricing-features">
+                            <ul>
+                                <li><i class="fas fa-check"></i> <strong>15 questions</strong> per day (using our API key)</li>
+                                <li><i class="fas fa-check"></i> <strong>Unlimited</strong> questions with your own API key</li>
+                                <li><i class="fas fa-check"></i> Full access to all Islamic knowledge</li>
+                                <li><i class="fas fa-check"></i> Ramadan special topics</li>
+                                <li><i class="fas fa-check"></i> Daily Hadith with commentary</li>
+                                <li><i class="fas fa-check"></i> Personalized prayer times</li>
+                                <li><i class="fas fa-check"></i> Save & access conversation history</li>
+                                <li><i class="fas fa-check"></i> Priority support</li>
+                                <li><i class="fas fa-check"></i> Downloadable responses (PDF)</li>
+                                <li><i class="fas fa-check"></i> Coming soon: Scholarly references</li>
+                            </ul>
+                        </div>
+                        <div class="pricing-footer">
+                            <div class="pricing-note">Ideal for serious students and seekers of knowledge</div>
+                            <button id="empowering-signup-button" class="pricing-button premium-button">Upgrade Now</button>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="pricing-alternative">
+                    <div class="subscription-divider">OR</div>
+                    <p>Support our work with a one-time contribution:</p>
+                    <a href="https://buymeacoffee.com/samir.shah" target="_blank" class="buy-coffee-button">
+                        <img src="https://cdn.buymeacoffee.com/buttons/v2/default-white.png" alt="Buy Me A Coffee">
+                    </a>
+                </div>
             </div>
         </div>
 
@@ -1329,6 +1743,118 @@
                     <li>✓ For critical matters of faith, worship, or Islamic law, please consult qualified scholars and verify information with authentic sources.</li>
                     <li>✓ Our responses are generated through AI interpretation of Islamic texts - always cross-reference with original sources.</li>
                 </ul>
+            </div>
+        </div>
+    </div>
+
+    <!-- Authentication Modals -->
+    <div id="login-modal" class="auth-modal">
+        <div class="auth-modal-content">
+            <span class="close-modal">&times;</span>
+            <h2>Sign In</h2>
+            <div class="auth-form">
+                <div class="form-group">
+                    <label for="login-email">Email</label>
+                    <input type="email" id="login-email" placeholder="Enter your email" required>
+                </div>
+                <div class="form-group">
+                    <label for="login-password">Password</label>
+                    <input type="password" id="login-password" placeholder="Enter your password" required>
+                </div>
+                <button id="login-submit" class="auth-submit-button">Sign In</button>
+                <div class="auth-divider">
+                    <span>OR</span>
+                </div>
+                <button id="google-signin" class="google-button">
+                    <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" alt="Google logo">
+                    Sign in with Google
+                </button>
+                <p class="auth-message">Don't have an account? <a href="#" id="switch-to-signup">Sign Up</a></p>
+                <p class="auth-message"><a href="#" id="forgot-password">Forgot Password?</a></p>
+                <div id="login-error" class="auth-error"></div>
+            </div>
+        </div>
+    </div>
+
+    <div id="signup-modal" class="auth-modal">
+        <div class="auth-modal-content">
+            <span class="close-modal">&times;</span>
+            <h2>Sign Up</h2>
+            <div class="auth-form">
+                <div class="form-group">
+                    <label for="signup-email">Email</label>
+                    <input type="email" id="signup-email" placeholder="Enter your email" required>
+                </div>
+                <div class="form-group">
+                    <label for="signup-password">Password</label>
+                    <input type="password" id="signup-password" placeholder="Enter your password" required>
+                </div>
+                <div class="form-group">
+                    <label for="signup-confirm-password">Confirm Password</label>
+                    <input type="password" id="signup-confirm-password" placeholder="Confirm your password" required>
+                </div>
+                <button id="signup-submit" class="auth-submit-button">Sign Up</button>
+                <div class="auth-divider">
+                    <span>OR</span>
+                </div>
+                <button id="google-signup" class="google-button">
+                    <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" alt="Google logo">
+                    Sign up with Google
+                </button>
+                <p class="auth-message">Already have an account? <a href="#" id="switch-to-login">Sign In</a></p>
+                <div id="signup-error" class="auth-error"></div>
+            </div>
+        </div>
+    </div>
+
+    <div id="reset-password-modal" class="auth-modal">
+        <div class="auth-modal-content">
+            <span class="close-modal">&times;</span>
+            <h2>Reset Password</h2>
+            <div class="auth-form">
+                <div class="form-group">
+                    <label for="reset-email">Email</label>
+                    <input type="email" id="reset-email" placeholder="Enter your email" required>
+                </div>
+                <button id="reset-submit" class="auth-submit-button">Send Reset Link</button>
+                <p class="auth-message"><a href="#" id="back-to-login">Back to Sign In</a></p>
+                <div id="reset-message" class="auth-message"></div>
+                <div id="reset-error" class="auth-error"></div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- User Profile Modal -->
+    <div id="profile-modal" class="auth-modal">
+        <div class="auth-modal-content">
+            <span class="close-modal">&times;</span>
+            <h2>User Profile</h2>
+            <div class="auth-form">
+                <div id="subscription-status" class="subscription-status">
+                    <h3>Subscription Status</h3>
+                    <div id="current-plan" class="current-plan">Free Plan</div>
+                    <p>Free plan users have a limit of 7 questions per day.</p>
+                    <button id="upgrade-button" class="cta-button">Upgrade to Premium</button>
+                </div>
+                
+                <div class="api-key-section">
+                    <h3>Your OpenAI API Key</h3>
+                    <p>Using your own API key gives you unlimited questions without counting against your daily limit.</p>
+                    <div class="form-group">
+                        <label for="api-key-input">API Key</label>
+                        <div class="api-key-input-container">
+                            <input type="password" id="api-key-input" placeholder="Enter your OpenAI API key">
+                            <button id="toggle-api-key" class="toggle-password-button">
+                                <i class="fas fa-eye"></i>
+                            </button>
+                        </div>
+                    </div>
+                    <button id="save-api-key" class="auth-submit-button">Save API Key</button>
+                    <p class="api-key-message">Your API key is stored securely in your browser and is only sent with your questions.</p>
+                </div>
+                
+                <div id="profile-message" class="auth-message"></div>
+                <div id="profile-error" class="auth-error"></div>
             </div>
         </div>
     </div>
@@ -1358,9 +1884,191 @@
             color: white;
             text-decoration: underline;
         }
-
-        .buy-coffee-container {
+        
+        .empowering-section h3 {
+            color: white;
+            margin: 30px 0 20px;
+            font-size: 1.6em;
+        }
+        
+        /* Pricing Section Styles */
+        .pricing-section {
+            margin-top: 40px;
+        }
+        
+        .pricing-container {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 30px;
+            margin: 30px 0;
+        }
+        
+        .pricing-card {
+            background-color: white;
+            border-radius: 10px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+            width: 300px;
+            overflow: hidden;
+            position: relative;
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+            color: var(--text-color);
+        }
+        
+        .pricing-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+        }
+        
+        .pricing-badge {
+            position: absolute;
+            top: 0;
+            right: 0;
+            background-color: var(--ramadan-gold);
+            color: var(--ramadan-deep-blue);
+            padding: 5px 15px;
+            font-size: 12px;
+            font-weight: bold;
+            border-bottom-left-radius: 10px;
+        }
+        
+        .premium-card {
+            border: 2px solid var(--ramadan-gold);
+        }
+        
+        .pricing-header {
+            padding: 25px 20px;
+            text-align: center;
+            border-bottom: 1px solid #eee;
+        }
+        
+        .pricing-header h4 {
+            margin: 0;
+            font-size: 24px;
+            color: #2c3e50;
+        }
+        
+        .pricing-cost {
+            font-size: 36px;
+            font-weight: bold;
+            color: var(--primary-color);
+            margin: 15px 0 5px;
+        }
+        
+        .pricing-cost span {
+            font-size: 16px;
+            font-weight: normal;
+            color: #7f8c8d;
+        }
+        
+        .pricing-features {
+            padding: 20px;
+        }
+        
+        .pricing-features ul {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+            text-align: left;
+        }
+        
+        .pricing-features li {
+            padding: 10px 0;
+            border-bottom: 1px solid #eee;
+            color: #34495e;
+        }
+        
+        .pricing-features li:last-child {
+            border-bottom: none;
+        }
+        
+        .pricing-features i {
+            margin-right: 10px;
+            color: var(--primary-color);
+        }
+        
+        .feature-disabled {
+            color: #95a5a6 !important;
+        }
+        
+        .feature-disabled i {
+            color: #e74c3c;
+        }
+        
+        .pricing-footer {
+            padding: 20px;
+            text-align: center;
+            background-color: #f9f9f9;
+        }
+        
+        .pricing-note {
+            font-size: 14px;
+            color: #7f8c8d;
+            margin-bottom: 15px;
+        }
+        
+        .pricing-button {
+            display: inline-block;
+            padding: 12px 30px;
+            border-radius: 30px;
+            font-weight: bold;
+            text-transform: uppercase;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            border: none;
+            font-size: 14px;
+            width: 100%;
+        }
+        
+        .free-button {
+            background-color: #ecf0f1;
+            color: #7f8c8d;
+            cursor: default;
+        }
+        
+        .premium-button {
+            background-color: var(--primary-color);
+            color: white;
+        }
+        
+        .premium-button:hover {
+            background-color: #174a3c;
+        }
+        
+        .pricing-alternative {
             margin-top: 30px;
+            text-align: center;
+        }
+        
+        .subscription-options {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            margin-top: 30px;
+            gap: 15px;
+        }
+        
+        .subscription-divider {
+            font-weight: 500;
+            margin: 5px 0;
+        }
+        
+        .cta-button {
+            background-color: white;
+            color: var(--primary-color);
+            border: none;
+            border-radius: 25px;
+            padding: 12px 25px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+        }
+        
+        .cta-button:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 6px 12px rgba(0, 0, 0, 0.2);
         }
 
         .buy-coffee-button img {
@@ -1697,10 +2405,23 @@
                 document.getElementById('stop-button').style.display = 'inline-flex';
 
                 console.log('Sending message:', message);
+                // Get user's API key if available
+                const userApiKey = localStorage.getItem('openai_api_key');
+                
+                // Get current user ID if logged in
+                let userId = null;
+                const auth = getAuth();
+                const user = auth.currentUser;
+                if (user) {
+                    userId = user.uid;
+                }
+                
                 const response = await fetch('/api/chat', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
+                        ...(userApiKey && { 'X-API-Key': userApiKey }),
+                        ...(userId && { 'X-User-Id': userId })
                     },
                     body: JSON.stringify({ message }),
                 });
@@ -2195,7 +2916,528 @@
             document.getElementById('refresh-hadith-btn').addEventListener('click', displayRandomHadith);
             // Display initial random hadith
             displayRandomHadith();
+            
+            // Initialize authentication UI
+            initAuthUI();
         });
+    </script>
+    
+    <!-- Authentication Script -->
+    <script type="module">
+        import { 
+            getAuth, 
+            createUserWithEmailAndPassword, 
+            signInWithEmailAndPassword, 
+            signInWithPopup, 
+            GoogleAuthProvider, 
+            signOut, 
+            sendPasswordResetEmail,
+            onAuthStateChanged 
+        } from 'https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js';
+        import { 
+            getFirestore, 
+            doc, 
+            setDoc, 
+            getDoc, 
+            serverTimestamp 
+        } from 'https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js';
+        
+        // DOM Elements
+        let loginButton, signupButton, userProfile, userEmail, logoutButton;
+        let loginModal, signupModal, resetPasswordModal;
+        let loginEmail, loginPassword, signupEmail, signupPassword, signupConfirmPassword, resetEmail;
+        let loginSubmit, signupSubmit, resetSubmit, googleSignin, googleSignup;
+        let loginError, signupError, resetError, resetMessage;
+        let switchToSignup, switchToLogin, forgotPassword, backToLogin;
+        let closeButtons;
+        
+        // Initialize the auth UI
+        function initAuthUI() {
+            // Get DOM elements
+            loginButton = document.getElementById('login-button');
+            signupButton = document.getElementById('signup-button');
+            userProfile = document.getElementById('user-profile');
+            userEmail = document.getElementById('user-email');
+            logoutButton = document.getElementById('logout-button');
+            const profileButton = document.getElementById('profile-button');
+            
+            loginModal = document.getElementById('login-modal');
+            signupModal = document.getElementById('signup-modal');
+            resetPasswordModal = document.getElementById('reset-password-modal');
+            const profileModal = document.getElementById('profile-modal');
+            
+            loginEmail = document.getElementById('login-email');
+            loginPassword = document.getElementById('login-password');
+            signupEmail = document.getElementById('signup-email');
+            signupPassword = document.getElementById('signup-password');
+            signupConfirmPassword = document.getElementById('signup-confirm-password');
+            resetEmail = document.getElementById('reset-email');
+            
+            loginSubmit = document.getElementById('login-submit');
+            signupSubmit = document.getElementById('signup-submit');
+            resetSubmit = document.getElementById('reset-submit');
+            googleSignin = document.getElementById('google-signin');
+            googleSignup = document.getElementById('google-signup');
+            
+            loginError = document.getElementById('login-error');
+            signupError = document.getElementById('signup-error');
+            resetError = document.getElementById('reset-error');
+            resetMessage = document.getElementById('reset-message');
+            
+            switchToSignup = document.getElementById('switch-to-signup');
+            switchToLogin = document.getElementById('switch-to-login');
+            forgotPassword = document.getElementById('forgot-password');
+            backToLogin = document.getElementById('back-to-login');
+            
+            closeButtons = document.querySelectorAll('.close-modal');
+            
+            // Add event listeners
+            loginButton.addEventListener('click', () => showModal(loginModal));
+            signupButton.addEventListener('click', () => showModal(signupModal));
+            logoutButton.addEventListener('click', handleLogout);
+            profileButton.addEventListener('click', () => {
+                showModal(profileModal);
+                loadUserProfile();
+            });
+            
+            loginSubmit.addEventListener('click', handleLogin);
+            signupSubmit.addEventListener('click', handleSignup);
+            resetSubmit.addEventListener('click', handlePasswordReset);
+            
+            googleSignin.addEventListener('click', () => handleGoogleAuth(true));
+            googleSignup.addEventListener('click', () => handleGoogleAuth(false));
+            
+            switchToSignup.addEventListener('click', (e) => {
+                e.preventDefault();
+                hideModal(loginModal);
+                showModal(signupModal);
+            });
+            
+            switchToLogin.addEventListener('click', (e) => {
+                e.preventDefault();
+                hideModal(signupModal);
+                showModal(loginModal);
+            });
+            
+            forgotPassword.addEventListener('click', (e) => {
+                e.preventDefault();
+                hideModal(loginModal);
+                showModal(resetPasswordModal);
+            });
+            
+            backToLogin.addEventListener('click', (e) => {
+                e.preventDefault();
+                hideModal(resetPasswordModal);
+                showModal(loginModal);
+            });
+            
+            // Re-initialize close buttons to include all modals
+            document.querySelectorAll('.close-modal').forEach(button => {
+                button.addEventListener('click', function() {
+                    const modal = this.closest('.auth-modal');
+                    if (modal) {
+                        hideModal(modal);
+                    } else {
+                        // Fallback to hiding all modals
+                        hideModal(loginModal);
+                        hideModal(signupModal);
+                        hideModal(resetPasswordModal);
+                        hideModal(profileModal);
+                    }
+                });
+            });
+            
+            // Close modal when clicking outside
+            window.addEventListener('click', (event) => {
+                if (event.target === loginModal) hideModal(loginModal);
+                if (event.target === signupModal) hideModal(signupModal);
+                if (event.target === resetPasswordModal) hideModal(resetPasswordModal);
+                if (event.target === profileModal) hideModal(profileModal);
+            });
+            
+            // Premium signup button in empowering section
+            const premiumSignupButton = document.getElementById('empowering-signup-button');
+            if (premiumSignupButton) {
+                premiumSignupButton.addEventListener('click', function() {
+                    console.log('Premium signup button clicked');
+                    const auth = getAuth();
+                    const user = auth.currentUser;
+                    
+                    if (user) {
+                        // User is signed in, show profile modal with subscription options
+                        const profileModal = document.getElementById('profile-modal');
+                        showModal(profileModal);
+                        loadUserProfile();
+                    } else {
+                        // User is not signed in, show signup modal with premium message
+                        showModal(signupModal);
+                        
+                        // Add a note that they're signing up for premium
+                        const premiumMessage = document.createElement('div');
+                        premiumMessage.className = 'auth-message premium-message';
+                        premiumMessage.textContent = 'Complete signup to access premium subscription options';
+                        
+                        const signupForm = document.querySelector('#signup-modal .auth-form');
+                        // Only add the message if it doesn't already exist
+                        if (!signupForm.querySelector('.premium-message')) {
+                            signupForm.insertBefore(premiumMessage, signupForm.querySelector('#signup-error'));
+                        }
+                    }
+                });
+            }
+            
+            // API Key Management
+            const apiKeyInput = document.getElementById('api-key-input');
+            const toggleApiKeyButton = document.getElementById('toggle-api-key');
+            const saveApiKeyButton = document.getElementById('save-api-key');
+            const upgradeButton = document.getElementById('upgrade-button');
+            
+            // Load saved API key if exists
+            const savedApiKey = localStorage.getItem('openai_api_key');
+            if (savedApiKey) {
+                apiKeyInput.value = savedApiKey;
+            }
+            
+            // Toggle API key visibility
+            toggleApiKeyButton.addEventListener('click', () => {
+                if (apiKeyInput.type === 'password') {
+                    apiKeyInput.type = 'text';
+                    toggleApiKeyButton.innerHTML = '<i class="fas fa-eye-slash"></i>';
+                } else {
+                    apiKeyInput.type = 'password';
+                    toggleApiKeyButton.innerHTML = '<i class="fas fa-eye"></i>';
+                }
+            });
+            
+            // Save API key
+            saveApiKeyButton.addEventListener('click', () => {
+                const apiKey = apiKeyInput.value.trim();
+                if (apiKey) {
+                    localStorage.setItem('openai_api_key', apiKey);
+                    document.getElementById('profile-message').textContent = 'API key saved successfully!';
+                    document.getElementById('profile-message').style.color = 'green';
+                } else {
+                    localStorage.removeItem('openai_api_key');
+                    document.getElementById('profile-message').textContent = 'API key removed.';
+                    document.getElementById('profile-message').style.color = 'orange';
+                }
+            });
+            
+            // Handle premium upgrade
+            upgradeButton.addEventListener('click', handlePremiumUpgrade);
+            
+            // Listen for auth state changes
+            const auth = getAuth();
+            onAuthStateChanged(auth, handleAuthStateChange);
+        }
+        
+        // Authentication functions
+        async function handleLogin(event) {
+            event.preventDefault();
+            
+            const email = loginEmail.value.trim();
+            const password = loginPassword.value;
+            
+            if (!email || !password) {
+                showError(loginError, 'Please enter both email and password');
+                return;
+            }
+            
+            try {
+                const auth = getAuth();
+                await signInWithEmailAndPassword(auth, email, password);
+                hideModal(loginModal);
+                clearInputs();
+            } catch (error) {
+                handleAuthError(error, loginError);
+            }
+        }
+        
+        async function handleSignup(event) {
+            event.preventDefault();
+            
+            const email = signupEmail.value.trim();
+            const password = signupPassword.value;
+            const confirmPassword = signupConfirmPassword.value;
+            
+            if (!email || !password || !confirmPassword) {
+                showError(signupError, 'Please fill in all fields');
+                return;
+            }
+            
+            if (password !== confirmPassword) {
+                showError(signupError, 'Passwords do not match');
+                return;
+            }
+            
+            if (password.length < 6) {
+                showError(signupError, 'Password must be at least 6 characters');
+                return;
+            }
+            
+            try {
+                const auth = getAuth();
+                const db = getFirestore();
+                const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+                await createUserProfile(userCredential.user, db);
+                hideModal(signupModal);
+                clearInputs();
+            } catch (error) {
+                handleAuthError(error, signupError);
+            }
+        }
+        
+        async function handleGoogleAuth(isSignIn) {
+            try {
+                const auth = getAuth();
+                const db = getFirestore();
+                const provider = new GoogleAuthProvider();
+                const result = await signInWithPopup(auth, provider);
+                const user = result.user;
+                
+                // Check if this is a new user
+                const userDoc = await getDoc(doc(db, 'users', user.uid));
+                if (!userDoc.exists()) {
+                    await createUserProfile(user, db);
+                }
+                
+                hideModal(loginModal);
+                hideModal(signupModal);
+            } catch (error) {
+                handleAuthError(error, isSignIn ? loginError : signupError);
+            }
+        }
+        
+        async function handleLogout() {
+            try {
+                const auth = getAuth();
+                await signOut(auth);
+            } catch (error) {
+                console.error('Error signing out:', error);
+            }
+        }
+        
+        async function handlePasswordReset(event) {
+            event.preventDefault();
+            
+            const email = resetEmail.value.trim();
+            
+            if (!email) {
+                showError(resetError, 'Please enter your email address');
+                return;
+            }
+            
+            try {
+                const auth = getAuth();
+                await sendPasswordResetEmail(auth, email);
+                resetMessage.textContent = 'Password reset email sent! Check your inbox.';
+                resetMessage.style.color = 'green';
+                resetError.textContent = '';
+            } catch (error) {
+                handleAuthError(error, resetError);
+                resetMessage.textContent = '';
+            }
+        }
+        
+        async function createUserProfile(user, db) {
+            try {
+                await setDoc(doc(db, 'users', user.uid), {
+                    email: user.email,
+                    createdAt: serverTimestamp(),
+                    questionCount: 0,
+                    lastQuestionDate: null,
+                    subscription: {
+                        type: 'free',
+                        expiresAt: null
+                    }
+                });
+            } catch (error) {
+                console.error('Error creating user profile:', error);
+            }
+        }
+        
+        async function handleAuthStateChange(user) {
+            if (user) {
+                // User is signed in
+                loginButton.style.display = 'none';
+                signupButton.style.display = 'none';
+                userProfile.style.display = 'flex';
+                userEmail.textContent = user.email;
+                
+                // Check if user has premium subscription
+                try {
+                    const db = getFirestore();
+                    const userDoc = await getDoc(doc(db, 'users', user.uid));
+                    if (userDoc.exists()) {
+                        const userData = userDoc.data();
+                        if (userData.subscription && userData.subscription.type === 'premium') {
+                            // User has premium subscription
+                            console.log('User has premium subscription');
+                            // Add premium badge to user email
+                            if (!document.getElementById('premium-badge')) {
+                                const premiumBadge = document.createElement('span');
+                                premiumBadge.id = 'premium-badge';
+                                premiumBadge.className = 'premium-badge';
+                                premiumBadge.textContent = 'PREMIUM';
+                                userEmail.appendChild(document.createTextNode(' '));
+                                userEmail.appendChild(premiumBadge);
+                            }
+                        }
+                    }
+                } catch (error) {
+                    console.error('Error checking subscription:', error);
+                }
+            } else {
+                // User is signed out
+                loginButton.style.display = 'block';
+                signupButton.style.display = 'block';
+                userProfile.style.display = 'none';
+                userEmail.textContent = '';
+            }
+        }
+        
+        // Function to load user profile data
+        async function loadUserProfile() {
+            const auth = getAuth();
+            const user = auth.currentUser;
+            
+            if (!user) {
+                return;
+            }
+            
+            try {
+                const db = getFirestore();
+                const userDoc = await getDoc(doc(db, 'users', user.uid));
+                
+                if (userDoc.exists()) {
+                    const userData = userDoc.data();
+                    const currentPlan = document.getElementById('current-plan');
+                    const upgradeButton = document.getElementById('upgrade-button');
+                    
+                    if (userData.subscription && userData.subscription.type === 'premium') {
+                        currentPlan.textContent = 'Premium Plan';
+                        currentPlan.classList.add('premium');
+                        upgradeButton.textContent = 'Manage Subscription';
+                    } else {
+                        currentPlan.textContent = 'Free Plan';
+                        currentPlan.classList.remove('premium');
+                        upgradeButton.textContent = 'Upgrade to Premium';
+                    }
+                }
+            } catch (error) {
+                console.error('Error loading user profile:', error);
+                document.getElementById('profile-error').textContent = 'Error loading profile data. Please try again.';
+            }
+        }
+        
+        // Function to handle premium upgrade
+        async function handlePremiumUpgrade() {
+            const auth = getAuth();
+            const user = auth.currentUser;
+            
+            if (!user) {
+                showModal(loginModal);
+                return;
+            }
+            
+            try {
+                // Here you would typically redirect to a Stripe checkout page
+                // For now, we'll simulate upgrading the user to premium
+                const db = getFirestore();
+                await setDoc(doc(db, 'users', user.uid), {
+                    subscription: {
+                        type: 'premium',
+                        startDate: serverTimestamp(),
+                        expiresAt: null // No expiration for now
+                    }
+                }, { merge: true });
+                
+                // Update UI
+                loadUserProfile();
+                
+                // Show success message
+                document.getElementById('profile-message').textContent = 'Upgraded to premium successfully!';
+                document.getElementById('profile-message').style.color = 'green';
+                
+                // Add premium badge if not already there
+                if (!document.getElementById('premium-badge')) {
+                    const premiumBadge = document.createElement('span');
+                    premiumBadge.id = 'premium-badge';
+                    premiumBadge.className = 'premium-badge';
+                    premiumBadge.textContent = 'PREMIUM';
+                    userEmail.appendChild(document.createTextNode(' '));
+                    userEmail.appendChild(premiumBadge);
+                }
+            } catch (error) {
+                console.error('Error upgrading to premium:', error);
+                document.getElementById('profile-error').textContent = 'Error upgrading to premium. Please try again.';
+            }
+        }
+        
+        // Helper functions
+        function showModal(modal) {
+            console.log('Showing modal:', modal?.id);
+            if (modal) modal.style.display = 'block';
+        }
+        
+        function hideModal(modal) {
+            console.log('Hiding modal:', modal?.id);
+            if (modal) modal.style.display = 'none';
+        }
+        
+        function clearInputs() {
+            loginEmail.value = '';
+            loginPassword.value = '';
+            signupEmail.value = '';
+            signupPassword.value = '';
+            signupConfirmPassword.value = '';
+            resetEmail.value = '';
+            
+            loginError.textContent = '';
+            signupError.textContent = '';
+            resetError.textContent = '';
+            resetMessage.textContent = '';
+        }
+        
+        function showError(element, message) {
+            if (element) element.textContent = message;
+        }
+        
+        function handleAuthError(error, errorElement) {
+            let errorMessage = 'An error occurred. Please try again.';
+            
+            switch (error.code) {
+                case 'auth/email-already-in-use':
+                    errorMessage = 'This email is already in use. Please use a different email or sign in.';
+                    break;
+                case 'auth/invalid-email':
+                    errorMessage = 'Invalid email address. Please check your email.';
+                    break;
+                case 'auth/user-not-found':
+                case 'auth/wrong-password':
+                    errorMessage = 'Invalid email or password. Please try again.';
+                    break;
+                case 'auth/weak-password':
+                    errorMessage = 'Password is too weak. Please use a stronger password.';
+                    break;
+                case 'auth/popup-closed-by-user':
+                    errorMessage = 'Sign-in popup was closed before completing the sign in.';
+                    break;
+                case 'auth/cancelled-popup-request':
+                    errorMessage = 'The sign-in popup was cancelled.';
+                    break;
+                case 'auth/popup-blocked':
+                    errorMessage = 'Sign-in popup was blocked by the browser. Please allow popups for this site.';
+                    break;
+                default:
+                    console.error('Auth error:', error);
+            }
+            
+            showError(errorElement, errorMessage);
+        }
+        
+        // Expose initAuthUI to global scope
+        window.initAuthUI = initAuthUI;
     </script>
 </body>
 </html>

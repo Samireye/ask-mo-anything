@@ -4,6 +4,8 @@ import dotenv from 'dotenv';
 import OpenAI from 'openai';
 import rateLimit from 'express-rate-limit';
 import crypto from 'crypto';
+import { initializeApp } from 'firebase/app';
+import { getFirestore, doc, getDoc } from 'firebase/firestore';
 
 // Load environment variables
 dotenv.config();
@@ -12,6 +14,19 @@ dotenv.config();
 if (!process.env.OPENAI_API_KEY) {
     throw new Error('OPENAI_API_KEY environment variable is not set');
 }
+
+// Initialize Firebase
+const firebaseConfig = {
+    apiKey: process.env.FIREBASE_API_KEY,
+    authDomain: process.env.FIREBASE_AUTH_DOMAIN,
+    projectId: process.env.FIREBASE_PROJECT_ID,
+    storageBucket: process.env.FIREBASE_STORAGE_BUCKET,
+    messagingSenderId: process.env.FIREBASE_MESSAGING_SENDER_ID,
+    appId: process.env.FIREBASE_APP_ID
+};
+
+const firebaseApp = initializeApp(firebaseConfig);
+const db = getFirestore(firebaseApp);
 
 const app = express();
 
@@ -121,10 +136,11 @@ class QuestionTracker {
 const questionTracker = new QuestionTracker();
 
 // Middleware to check question limit
-const checkQuestionLimit = (req, res, next) => {
+const checkQuestionLimit = async (req, res, next) => {
     const userApiKey = req.headers['x-api-key'];
     const platform = req.headers['x-platform'];
     const mobileDevKey = req.headers['x-mobile-dev'];
+    const userId = req.headers['x-user-id']; // Firebase user ID
 
     // If it's a mobile request with valid authentication, bypass the limit
     if (platform === 'mobile' && 
@@ -138,13 +154,30 @@ const checkQuestionLimit = (req, res, next) => {
         return next();
     }
 
+    // Check if user has premium subscription
+    if (userId) {
+        try {
+            const userDoc = await getDoc(doc(db, 'users', userId));
+            if (userDoc.exists()) {
+                const userData = userDoc.data();
+                if (userData.subscription && userData.subscription.type === 'premium') {
+                    // User has premium subscription, bypass the limit
+                    return next();
+                }
+            }
+        } catch (error) {
+            console.error('Error checking user subscription:', error);
+            // Continue with normal limit checking if there's an error
+        }
+    }
+
     const userKey = questionTracker.generateKey(req);
     const currentCount = questionTracker.getQuestionCount(userKey);
     
     if (currentCount >= QUESTIONS_PER_WINDOW) {
         return res.status(429).json({
             error: 'Daily question limit reached',
-            message: `You've reached your daily limit of ${QUESTIONS_PER_WINDOW} questions. To continue using our platform, you can either get your own OpenAI API key for unlimited access or support our project on Buy Me a Coffee.`,
+            message: `You've reached your daily limit of ${QUESTIONS_PER_WINDOW} questions. To continue using our platform, you can either get your own OpenAI API key for unlimited access, sign up for a premium subscription, or support our project on Buy Me a Coffee.`,
             questionCount: currentCount,
             limit: QUESTIONS_PER_WINDOW,
             windowSize: 'day'
