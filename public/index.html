@@ -409,6 +409,16 @@
             background: var(--primary-color);
             color: white;
         }
+        
+        .x-icon {
+            font-weight: bold;
+            font-size: 16px;
+            font-family: Arial, sans-serif;
+        }
+        
+        .x-btn {
+            font-weight: bold;
+        }
 
         .share-button:hover {
             background: var(--secondary-color);
@@ -1460,8 +1470,8 @@
                 shareSection.innerHTML = `
                     <div class="share-text">Share this complete answer:</div>
                     <div class="share-buttons">
-                        <button class="share-btn" onclick="shareToTwitter(this.closest('.complete-response-container'))" title="Share on Twitter">
-                            <i class="fab fa-twitter"></i>
+                        <button class="share-btn x-btn" onclick="shareToTwitter(this.closest('.complete-response-container'))" title="Share on X">
+                            <span class="x-icon">𝕏</span>
                         </button>
                         <button class="share-btn" onclick="shareToWhatsApp(this.closest('.complete-response-container'))" title="Share on WhatsApp">
                             <i class="fab fa-whatsapp"></i>
