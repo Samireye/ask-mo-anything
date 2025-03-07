@@ -7,6 +7,8 @@
     <title>Ask Mo Anything</title>
     <link rel="icon" type="image/x-icon" href="/favicon.ico">
     <link href="https://fonts.googleapis.com/css2?family=Amiri:wght@400;700&family=Roboto:wght@300;400;500;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
     <style>
         * {
             margin: 0;
@@ -366,6 +368,139 @@
             margin-right: auto;
             box-shadow: 0 2px 4px rgba(0,0,0,0.05);
             border: 1px solid #eee;
+            position: relative;
+        }
+
+        .share-section {
+            margin-top: 15px;
+            padding-top: 15px;
+            border-top: 1px solid #eee;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .share-text {
+            font-size: 0.9em;
+            color: #666;
+        }
+
+        .share-buttons {
+            display: flex;
+            gap: 8px;
+        }
+
+        .share-btn {
+            background: none;
+            border: none;
+            color: var(--primary-color);
+            cursor: pointer;
+            padding: 5px;
+            border-radius: 50%;
+            width: 32px;
+            height: 32px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s ease;
+        }
+
+        .share-btn:hover {
+            background: var(--primary-color);
+            color: white;
+        }
+
+        .share-button:hover {
+            background: var(--secondary-color);
+        }
+
+        .share-options {
+            position: absolute;
+            top: 50px;
+            right: 10px;
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            padding: 8px 0;
+            display: none;
+            z-index: 3;
+        }
+
+        .share-options.active {
+            display: block;
+        }
+
+        .share-option {
+            padding: 8px 16px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            cursor: pointer;
+            transition: background 0.2s ease;
+        }
+
+        .share-option:hover {
+            background: #f5f5f5;
+        }
+
+        .share-option i {
+            font-size: 18px;
+            width: 24px;
+            text-align: center;
+        }
+
+        /* Share card styles */
+        .share-card {
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+            padding: 20px;
+            max-width: 600px;
+            margin: 20px auto;
+            position: relative;
+            display: none;
+        }
+
+        .share-card.active {
+            display: block;
+        }
+
+        .share-card-header {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 16px;
+        }
+
+        .share-card-logo {
+            width: 40px;
+            height: 40px;
+            border-radius: 8px;
+        }
+
+        .share-card-title {
+            font-size: 1.2em;
+            font-weight: 500;
+            color: var(--primary-color);
+        }
+
+        .share-card-content {
+            font-size: 1.1em;
+            line-height: 1.6;
+            margin-bottom: 16px;
+        }
+
+        .share-card-footer {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding-top: 16px;
+            border-top: 1px solid #eee;
+        }
+
+        .share-card-qr {
+            width: 80px;
+            height: 80px;
         }
 
         .error-message {
@@ -765,6 +900,62 @@
         let chatMessages;
         let userInput;
         let sendButton;
+
+        // Sharing functions
+        function showShareOptions(message) {
+            const options = message.querySelector('.share-options');
+            options.classList.toggle('active');
+        }
+
+        function generateShareCard(message) {
+            const content = message.textContent;
+            const card = document.createElement('div');
+            card.className = 'share-card';
+            card.innerHTML = `
+                <div class="share-card-header">
+                    <img src="/images/islamic-art.png" class="share-card-logo" alt="Ask Mo Logo">
+                    <div class="share-card-title">Ask Mo Anything</div>
+                </div>
+                <div class="share-card-content">${content}</div>
+                <div class="share-card-footer">
+                    <div>ask-mo-anything.vercel.app</div>
+                    <div class="share-card-qr"></div>
+                </div>
+            `;
+            
+            // Generate QR code
+            new QRCode(card.querySelector('.share-card-qr'), {
+                text: 'https://ask-mo-anything.vercel.app',
+                width: 80,
+                height: 80
+            });
+
+            return card;
+        }
+
+        async function shareToTwitter(message) {
+            const text = encodeURIComponent(message.textContent.substring(0, 280));
+            window.open(`https://twitter.com/intent/tweet?text=${text}&url=${encodeURIComponent('https://ask-mo-anything.vercel.app')}`);
+        }
+
+        async function shareToWhatsApp(message) {
+            const text = encodeURIComponent(message.completeResponse || message.fullResponse || message.rawResponse || message.textContent);
+            window.open(`https://wa.me/?text=${text}%20-%20via%20https://ask-mo-anything.vercel.app`);
+        }
+
+        async function shareToTelegram(message) {
+            const text = encodeURIComponent(message.completeResponse || message.fullResponse || message.rawResponse || message.textContent);
+            window.open(`https://t.me/share/url?url=${encodeURIComponent('https://ask-mo-anything.vercel.app')}&text=${text}`);
+        }
+
+        async function copyToClipboard(message) {
+            try {
+                await navigator.clipboard.writeText(message.completeResponse || message.fullResponse || message.rawResponse || message.textContent);
+                alert('Content copied to clipboard!');
+            } catch (err) {
+                console.error('Failed to copy:', err);
+            }
+        }
         
         // Process message text
         function processMessageText(text) {
@@ -964,6 +1155,17 @@
 
             let currentMessage = document.createElement('div');
             currentMessage.className = 'message bot-message';
+            currentMessage.fullResponse = '';  // Track full response text
+            currentMessage.rawResponse = '';   // Track raw response before processing
+            
+            // Initialize or get the global completeResponse variable
+            if (typeof window.completeResponse === 'undefined') {
+                window.completeResponse = '';
+            } else {
+                // Clear previous response when starting a new one
+                window.completeResponse = '';
+            }
+            
             let currentSection = '';
             
             try {
@@ -1114,10 +1316,13 @@
                                             topicsDiv.className = 'related-topics';
                                             const header = document.createElement('div');
                                             header.className = 'related-topics-header';
-                                            header.textContent = 'Related Questions:';
+                                            header.textContent = 'Related Topics:';
                                             topicsDiv.appendChild(header);
                                             currentMessage.appendChild(topicsDiv);
                                             chatMessages.appendChild(currentMessage);
+                                            
+                                            // Add related topics header to complete response
+                                            window.completeResponse += '\n\nRelated Topics:\n';
                                         }
                                     } else {
                                         // For other sections
@@ -1132,6 +1337,9 @@
                                         header.className = 'section-header';
                                         header.textContent = chunk;
                                         currentMessage.appendChild(header);
+                                        
+                                        // Add section header to complete response
+                                        window.completeResponse += '\n\n' + chunk + '\n';
                                     }
                                 } else {
                                     // Handle non-section content
@@ -1145,22 +1353,23 @@
                                             }
                                             
                                             // Handle honorifics or normal text
+                                            let processedChunk = chunk;
                                             if (chunk.includes('ﷺ')) {  // Prophet Muhammad (PBUH)
-                                                topicsDiv.currentTopic += ' (PBUH) ';
+                                                processedChunk = processedChunk.replace(/ﷺ/g, ' (PBUH) ');
                                                 topicsDiv.honorificPending = true;
                                             } else if (chunk.includes('رضي الله عنه') || chunk.includes('رضي الله عنها')) {  // RA
-                                                topicsDiv.currentTopic += ' (RA) ';
+                                                processedChunk = processedChunk.replace(/رضي الله عنه|رضي الله عنها/g, ' (RA) ');
                                                 topicsDiv.honorificPending = true;
                                             } else if (chunk.includes('عليه السلام')) {  // AS
-                                                topicsDiv.currentTopic += ' (AS) ';
+                                                processedChunk = processedChunk.replace(/عليه السلام/g, ' (AS) ');
                                                 topicsDiv.honorificPending = true;
+                                            }
+                                            
+                                            if (topicsDiv.honorificPending && !processedChunk.trim().match(/[(.)]$/)) {
+                                                topicsDiv.currentTopic += processedChunk + ' ';
+                                                topicsDiv.honorificPending = false;
                                             } else {
-                                                if (topicsDiv.honorificPending) {
-                                                    topicsDiv.currentTopic += ' ' + chunk;
-                                                    topicsDiv.honorificPending = false;
-                                                } else {
-                                                    topicsDiv.currentTopic += chunk;
-                                                }
+                                                topicsDiv.currentTopic += processedChunk;
                                             }
                                             
                                             // Check if we have any complete questions
@@ -1195,6 +1404,12 @@
                                         const content = document.createElement('span');
                                         content.innerHTML = processMessageText(chunk);
                                         currentMessage.appendChild(content);
+                                        // Accumulate raw response text
+                                        currentMessage.rawResponse = (currentMessage.rawResponse || '') + chunk;
+                                        // Keep same text for full response
+                                        currentMessage.fullResponse = (currentMessage.fullResponse || '') + chunk;
+                                        // Add to global complete response
+                                        window.completeResponse += chunk;
                                         if (!currentMessage.parentNode) {
                                             chatMessages.appendChild(currentMessage);
                                         }
@@ -1218,6 +1433,49 @@
                 if (loadingInterval) {
                     clearInterval(loadingInterval);
                 }
+
+                // Create a complete response container with all accumulated text
+                const completeResponseContainer = document.createElement('div');
+                completeResponseContainer.className = 'message bot-message complete-response-container';
+                completeResponseContainer.style.marginTop = '20px';
+                completeResponseContainer.style.backgroundColor = '#f8f9fa';
+                completeResponseContainer.style.border = '1px solid #e9ecef';
+                completeResponseContainer.style.borderRadius = '8px';
+                completeResponseContainer.style.padding = '15px';
+                
+                // Store the complete response text from the global variable
+                completeResponseContainer.fullResponse = window.completeResponse;
+                
+                // Add a small indicator that this is for sharing
+                const shareIndicator = document.createElement('div');
+                shareIndicator.style.fontSize = '0.8em';
+                shareIndicator.style.color = '#6c757d';
+                shareIndicator.style.marginBottom = '10px';
+                shareIndicator.textContent = 'Share options for the complete response:';
+                completeResponseContainer.appendChild(shareIndicator);
+                
+                // Add share section to the complete response container
+                const shareSection = document.createElement('div');
+                shareSection.className = 'share-section';
+                shareSection.innerHTML = `
+                    <div class="share-text">Share this complete answer:</div>
+                    <div class="share-buttons">
+                        <button class="share-btn" onclick="shareToTwitter(this.closest('.complete-response-container'))" title="Share on Twitter">
+                            <i class="fab fa-twitter"></i>
+                        </button>
+                        <button class="share-btn" onclick="shareToWhatsApp(this.closest('.complete-response-container'))" title="Share on WhatsApp">
+                            <i class="fab fa-whatsapp"></i>
+                        </button>
+                        <button class="share-btn" onclick="shareToTelegram(this.closest('.complete-response-container'))" title="Share on Telegram">
+                            <i class="fab fa-telegram"></i>
+                        </button>
+                        <button class="share-btn" onclick="copyToClipboard(this.closest('.complete-response-container'))" title="Copy to clipboard">
+                            <i class="far fa-copy"></i>
+                        </button>
+                    </div>
+                `;
+                completeResponseContainer.appendChild(shareSection);
+                chatMessages.appendChild(completeResponseContainer);
             }
         }
 
@@ -1229,16 +1487,9 @@
             // Set container height based on content
             container.style.minHeight = Math.min(totalHeight, maxHeight) + 'px';
             
-            // Smooth scroll to bottom with a slight delay to ensure content is rendered
+            // Only scroll the chat messages container
             setTimeout(() => {
                 chatMessages.scrollTop = chatMessages.scrollHeight;
-                // Also scroll the page if needed
-                if (container.getBoundingClientRect().bottom > window.innerHeight) {
-                    window.scrollTo({
-                        top: document.body.scrollHeight,
-                        behavior: 'smooth'
-                    });
-                }
             }, 10);
         }
 
