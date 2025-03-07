@@ -382,12 +382,15 @@
 
         .share-text {
             font-size: 0.9em;
-            color: #666;
+            color: #1e6f5c;
+            font-weight: 500;
+            margin-bottom: 8px;
         }
 
         .share-buttons {
             display: flex;
-            gap: 8px;
+            gap: 12px;
+            margin-top: 5px;
         }
 
         .share-btn {
@@ -1448,27 +1451,30 @@
                 const completeResponseContainer = document.createElement('div');
                 completeResponseContainer.className = 'message bot-message complete-response-container';
                 completeResponseContainer.style.marginTop = '20px';
-                completeResponseContainer.style.backgroundColor = '#f8f9fa';
-                completeResponseContainer.style.border = '1px solid #e9ecef';
+                completeResponseContainer.style.backgroundColor = '#f0f7f4';
+                completeResponseContainer.style.border = '1px solid #c8e6d7';
                 completeResponseContainer.style.borderRadius = '8px';
                 completeResponseContainer.style.padding = '15px';
+                completeResponseContainer.style.marginTop = '20px';
+                completeResponseContainer.style.boxShadow = '0 2px 5px rgba(0,0,0,0.05)';
                 
                 // Store the complete response text from the global variable
                 completeResponseContainer.fullResponse = window.completeResponse;
                 
                 // Add a small indicator that this is for sharing
                 const shareIndicator = document.createElement('div');
-                shareIndicator.style.fontSize = '0.8em';
-                shareIndicator.style.color = '#6c757d';
+                shareIndicator.style.fontSize = '0.9em';
+                shareIndicator.style.color = '#1e6f5c';
                 shareIndicator.style.marginBottom = '10px';
-                shareIndicator.textContent = 'Share options for the complete response:';
+                shareIndicator.style.fontWeight = '500';
+                shareIndicator.textContent = 'Found this helpful? Spread the knowledge!';
                 completeResponseContainer.appendChild(shareIndicator);
                 
                 // Add share section to the complete response container
                 const shareSection = document.createElement('div');
                 shareSection.className = 'share-section';
                 shareSection.innerHTML = `
-                    <div class="share-text">Share this complete answer:</div>
+                    <div class="share-text">Continue the conversation:</div>
                     <div class="share-buttons">
                         <button class="share-btn x-btn" onclick="shareToTwitter(this.closest('.complete-response-container'))" title="Share on X">
                             <span class="x-icon">𝕏</span>
