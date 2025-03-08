@@ -6,6 +6,11 @@ node_modules/
 .env.local
 .env.*.local
 
+# Firebase service account keys
+serviceAccountKey.json
+api/serviceAccountKey.json
+**/serviceAccountKey.json
+
 # Logs
 logs
 *.log

@@ -1,0 +1,337 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Firebase Auth Test</title>
+    <link rel="icon" type="image/x-icon" href="/favicon.ico">
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        .container {
+            background-color: #f5f5f5;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .form-group {
+            margin-bottom: 15px;
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+        input {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+        button {
+            background-color: #4285f4;
+            color: white;
+            border: none;
+            padding: 10px 15px;
+            border-radius: 4px;
+            cursor: pointer;
+            margin-right: 10px;
+            margin-bottom: 10px;
+        }
+        button:hover {
+            background-color: #3367d6;
+        }
+        .google-btn {
+            background-color: white;
+            color: #757575;
+            border: 1px solid #ddd;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 8px 15px;
+        }
+        .google-btn img {
+            margin-right: 10px;
+            width: 18px;
+            height: 18px;
+        }
+        .status {
+            margin-top: 20px;
+            padding: 15px;
+            border-radius: 4px;
+        }
+        .success {
+            background-color: #d4edda;
+            color: #155724;
+        }
+        .error {
+            background-color: #f8d7da;
+            color: #721c24;
+        }
+        .user-info {
+            margin-top: 20px;
+            padding: 15px;
+            background-color: #e9ecef;
+            border-radius: 4px;
+        }
+        .hidden {
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Firebase Auth Test</h1>
+        
+        <div id="auth-status" class="status">Checking authentication status...</div>
+        
+        <div id="login-form">
+            <h2>Sign In / Sign Up</h2>
+            <div class="form-group">
+                <label for="email">Email</label>
+                <input type="email" id="email" placeholder="Enter your email">
+            </div>
+            <div class="form-group">
+                <label for="password">Password</label>
+                <input type="password" id="password" placeholder="Enter your password">
+            </div>
+            <button id="signin-btn">Sign In</button>
+            <button id="signup-btn">Sign Up</button>
+            <button id="google-signin" class="google-btn">
+                <img src="https://upload.wikimedia.org/wikipedia/commons/5/53/Google_%22G%22_Logo.svg" alt="Google logo">
+                Sign in with Google
+            </button>
+        </div>
+        
+        <div id="user-info" class="user-info hidden">
+            <h2>User Information</h2>
+            <div id="user-details"></div>
+            <button id="signout-btn">Sign Out</button>
+        </div>
+    </div>
+
+    <script type="module">
+        // Import Firebase modules
+        import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js';
+        import { 
+            getAuth, 
+            createUserWithEmailAndPassword, 
+            signInWithEmailAndPassword, 
+            signOut, 
+            onAuthStateChanged,
+            GoogleAuthProvider,
+            signInWithPopup
+        } from 'https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js';
+        import { 
+            getFirestore, 
+            doc, 
+            setDoc, 
+            getDoc, 
+            serverTimestamp 
+        } from 'https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js';
+
+        // Your Firebase configuration
+        const firebaseConfig = {
+            apiKey: "AIzaSyCbaHuXWm5n9IQ91JjQhR5UwgCcvPe8_VE",
+            authDomain: "ask-mo-anything-web.firebaseapp.com",
+            projectId: "ask-mo-anything-web",
+            storageBucket: "ask-mo-anything-web.firebasestorage.app",
+            messagingSenderId: "9830805398",
+            appId: "1:9830805398:web:697c4fa5f093fcfd0d37b7"
+        };
+
+        // Initialize Firebase
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+
+        // DOM elements
+        const authStatus = document.getElementById('auth-status');
+        const loginForm = document.getElementById('login-form');
+        const userInfo = document.getElementById('user-info');
+        const userDetails = document.getElementById('user-details');
+        const emailInput = document.getElementById('email');
+        const passwordInput = document.getElementById('password');
+        const signinBtn = document.getElementById('signin-btn');
+        const signupBtn = document.getElementById('signup-btn');
+        const googleSigninBtn = document.getElementById('google-signin');
+        const signoutBtn = document.getElementById('signout-btn');
+
+        // Create user with email and password
+        const createUser = async (email, password) => {
+            try {
+                const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+                // Create user document in Firestore
+                await setDoc(doc(db, 'users', userCredential.user.uid), {
+                    email: userCredential.user.email,
+                    createdAt: serverTimestamp(),
+                    questionCount: 0,
+                    lastQuestionDate: null,
+                    subscription: {
+                        type: 'free',
+                        expiresAt: null
+                    }
+                });
+                return userCredential.user;
+            } catch (error) {
+                throw error;
+            }
+        };
+
+        // Sign in with email and password
+        const signIn = async (email, password) => {
+            try {
+                const userCredential = await signInWithEmailAndPassword(auth, email, password);
+                return userCredential.user;
+            } catch (error) {
+                throw error;
+            }
+        };
+
+        // Sign in with Google
+        const signInWithGoogle = async () => {
+            try {
+                const provider = new GoogleAuthProvider();
+                const userCredential = await signInWithPopup(auth, provider);
+                
+                // Check if user document exists
+                const userDoc = await getDoc(doc(db, 'users', userCredential.user.uid));
+                
+                // If not, create it
+                if (!userDoc.exists()) {
+                    await setDoc(doc(db, 'users', userCredential.user.uid), {
+                        email: userCredential.user.email,
+                        createdAt: serverTimestamp(),
+                        questionCount: 0,
+                        lastQuestionDate: null,
+                        subscription: {
+                            type: 'free',
+                            expiresAt: null
+                        }
+                    });
+                }
+                
+                return userCredential.user;
+            } catch (error) {
+                throw error;
+            }
+        };
+
+        // Get user data
+        const getUserData = async (userId) => {
+            try {
+                const userDoc = await getDoc(doc(db, 'users', userId));
+                if (userDoc.exists()) {
+                    return userDoc.data();
+                }
+                return null;
+            } catch (error) {
+                throw error;
+            }
+        };
+
+        // Update UI based on authentication state
+        const updateUI = (user) => {
+            if (user) {
+                loginForm.classList.add('hidden');
+                userInfo.classList.remove('hidden');
+                authStatus.textContent = `Authenticated as ${user.email}`;
+                authStatus.className = 'status success';
+                
+                // Display user details
+                getUserData(user.uid).then(userData => {
+                    let html = `
+                        <p><strong>Email:</strong> ${user.email}</p>
+                        <p><strong>User ID:</strong> ${user.uid}</p>
+                    `;
+                    
+                    if (userData) {
+                        html += `
+                            <p><strong>Subscription:</strong> ${userData.subscription?.type || 'free'}</p>
+                            <p><strong>Question Count:</strong> ${userData.questionCount || 0}</p>
+                        `;
+                    }
+                    
+                    userDetails.innerHTML = html;
+                });
+            } else {
+                loginForm.classList.remove('hidden');
+                userInfo.classList.add('hidden');
+                authStatus.textContent = 'Not authenticated';
+                authStatus.className = 'status';
+            }
+        };
+
+        // Event listeners
+        signinBtn.addEventListener('click', async () => {
+            const email = emailInput.value;
+            const password = passwordInput.value;
+            
+            if (!email || !password) {
+                authStatus.textContent = 'Please enter email and password';
+                authStatus.className = 'status error';
+                return;
+            }
+            
+            try {
+                authStatus.textContent = 'Signing in...';
+                await signIn(email, password);
+                // UI will be updated by the auth state listener
+            } catch (error) {
+                authStatus.textContent = `Error: ${error.message}`;
+                authStatus.className = 'status error';
+            }
+        });
+
+        signupBtn.addEventListener('click', async () => {
+            const email = emailInput.value;
+            const password = passwordInput.value;
+            
+            if (!email || !password) {
+                authStatus.textContent = 'Please enter email and password';
+                authStatus.className = 'status error';
+                return;
+            }
+            
+            try {
+                authStatus.textContent = 'Creating account...';
+                await createUser(email, password);
+                // UI will be updated by the auth state listener
+            } catch (error) {
+                authStatus.textContent = `Error: ${error.message}`;
+                authStatus.className = 'status error';
+            }
+        });
+
+        googleSigninBtn.addEventListener('click', async () => {
+            try {
+                authStatus.textContent = 'Signing in with Google...';
+                await signInWithGoogle();
+                // UI will be updated by the auth state listener
+            } catch (error) {
+                authStatus.textContent = `Error: ${error.message}`;
+                authStatus.className = 'status error';
+            }
+        });
+
+        signoutBtn.addEventListener('click', async () => {
+            try {
+                await signOut(auth);
+                // UI will be updated by the auth state listener
+            } catch (error) {
+                authStatus.textContent = `Error signing out: ${error.message}`;
+                authStatus.className = 'status error';
+            }
+        });
+
+        // Listen for authentication state changes
+        onAuthStateChanged(auth, (user) => {
+            updateUI(user);
+        });
+    </script>
+</body>
+</html>
