@@ -7,7 +7,8 @@ import {
     GoogleAuthProvider, 
     signOut, 
     sendPasswordResetEmail,
-    onAuthStateChanged
+    onAuthStateChanged,
+    getIdToken
 } from 'firebase/auth';
 import { 
     doc, 
@@ -33,6 +34,9 @@ let closeButtons;
 document.addEventListener('DOMContentLoaded', initAuthUI);
 
 function initAuthUI() {
+    // Set up API interceptor for auth tokens
+    setupApiInterceptor();
+    
     // Get DOM elements
     loginButton = document.getElementById('login-button');
     signupButton = document.getElementById('signup-button');
@@ -237,19 +241,76 @@ async function createUserProfile(user) {
     }
 }
 
-function handleAuthStateChange(user) {
+// Store auth token in localStorage
+async function storeAuthToken(user) {
+    if (!user) return null;
+    
+    try {
+        const token = await getIdToken(user, true); // Force refresh the token
+        localStorage.setItem('authToken', token);
+        return token;
+    } catch (error) {
+        console.error('Error getting auth token:', error);
+        return null;
+    }
+}
+
+// Get the stored auth token
+function getStoredAuthToken() {
+    return localStorage.getItem('authToken');
+}
+
+// Clear the stored auth token
+function clearStoredAuthToken() {
+    localStorage.removeItem('authToken');
+}
+
+// Add auth token to API requests
+function setupApiInterceptor() {
+    // Intercept fetch requests
+    const originalFetch = window.fetch;
+    window.fetch = async function(url, options = {}) {
+        // Only intercept requests to our API
+        if (url.includes('/api/')) {
+            const token = getStoredAuthToken();
+            if (token) {
+                // Create headers object if it doesn't exist
+                options.headers = options.headers || {};
+                
+                // Add the auth token to the headers
+                options.headers['X-Auth-Token'] = token;
+            }
+        }
+        
+        return originalFetch.call(this, url, options);
+    };
+}
+
+async function handleAuthStateChange(user) {
     if (user) {
         // User is signed in
         loginButton.style.display = 'none';
         signupButton.style.display = 'none';
         userProfile.style.display = 'flex';
         userEmail.textContent = user.email;
+        
+        // Get and store the auth token
+        await storeAuthToken(user);
+        
+        // Update UI for authenticated user
+        document.body.classList.add('user-authenticated');
     } else {
         // User is signed out
         loginButton.style.display = 'block';
         signupButton.style.display = 'block';
         userProfile.style.display = 'none';
         userEmail.textContent = '';
+        
+        // Clear the stored auth token
+        clearStoredAuthToken();
+        
+        // Update UI for non-authenticated user
+        document.body.classList.remove('user-authenticated');
     }
 }
 
@@ -313,4 +374,4 @@ function handleAuthError(error, errorElement) {
     showError(errorElement, errorMessage);
 }
 
-export { initAuthUI };
+export { initAuthUI, getStoredAuthToken };

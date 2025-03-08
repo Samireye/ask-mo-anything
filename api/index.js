@@ -6,6 +6,8 @@ import rateLimit from 'express-rate-limit';
 import crypto from 'crypto';
 import { initializeApp } from 'firebase/app';
 import { getFirestore, doc, getDoc } from 'firebase/firestore';
+import { getAuth } from 'firebase/auth';
+import admin from 'firebase-admin';
 
 // Load environment variables
 dotenv.config();
@@ -17,16 +19,66 @@ if (!process.env.OPENAI_API_KEY) {
 
 // Initialize Firebase
 const firebaseConfig = {
-    apiKey: process.env.FIREBASE_API_KEY,
-    authDomain: process.env.FIREBASE_AUTH_DOMAIN,
-    projectId: process.env.FIREBASE_PROJECT_ID,
-    storageBucket: process.env.FIREBASE_STORAGE_BUCKET,
-    messagingSenderId: process.env.FIREBASE_MESSAGING_SENDER_ID,
-    appId: process.env.FIREBASE_APP_ID
+    apiKey: process.env.FIREBASE_API_KEY || "AIzaSyDn_yz3eL1c4cxxaChd2YFx8TReFYSWI-Q",
+    authDomain: process.env.FIREBASE_AUTH_DOMAIN || "ask-mo-anything.firebaseapp.com",
+    projectId: process.env.FIREBASE_PROJECT_ID || "ask-mo-anything",
+    storageBucket: process.env.FIREBASE_STORAGE_BUCKET || "ask-mo-anything.firebasestorage.app",
+    messagingSenderId: process.env.FIREBASE_MESSAGING_SENDER_ID || "31573817503",
+    appId: process.env.FIREBASE_APP_ID || "1:31573817503:web:b8f5c3a066b3cb4243b69d"
 };
 
+// Initialize Firebase client SDK
 const firebaseApp = initializeApp(firebaseConfig);
 const db = getFirestore(firebaseApp);
+const auth = getAuth(firebaseApp);
+
+// Initialize Firebase Admin SDK for token verification
+// Note: In production, use environment variables or secure storage for service account
+
+// Import fs module to read the service account key file
+import fs from 'fs';
+import path from 'path';
+import { fileURLToPath } from 'url';
+
+// Get the current directory path
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+// Check if Firebase Admin SDK is already initialized
+if (!admin.apps.length) {
+    try {
+        // First try to use environment variables (for production)
+        if (process.env.FIREBASE_PRIVATE_KEY && process.env.FIREBASE_CLIENT_EMAIL && process.env.FIREBASE_PROJECT_ID) {
+            admin.initializeApp({
+                credential: admin.credential.cert({
+                    projectId: process.env.FIREBASE_PROJECT_ID,
+                    clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
+                    // The private key needs to have newlines replaced
+                    privateKey: process.env.FIREBASE_PRIVATE_KEY.replace(/\\n/g, '\n')
+                })
+            });
+            console.log('Firebase Admin initialized with environment variables');
+        } else {
+            // Fallback to service account key file (for local development)
+            try {
+                const serviceAccountPath = path.join(__dirname, 'serviceAccountKey.json');
+                const serviceAccountContent = fs.readFileSync(serviceAccountPath, 'utf8');
+                const serviceAccountKey = JSON.parse(serviceAccountContent);
+                
+                admin.initializeApp({
+                    credential: admin.credential.cert(serviceAccountKey)
+                });
+                
+                console.log('Firebase Admin initialized with service account key file');
+            } catch (fileError) {
+                console.error('Error reading service account key file:', fileError.message);
+                throw new Error('Firebase credentials not available. Set environment variables or provide a service account key file.');
+            }
+        }
+    } catch (error) {
+        console.error('Firebase admin initialization error:', error.stack);
+    }
+}
 
 const app = express();
 
@@ -36,8 +88,10 @@ app.set('trust proxy', 1);
 // CORS configuration
 app.use(cors({
     origin: ['https://ask-mo-anything.vercel.app', 'http://localhost:3000', 'http://localhost:3001'],
-    methods: ['GET', 'POST'],
-    allowedHeaders: ['Content-Type', 'Authorization', 'X-API-Key', 'X-Platform', 'X-Mobile-Dev']
+    methods: ['GET', 'POST', 'OPTIONS'],
+    credentials: true,
+    allowedHeaders: ['Content-Type', 'Authorization', 'X-API-Key', 'X-Platform', 'X-Mobile-Dev', 'X-User-Id', 'X-Auth-Token'],
+    exposedHeaders: ['Content-Type', 'Authorization', 'X-API-Key', 'X-User-Id']
 }));
 
 app.use(express.json());
@@ -135,14 +189,48 @@ class QuestionTracker {
 
 const questionTracker = new QuestionTracker();
 
+// Authentication middleware
+const authenticateUser = async (req, res, next) => {
+    try {
+        // Get the auth token from the request headers
+        const authToken = req.headers['x-auth-token'];
+        
+        if (authToken) {
+            // Verify the Firebase ID token
+            const decodedToken = await admin.auth().verifyIdToken(authToken);
+            
+            // Add the verified user to the request object
+            req.user = decodedToken;
+            req.userId = decodedToken.uid;
+            
+            console.log(`Authenticated user: ${req.userId}`);
+        } else {
+            // No token provided, user is not authenticated
+            req.user = null;
+            req.userId = null;
+        }
+        
+        // Continue to the next middleware regardless of authentication status
+        next();
+    } catch (error) {
+        console.error('Error verifying auth token:', error);
+        // Invalid token, but still continue to next middleware
+        req.user = null;
+        req.userId = null;
+        next();
+    }
+};
+
+// Apply authentication middleware to all routes
+app.use(authenticateUser);
+
 // Middleware to check question limit
 const checkQuestionLimit = async (req, res, next) => {
     const userApiKey = req.headers['x-api-key'];
     const platform = req.headers['x-platform'];
     const mobileDevKey = req.headers['x-mobile-dev'];
-    const userId = req.headers['x-user-id']; // Firebase user ID
-
-    // If it's a mobile request with valid authentication, bypass the limit
+    
+    // Legacy mobile auth for backward compatibility
     if (platform === 'mobile' && 
         ((process.env.NODE_ENV === 'development' && mobileDevKey === process.env.MOBILE_DEV_KEY) ||
          (process.env.NODE_ENV === 'production' && userApiKey === process.env.MOBILE_API_KEY))) {
@@ -154,10 +242,10 @@ const checkQuestionLimit = async (req, res, next) => {
         return next();
     }
 
-    // Check if user has premium subscription
-    if (userId) {
+    // Check if authenticated user has premium subscription
+    if (req.userId) {
         try {
-            const userDoc = await getDoc(doc(db, 'users', userId));
+            const userDoc = await getDoc(doc(db, 'users', req.userId));
             if (userDoc.exists()) {
                 const userData = userDoc.data();
                 if (userData.subscription && userData.subscription.type === 'premium') {
