@@ -645,18 +645,85 @@
                 height: auto;
             }
             
-            .auth-container {
-                display: none;
-                position: absolute;
-                top: 100%;
-                right: 0;
-                background: var(--primary-color);
-                padding: 15px;
-                border-radius: 0 0 0 10px;
-                box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
-                z-index: 100;
-                flex-direction: column;
-                gap: 10px;
+            /* Basic mobile menu styling */
+            .mobile-menu-button {
+                cursor: pointer;
+                padding: 10px;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                min-width: 44px;
+                min-height: 44px;
+                margin-right: 5px;
+            }
+            
+            @media (max-width: 768px) {
+                .auth-container {
+                    display: none; /* Hidden by default */
+                    position: fixed; /* Fixed position */
+                    top: 60px; /* Position below header */
+                    right: 0;
+                    width: 200px;
+                    background-color: #1e6f5c;
+                    padding: 15px;
+                    z-index: 1000;
+                    flex-direction: column;
+                    gap: 10px;
+                    align-items: center;
+                    border-left: 2px solid #f0c14b;
+                    border-bottom: 2px solid #f0c14b;
+                    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+                }
+                
+                .auth-button {
+                    width: 100%;
+                    margin: 5px 0;
+                }
+                
+                .user-profile {
+                    width: 100%;
+                    flex-direction: column;
+                    align-items: center;
+                }
+            }
+            
+            /* Desktop menu styling */
+            @media (min-width: 769px) {
+                .auth-container {
+                    display: flex;
+                    flex-direction: row;
+                    gap: 10px;
+                }
+            }
+            
+            /* Class to show the menu */
+            .auth-container.show-mobile-menu {
+                display: flex !important;
+                animation: slideDown 0.3s ease-out;
+            }
+            
+            @keyframes slideDown {
+                from { transform: translateY(-20px); opacity: 0; }
+                to { transform: translateY(0); opacity: 1; }
+            }
+            
+            .auth-container .auth-button {
+                display: block;
+                width: 90%;
+                margin: 8px auto;
+                text-align: center;
+                padding: 10px !important;
+                font-size: 15px !important;
+                border-radius: 8px;
+                background-color: rgba(255, 255, 255, 0.2);
+                border: 1px solid rgba(255, 255, 255, 0.3);
+                transition: all 0.2s ease;
+                white-space: nowrap;
+            }
+            
+            .auth-container .auth-button:active {
+                transform: scale(0.98);
+                background-color: rgba(255, 255, 255, 0.3);
             }
             
             .auth-options {
@@ -668,11 +735,53 @@
             }
             
             .auth-container.mobile-visible {
+                display: flex !important;
+                animation: slideDown 0.3s ease-in-out;
+            }
+            
+            /* Improve user profile display in mobile view */
+            .auth-container #user-profile {
                 display: flex;
+                flex-direction: column;
+                align-items: center;
+                width: 100%;
+                padding: 10px 0;
+            }
+            
+            .auth-container #user-profile i {
+                margin-bottom: 10px;
+                font-size: 28px !important;
+                color: white;
+            }
+            
+            .auth-container #user-profile button {
+                margin: 5px 0;
+                width: 90%;
+                padding: 8px 12px !important;
+                font-size: 14px !important;
+                text-align: center;
+            }
+            
+            @keyframes slideDown {
+                from { opacity: 0; transform: translateY(-10px); }
+                to { opacity: 1; transform: translateY(0); }
             }
             
             .mobile-menu-button {
                 display: flex;
+                cursor: pointer;
+                -webkit-tap-highlight-color: transparent;
+                padding: 12px;
+                font-size: 24px;
+                color: white;
+                background-color: rgba(255, 255, 255, 0.1);
+                border-radius: 5px;
+                margin-right: 5px;
+                transition: background-color 0.2s ease;
+            }
+            
+            .mobile-menu-button:active {
+                background-color: rgba(255, 255, 255, 0.2);
             }
         }
         
@@ -1627,7 +1736,7 @@
                 <div class="arabic-title">اسأل عن النبي محمد ﷺ</div>
             </div>
             <div class="mobile-menu-button">
-                <i class="fas fa-bars"></i>
+                <i class="fas fa-bars" style="font-size: 24px; width: 100%; text-align: center;"></i>
             </div>
             <div class="auth-container" id="auth-container">
                 <button id="login-button" class="auth-button">Sign In</button>
@@ -3262,24 +3371,42 @@
             // Handle premium upgrade
             upgradeButton.addEventListener('click', handlePremiumUpgrade);
             
-            // Mobile menu button functionality
+            // Simple mobile menu toggle
             if (mobileMenuButton) {
-                mobileMenuButton.addEventListener('click', () => {
-                    // Toggle the mobile-visible class on the auth container
-                    authContainer.classList.toggle('mobile-visible');
-                    
-                    // If auth options are visible, hide them
-                    if (authOptions.style.display === 'flex') {
-                        authOptions.style.display = 'none';
+                mobileMenuButton.addEventListener('click', function() {
+                    // Simple toggle
+                    if (window.getComputedStyle(authContainer).display === 'flex') {
+                        authContainer.style.display = 'none';
+                        this.querySelector('i').className = 'fas fa-bars';
+                    } else {
+                        authContainer.style.display = 'flex';
+                        this.querySelector('i').className = 'fas fa-times';
                     }
+                });
+                
+                // Close when clicking outside - only on mobile
+                document.addEventListener('click', function(e) {
+                    // Only apply this behavior on mobile screens
+                    if (window.innerWidth <= 768) {
+                        if (e.target !== mobileMenuButton && !authContainer.contains(e.target) && 
+                            window.getComputedStyle(authContainer).display === 'flex') {
+                            authContainer.style.display = 'none';
+                            mobileMenuButton.querySelector('i').className = 'fas fa-bars';
+                        }
+                    }
+                });
+                
+                // Prevent closing when clicking inside menu
+                authContainer.addEventListener('click', function(e) {
+                    e.stopPropagation();
                 });
             }
             
             // Auth toggle button functionality is now in initAuthUI
             
             // Listen for auth state changes
-            const auth = getAuth();
-            onAuthStateChanged(auth, handleAuthStateChange);
+            // Use the globally available auth instance instead of creating a new one
+            onAuthStateChanged(window.firebaseAuth, handleAuthStateChange);
         }
         
         // Authentication functions
