@@ -5,7 +5,7 @@ import OpenAI from 'openai';
 import rateLimit from 'express-rate-limit';
 import crypto from 'crypto';
 import { initializeApp } from 'firebase/app';
-import { getFirestore, doc, getDoc } from 'firebase/firestore';
+import { getFirestore, doc, getDoc, updateDoc, setDoc } from 'firebase/firestore';
 import { getAuth } from 'firebase/auth';
 import admin from 'firebase-admin';
 
@@ -47,36 +47,16 @@ const __dirname = path.dirname(__filename);
 // Check if Firebase Admin SDK is already initialized
 if (!admin.apps.length) {
     try {
-        // First try to use environment variables (for production)
-        if (process.env.FIREBASE_PRIVATE_KEY && process.env.FIREBASE_CLIENT_EMAIL && process.env.FIREBASE_PROJECT_ID) {
-            admin.initializeApp({
-                credential: admin.credential.cert({
-                    projectId: process.env.FIREBASE_PROJECT_ID,
-                    clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
-                    // The private key needs to have newlines replaced
-                    privateKey: process.env.FIREBASE_PRIVATE_KEY.replace(/\\n/g, '\n')
-                })
-            });
-            console.log('Firebase Admin initialized with environment variables');
-        } else {
-            // Fallback to service account key file (for local development)
-            try {
-                const serviceAccountPath = path.join(__dirname, 'serviceAccountKey.json');
-                const serviceAccountContent = fs.readFileSync(serviceAccountPath, 'utf8');
-                const serviceAccountKey = JSON.parse(serviceAccountContent);
-                
-                admin.initializeApp({
-                    credential: admin.credential.cert(serviceAccountKey)
-                });
-                
-                console.log('Firebase Admin initialized with service account key file');
-            } catch (fileError) {
-                console.error('Error reading service account key file:', fileError.message);
-                throw new Error('Firebase credentials not available. Set environment variables or provide a service account key file.');
-            }
-        }
+        // Initialize Firebase Admin without credentials for basic functionality
+        // This will allow the server to run but with limited admin capabilities
+        admin.initializeApp({
+            projectId: firebaseConfig.projectId,
+        });
+        console.log('Firebase Admin initialized with basic configuration');
     } catch (error) {
-        console.error('Firebase admin initialization error:', error.stack);
+        console.error('Firebase admin initialization error:', error);
+        // Continue without admin SDK - some features might be limited
+        console.log('Continuing without Firebase Admin SDK');
     }
 }
 
@@ -221,6 +201,169 @@ const authenticateUser = async (req, res, next) => {
     }
 };
 
+// Function to update user subscription status
+async function updateUserSubscription(userId, planType, paymentId) {
+    try {
+        // Get current date for subscription start
+        const now = new Date();
+        
+        // Set subscription end date based on plan type
+        let endDate = new Date();
+        if (planType === 'monthly') {
+            endDate.setMonth(endDate.getMonth() + 1);
+        } else if (planType === 'annual') {
+            endDate.setFullYear(endDate.getFullYear() + 1);
+        } else {
+            throw new Error('Invalid plan type');
+        }
+        
+        // Update user document with subscription information
+        const userRef = doc(db, 'users', userId);
+        
+        // First check if user document exists
+        const userDoc = await getDoc(userRef);
+        
+        if (userDoc.exists()) {
+            // Update existing user document
+            await updateDoc(userRef, {
+                subscription: {
+                    type: 'premium',
+                    plan: planType,
+                    startDate: now.toISOString(),
+                    endDate: endDate.toISOString(),
+                    paymentId: paymentId,
+                    active: true,
+                    questionLimit: planType === 'monthly' ? 100 : 100, // Both plans have same question limit
+                    updatedAt: now.toISOString()
+                }
+            });
+        } else {
+            // Create new user document
+            await setDoc(userRef, {
+                userId: userId,
+                createdAt: now.toISOString(),
+                subscription: {
+                    type: 'premium',
+                    plan: planType,
+                    startDate: now.toISOString(),
+                    endDate: endDate.toISOString(),
+                    paymentId: paymentId,
+                    active: true,
+                    questionLimit: planType === 'monthly' ? 100 : 100, // Both plans have same question limit
+                    updatedAt: now.toISOString()
+                }
+            });
+        }
+        
+        return { success: true };
+    } catch (error) {
+        console.error('Error updating subscription:', error);
+        return { success: false, error: error.message };
+    }
+}
+
+// API endpoint to check premium status
+app.get('/api/check-premium', async (req, res) => {
+    const userId = req.headers['x-user-id'];
+    const isTestMode = req.query.test === 'true';
+    
+    if (!userId && !isTestMode) {
+        return res.status(401).json({ error: 'Unauthorized' });
+    }
+    
+    // Use a test user ID if in test mode
+    const effectiveUserId = isTestMode ? 'test-user-123' : userId;
+    
+    try {
+        const userDoc = await getDoc(doc(db, 'users', effectiveUserId));
+        let isPremium = false;
+        let subscriptionDetails = null;
+        
+        if (userDoc.exists()) {
+            const userData = userDoc.data();
+            if (userData.subscription && 
+                userData.subscription.type === 'premium' && 
+                userData.subscription.active) {
+                
+                // Check if subscription is still valid (not expired)
+                const now = new Date();
+                const endDate = new Date(userData.subscription.endDate);
+                
+                if (now <= endDate) {
+                    isPremium = true;
+                    subscriptionDetails = {
+                        plan: userData.subscription.plan,
+                        startDate: userData.subscription.startDate,
+                        endDate: userData.subscription.endDate,
+                        questionLimit: userData.subscription.questionLimit
+                    };
+                } else {
+                    // Subscription expired, update the status
+                    try {
+                        await updateDoc(doc(db, 'users', effectiveUserId), {
+                            'subscription.active': false
+                        });
+                    } catch (updateError) {
+                        console.error('Error updating expired subscription:', updateError);
+                    }
+                }
+            }
+        }
+        
+        res.json({ 
+            isPremium, 
+            subscriptionDetails,
+            userId: effectiveUserId,
+            testMode: isTestMode
+        });
+    } catch (error) {
+        console.error('Error checking premium status:', error);
+        res.status(500).json({ error: 'Internal server error' });
+    }
+});
+
+// API endpoint to verify payment and activate subscription
+app.post('/api/verify-payment', async (req, res) => {
+    try {
+        const { userId, paymentId, planType } = req.body;
+        const isTestMode = req.query.test === 'true';
+        
+        if ((!userId || !paymentId || !planType) && !isTestMode) {
+            return res.status(400).json({ error: 'Missing required parameters' });
+        }
+        
+        // Use default values for test mode
+        const effectiveUserId = isTestMode ? 'test-user-123' : userId;
+        const effectivePaymentId = paymentId || `test-payment-${Date.now()}`;
+        const effectivePlanType = planType || 'monthly';
+        
+        // Validate plan type
+        if (effectivePlanType !== 'monthly' && effectivePlanType !== 'annual') {
+            return res.status(400).json({ error: 'Invalid plan type' });
+        }
+        
+        // In a production environment, you would verify the payment with Stripe here
+        // For now, we'll assume the payment is valid and update the subscription
+        
+        const result = await updateUserSubscription(effectiveUserId, effectivePlanType, effectivePaymentId);
+        
+        if (result.success) {
+            res.json({ 
+                success: true, 
+                message: 'Subscription activated successfully',
+                plan: effectivePlanType,
+                userId: effectiveUserId,
+                testMode: isTestMode
+            });
+        } else {
+            res.status(400).json({ error: result.error || 'Payment verification failed' });
+        }
+    } catch (error) {
+        console.error('Error in payment verification:', error);
+        res.status(500).json({ error: 'Internal server error' });
+    }
+});
+
 // Apply authentication middleware to all routes
 app.use(authenticateUser);
 
@@ -248,9 +391,28 @@ const checkQuestionLimit = async (req, res, next) => {
             const userDoc = await getDoc(doc(db, 'users', req.userId));
             if (userDoc.exists()) {
                 const userData = userDoc.data();
-                if (userData.subscription && userData.subscription.type === 'premium') {
-                    // User has premium subscription, bypass the limit
-                    return next();
+                if (userData.subscription && 
+                    userData.subscription.type === 'premium' && 
+                    userData.subscription.active) {
+                    
+                    // Check if subscription is still valid (not expired)
+                    const now = new Date();
+                    const endDate = new Date(userData.subscription.endDate);
+                    
+                    if (now <= endDate) {
+                        // Valid subscription, bypass the limit
+                        return next();
+                    } else {
+                        // Subscription expired, update the status
+                        try {
+                            await updateDoc(doc(db, 'users', req.userId), {
+                                'subscription.active': false
+                            });
+                            console.log(`Subscription expired for user ${req.userId}, marked as inactive`);
+                        } catch (updateError) {
+                            console.error('Error updating expired subscription:', updateError);
+                        }
+                    }
                 }
             }
         } catch (error) {
@@ -758,6 +920,108 @@ Always:
         }
     } finally {
         endStream();
+    }
+});
+
+// API endpoint to check premium status
+app.get('/api/check-premium', async (req, res) => {
+    const userId = req.headers['x-user-id'];
+    const isTestMode = req.query.test === 'true';
+    
+    if (!userId && !isTestMode) {
+        return res.status(401).json({ error: 'Unauthorized' });
+    }
+    
+    // Use a test user ID if in test mode
+    const effectiveUserId = isTestMode ? 'test-user-123' : userId;
+    
+    try {
+        const userDoc = await getDoc(doc(db, 'users', effectiveUserId));
+        let isPremium = false;
+        let subscriptionDetails = null;
+        
+        if (userDoc.exists()) {
+            const userData = userDoc.data();
+            if (userData.subscription && 
+                userData.subscription.type === 'premium' && 
+                userData.subscription.active) {
+                
+                // Check if subscription is still valid (not expired)
+                const now = new Date();
+                const endDate = new Date(userData.subscription.endDate);
+                
+                if (now <= endDate) {
+                    isPremium = true;
+                    subscriptionDetails = {
+                        plan: userData.subscription.plan,
+                        startDate: userData.subscription.startDate,
+                        endDate: userData.subscription.endDate,
+                        questionLimit: userData.subscription.questionLimit
+                    };
+                } else {
+                    // Subscription expired, update the status
+                    try {
+                        await updateDoc(doc(db, 'users', userId), {
+                            'subscription.active': false
+                        });
+                    } catch (updateError) {
+                        console.error('Error updating expired subscription:', updateError);
+                    }
+                }
+            }
+        }
+        
+        res.json({ 
+            isPremium, 
+            subscriptionDetails,
+            userId: effectiveUserId,
+            testMode: isTestMode
+        });
+    } catch (error) {
+        console.error('Error checking premium status:', error);
+        res.status(500).json({ error: 'Internal server error' });
+    }
+});
+
+// API endpoint to verify payment and activate subscription
+app.post('/api/verify-payment', async (req, res) => {
+    try {
+        const { userId, paymentId, planType } = req.body;
+        const isTestMode = req.query.test === 'true';
+        
+        if ((!userId || !paymentId || !planType) && !isTestMode) {
+            return res.status(400).json({ error: 'Missing required parameters' });
+        }
+        
+        // Use default values for test mode
+        const effectiveUserId = isTestMode ? 'test-user-123' : userId;
+        const effectivePaymentId = paymentId || `test-payment-${Date.now()}`;
+        const effectivePlanType = planType || 'monthly';
+        
+        // Validate plan type
+        if (effectivePlanType !== 'monthly' && effectivePlanType !== 'annual') {
+            return res.status(400).json({ error: 'Invalid plan type' });
+        }
+        
+        // In a production environment, you would verify the payment with Stripe here
+        // For now, we'll assume the payment is valid and update the subscription
+        
+        const result = await updateUserSubscription(effectiveUserId, effectivePlanType, effectivePaymentId);
+        
+        if (result.success) {
+            res.json({ 
+                success: true, 
+                message: 'Subscription activated successfully',
+                plan: effectivePlanType,
+                userId: effectiveUserId,
+                testMode: isTestMode
+            });
+        } else {
+            res.status(400).json({ error: result.error || 'Payment verification failed' });
+        }
+    } catch (error) {
+        console.error('Error in payment verification:', error);
+        res.status(500).json({ error: 'Internal server error' });
     }
 });
 

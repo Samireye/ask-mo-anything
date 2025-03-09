@@ -1,0 +1,36 @@
+rules_version = '2';
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Special test user access - only for development environment
+    match /users/test-user-123 {
+      allow read, write: if true; // Allow unrestricted access to test user document
+    }
+    // Users collection - each user can only read/write their own data
+    match /users/{userId} {
+      allow read: if request.auth != null && request.auth.uid == userId;
+      allow write: if request.auth != null && request.auth.uid == userId;
+    }
+    
+    // Cache collection is readable by all authenticated users
+    match /questionCache/{document=**} {
+      allow read: if request.auth != null;
+      // Only allow writes from authenticated users with rate limiting
+      allow write: if request.auth != null
+        && (!resource.data.exists()
+            || (request.time.toMillis() - resource.data.timestamp > 300000)); // 5 min cooldown
+    }
+    
+    // Allow users to read and write their own data only
+    match /chatHistory/{document} {
+      allow read, write: if request.auth != null && request.auth.uid == resource.data.userId;
+      allow create: if request.auth != null && request.auth.uid == request.resource.data.userId;
+    }
+    
+    match /savedResponses/{document} {
+      allow read, write: if request.auth != null && request.auth.uid == resource.data.userId;
+      allow create: if request.auth != null && request.auth.uid == request.resource.data.userId;
+    }
+  }
+}

@@ -29,6 +29,7 @@
     "firebase": "^11.4.0",
     "firebase-admin": "^13.2.0",
     "moment-hijri": "^3.0.0",
+    "node-fetch": "^3.3.2",
     "openai": "^4.0.0"
   },
   "devDependencies": {

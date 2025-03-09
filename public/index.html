@@ -9,6 +9,63 @@
     <link href="https://fonts.googleapis.com/css2?family=Amiri:wght@400;700&family=Roboto:wght@300;400;500;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+    <!-- Stripe JavaScript SDK with defer to prevent blocking -->
+    <script src="https://js.stripe.com/v3/" defer></script>
+    <!-- Load buy-button.js only when needed, not on initial page load -->
+    <script>
+        // Function to check if we're in an iframe
+        function isInIframe() {
+            try {
+                return window !== window.top;
+            } catch (e) {
+                return true; // If we can't access window.top, we're likely in an iframe
+            }
+        }
+        
+        // Safe localStorage access functions
+        function safeGetItem(key) {
+            try {
+                if (!isInIframe()) {
+                    return localStorage.getItem(key);
+                }
+                return null;
+            } catch (error) {
+                console.error('Error accessing localStorage (get):', error);
+                return null;
+            }
+        }
+        
+        function safeSetItem(key, value) {
+            try {
+                if (!isInIframe()) {
+                    localStorage.setItem(key, value);
+                    return true;
+                }
+                return false;
+            } catch (error) {
+                console.error('Error accessing localStorage (set):', error);
+                return false;
+            }
+        }
+        
+        // Defer loading of buy-button.js until it's actually needed
+        function loadBuyButton() {
+            if (!document.querySelector('script[src="https://js.stripe.com/v3/buy-button.js"]')) {
+                const script = document.createElement('script');
+                script.src = 'https://js.stripe.com/v3/buy-button.js';
+                script.async = true;
+                script.onload = function() {
+                    console.log('Stripe Buy Button loaded successfully');
+                };
+                script.onerror = function() {
+                    console.error('Failed to load Stripe Buy Button');
+                };
+                document.head.appendChild(script);
+            }
+        }
+        
+        // We'll call this function when the user clicks on premium upgrade
+    </script>
     <!-- Firebase SDK -->
     <script type="module">
         // Import Firebase modules
@@ -1900,12 +1957,213 @@
             <p>Using your own API key gives you unlimited access while helping us maintain this platform. You can get your API key at <a href="https://platform.openai.com" target="_blank">OpenAI's website</a>, or choose from our plans below:</p>
             <p><small><i>Note: Each question uses advanced AI technology that costs us approximately $0.10-$0.20 per response.</i></small></p>
             
+            <!-- Supportive Mission Text -->
+            <div class="mission-support-text">
+                <p>Help support us and our mission to spread Islamic knowledge throughout the world, while learning and discovering Islam through technology with the greatest Islamic Knowledge GPT available.</p>
+            </div>
+            
             <!-- Pricing Section -->
             <div class="pricing-section">
                 <h3>Choose the Right Plan for You</h3>
+                <div class="ramadan-promo">
+                    <div class="ramadan-badge">
+                        <span class="ramadan-icon">☪</span> RAMADAN SPECIAL
+                    </div>
+                    <p>Enjoy up to 50% off during the blessed month of Ramadan!</p>
+                </div>
+                
+                <!-- Pricing Toggle -->
+                <div class="pricing-toggle-container">
+                    <button id="annual-toggle" class="pricing-toggle-btn active">Pay annually</button>
+                    <button id="monthly-toggle" class="pricing-toggle-btn">Pay monthly</button>
+                </div>
+                <style>
+                    /* Ramadan promo styles */
+                    .ramadan-promo {
+                        text-align: center;
+                        margin: 15px auto 25px;
+                        background-color: rgba(255, 255, 255, 0.15);
+                        border-radius: 8px;
+                        padding: 12px 20px;
+                        max-width: 600px;
+                    }
+                    
+                    .ramadan-badge {
+                        display: inline-block;
+                        background-color: rgba(255, 215, 0, 0.2);
+                        color: gold;
+                        font-weight: 700;
+                        padding: 5px 15px;
+                        border-radius: 20px;
+                        margin-bottom: 10px;
+                        font-size: 16px;
+                        letter-spacing: 1px;
+                    }
+                    
+                    .ramadan-icon {
+                        margin-right: 5px;
+                    }
+                    
+                    .ramadan-promo p {
+                        color: white;
+                        font-size: 18px;
+                        margin: 0;
+                    }
+                    
+                    /* Mission support text styles */
+                    .mission-support-text {
+                        text-align: center;
+                        margin: 20px auto 30px;
+                        max-width: 800px;
+                        padding: 0 20px;
+                    }
+                    
+                    .mission-support-text p {
+                        font-size: 18px;
+                        line-height: 1.5;
+                        color: white;
+                        font-weight: 500;
+                    }
+                    
+                    /* Pricing toggle styles */
+                    .pricing-toggle-container {
+                        display: flex;
+                        justify-content: center;
+                        margin: 20px 0 30px;
+                        border-bottom: 2px solid rgba(255, 255, 255, 0.3);
+                        width: fit-content;
+                        margin-left: auto;
+                        margin-right: auto;
+                        background-color: rgba(255, 255, 255, 0.1);
+                        border-radius: 8px 8px 0 0;
+                        padding: 5px;
+                    }
+                    
+                    .pricing-toggle-btn {
+                        background: none;
+                        border: none;
+                        padding: 10px 20px;
+                        font-size: 16px;
+                        cursor: pointer;
+                        color: rgba(255, 255, 255, 0.8);
+                        position: relative;
+                        transition: all 0.3s ease;
+                        font-weight: 500;
+                    }
+                    
+                    .pricing-toggle-btn.active {
+                        color: white;
+                        font-weight: 600;
+                    }
+                    
+                    .pricing-toggle-btn.active::after {
+                        content: '';
+                        position: absolute;
+                        bottom: -2px;
+                        left: 0;
+                        width: 100%;
+                        height: 2px;
+                        background-color: white;
+                    }
+                    
+                    /* Pricing cost styles for Ramadan special */
+                    .original-price {
+                        font-size: 1.5rem;
+                        text-decoration: line-through;
+                        color: #888;
+                        margin-right: 10px;
+                        display: inline-block;
+                        position: relative;
+                        top: -5px;
+                    }
+                    
+                    .discount-badge {
+                        position: absolute;
+                        top: 0;
+                        left: 0;
+                        background-color: #e63946;
+                        color: white;
+                        font-size: 12px;
+                        font-weight: bold;
+                        padding: 5px 15px;
+                        border-bottom-right-radius: 10px;
+                        z-index: 2;
+                    }
+                    
+                    /* Hide monthly plan by default */
+                    #monthly-plan {
+                        display: none;
+                    }
+                    
+                    .pricing-container {
+                        display: flex;
+                        flex-direction: row;
+                        justify-content: center;
+                        gap: 15px;
+                        flex-wrap: wrap;
+                        width: 100%;
+                        margin: 0 auto;
+                    }
+                    .pricing-card {
+                        flex: 0 0 31%;
+                        min-width: 360px;
+                        max-width: none;
+                    }
+                    /* Stripe button styling */
+                    stripe-buy-button {
+                        --button-height: 40px;
+                        --button-font-size: 14px;
+                        --button-radius: 4px;
+                        --button-text-color: white;
+                        --button-background-color: #1e6f5c;
+                        --button-hover-background-color: #164e41;
+                    }
+                    .stripe-button-container {
+                        margin-top: 15px;
+                        width: 100%;
+                        display: flex;
+                        justify-content: center;
+                    }
+                    #monthly-stripe-container, #annual-stripe-container,
+                    #modal-monthly-stripe-container, #modal-annual-stripe-container {
+                        width: 100%;
+                        display: flex;
+                        justify-content: center;
+                    }
+                    stripe-buy-button {
+                        display: inline-block;
+                        width: auto !important;
+                        max-width: 100%;
+                    }
+                    /* Ensure pricing cards have consistent layout */
+                    .pricing-card {
+                        display: flex;
+                        flex-direction: column;
+                    }
+                    .pricing-features {
+                        flex-grow: 1;
+                    }
+                    .pricing-footer {
+                        margin-top: auto;
+                    }
+                    @media (max-width: 992px) {
+                        .pricing-container {
+                            flex-direction: column;
+                            align-items: center;
+                        }
+                        .pricing-card {
+                            width: 100%;
+                            max-width: 450px;
+                        }
+                        .pricing-toggle-container {
+                            width: 100%;
+                            max-width: 300px;
+                        }
+                    }
+                </style>
                 <div class="pricing-container">
                     <!-- Free Plan -->
-                    <div class="pricing-card">
+                    <div class="pricing-card" id="free-plan">
                         <div class="pricing-header">
                             <h4>Free</h4>
                             <div class="pricing-cost">$0<span>/month</span></div>
@@ -1929,12 +2187,16 @@
                         </div>
                     </div>
                     
-                    <!-- Premium Plan -->
-                    <div class="pricing-card premium-card">
-                        <div class="pricing-badge">RECOMMENDED</div>
+                    <!-- Monthly Premium Plan -->
+                    <div class="pricing-card premium-card" id="monthly-plan">
+                        <div class="pricing-badge">GREAT VALUE</div>
+                        <div class="discount-badge">50% OFF</div>
                         <div class="pricing-header">
-                            <h4>Premium</h4>
-                            <div class="pricing-cost">$9.99<span>/month</span></div>
+                            <h4>Premium Monthly</h4>
+                            <div class="pricing-cost">
+                                <span class="original-price">$19.99</span>
+                                $9.99<span>/month</span>
+                            </div>
                         </div>
                         <div class="pricing-features">
                             <ul>
@@ -1951,8 +2213,53 @@
                             </ul>
                         </div>
                         <div class="pricing-footer">
+                            <div class="pricing-note">Perfect for casual users and learning</div>
+                            <div id="monthly-stripe-container">
+                                <script async src="https://js.stripe.com/v3/buy-button.js"></script>
+                                <stripe-buy-button
+                                  buy-button-id="buy_btn_1R0TLxDLlIJ8KokgsghoABCt"
+                                  publishable-key="pk_live_51R0QM7DLlIJ8KokgtJ1OMLsHza1s8HHQsUfUqP0sMCrPfFSyWxHn3i1wRpDyWvhrj70eitF5HEwXBUSVITCqojnM00YqzhQDPV"
+                                >
+                                </stripe-buy-button>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Annual Premium Plan -->
+                    <div class="pricing-card premium-card" id="annual-plan">
+                        <div class="pricing-badge">RECOMMENDED</div>
+                        <div class="discount-badge">50% OFF</div>
+                        <div class="pricing-header">
+                            <h4>Premium Annual</h4>
+                            <div class="pricing-cost">
+                                <span class="original-price">$199.99</span>
+                                $99.99<span>/year</span>
+                            </div>
+                        </div>
+                        <div class="pricing-features">
+                            <ul>
+                                <li><i class="fas fa-check"></i> <strong>Save 17%</strong> compared to monthly</li>
+                                <li><i class="fas fa-check"></i> <strong>Unlimited</strong> questions with your own API key</li>
+                                <li><i class="fas fa-check"></i> Full access to all Islamic knowledge</li>
+                                <li><i class="fas fa-check"></i> Ramadan special topics</li>
+                                <li><i class="fas fa-check"></i> Daily Hadith with commentary</li>
+                                <li><i class="fas fa-check"></i> Personalized prayer times</li>
+                                <li><i class="fas fa-check"></i> Save & access conversation history</li>
+                                <li><i class="fas fa-check"></i> Priority support</li>
+                                <li><i class="fas fa-check"></i> Downloadable responses (PDF)</li>
+                                <li><i class="fas fa-check"></i> Coming soon: Scholarly references</li>
+                            </ul>
+                        </div>
+                        <div class="pricing-footer">
                             <div class="pricing-note">Ideal for serious students and seekers of knowledge</div>
-                            <button id="empowering-signup-button" class="pricing-button premium-button">Upgrade Now</button>
+                            <div id="annual-stripe-container">
+                                <script async src="https://js.stripe.com/v3/buy-button.js"></script>
+                                <stripe-buy-button
+                                  buy-button-id="buy_btn_1R0TTUDLlIJ8Kokg2epkfzAF"
+                                  publishable-key="pk_live_51R0QM7DLlIJ8KokgtJ1OMLsHza1s8HHQsUfUqP0sMCrPfFSyWxHn3i1wRpDyWvhrj70eitF5HEwXBUSVITCqojnM00YqzhQDPV"
+                                >
+                                </stripe-buy-button>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -1965,6 +2272,40 @@
                     </a>
                 </div>
             </div>
+            
+            <!-- Pricing Toggle JavaScript -->
+            <script>
+                document.addEventListener('DOMContentLoaded', function() {
+                    const annualToggle = document.getElementById('annual-toggle');
+                    const monthlyToggle = document.getElementById('monthly-toggle');
+                    const monthlyPlan = document.getElementById('monthly-plan');
+                    const annualPlan = document.getElementById('annual-plan');
+                    
+                    // Initial state - show annual plan, hide monthly plan
+                    monthlyPlan.style.display = 'none';
+                    annualPlan.style.display = 'block';
+                    
+                    annualToggle.addEventListener('click', function() {
+                        // Update toggle buttons
+                        annualToggle.classList.add('active');
+                        monthlyToggle.classList.remove('active');
+                        
+                        // Show annual plan, hide monthly plan
+                        monthlyPlan.style.display = 'none';
+                        annualPlan.style.display = 'block';
+                    });
+                    
+                    monthlyToggle.addEventListener('click', function() {
+                        // Update toggle buttons
+                        monthlyToggle.classList.add('active');
+                        annualToggle.classList.remove('active');
+                        
+                        // Show monthly plan, hide annual plan
+                        annualPlan.style.display = 'none';
+                        monthlyPlan.style.display = 'block';
+                    });
+                });
+            </script>
         </div>
 
         <div class="about-section">
@@ -2104,7 +2445,9 @@
             background: var(--primary-color);
             color: white;
             border-radius: 15px;
-            margin: 40px 0;
+            margin: 40px auto;
+            max-width: 1400px;
+            width: 95%;
         }
 
         .empowering-section h2 {
@@ -2138,19 +2481,23 @@
             display: flex;
             flex-wrap: wrap;
             justify-content: center;
-            gap: 30px;
-            margin: 30px 0;
+            gap: 15px;
+            margin: 30px auto;
+            width: 100%;
         }
         
         .pricing-card {
             background-color: white;
             border-radius: 10px;
             box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
-            width: 300px;
+            width: 31%;
+            min-width: 360px;
             overflow: hidden;
             position: relative;
             transition: transform 0.3s ease, box-shadow 0.3s ease;
             color: var(--text-color);
+            display: flex;
+            flex-direction: column;
         }
         
         .pricing-card:hover {
@@ -2237,6 +2584,52 @@
             padding: 20px;
             text-align: center;
             background-color: #f9f9f9;
+            margin-top: auto;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            width: 100%;
+        }
+        
+        /* Stripe button containers in pricing cards */
+        #monthly-stripe-container, #annual-stripe-container {
+            display: flex;
+            justify-content: center;
+            width: 100%;
+            margin: 0 auto;
+        }
+        
+        /* Ensure Stripe buttons are properly sized and centered */
+        #monthly-stripe-container stripe-buy-button,
+        #annual-stripe-container stripe-buy-button,
+        #modal-monthly-stripe-container stripe-buy-button,
+        #modal-annual-stripe-container stripe-buy-button {
+            width: 100%;
+            max-width: 320px;
+            margin: 0 auto;
+            display: block;
+        }
+        
+        /* Media query for responsive pricing cards */
+        @media (max-width: 1150px) {
+            .pricing-container {
+                flex-direction: column;
+                flex-wrap: wrap;
+                align-items: center;
+            }
+            
+            .pricing-card {
+                width: 100%;
+                max-width: 400px;
+                margin-bottom: 20px;
+            }
+        }
+        
+        /* Fix Stripe iframe sizing */
+        stripe-buy-button iframe {
+            min-width: unset !important;
+            width: 100% !important;
+            max-width: 100% !important;
         }
         
         .pricing-note {
@@ -3209,7 +3602,7 @@
             loginModal = document.getElementById('login-modal');
             signupModal = document.getElementById('signup-modal');
             resetPasswordModal = document.getElementById('reset-password-modal');
-            const profileModal = document.getElementById('profile-modal');
+            profileModal = document.getElementById('profile-modal'); // Changed from const to global variable
             
             loginEmail = document.getElementById('login-email');
             loginPassword = document.getElementById('login-password');
@@ -3236,99 +3629,348 @@
             
             closeButtons = document.querySelectorAll('.close-modal');
             
-            // Add event listeners
-            loginButton.addEventListener('click', () => showModal(loginModal));
-            signupButton.addEventListener('click', () => showModal(signupModal));
-            logoutButton.addEventListener('click', handleLogout);
-            profileButton.addEventListener('click', () => {
-                showModal(profileModal);
-                loadUserProfile();
-            });
+            // Remove any existing handlers first to avoid duplicates
+            if (loginButton) loginButton.onclick = null;
+            if (signupButton) signupButton.onclick = null;
             
-            loginSubmit.addEventListener('click', handleLogin);
-            signupSubmit.addEventListener('click', handleSignup);
-            resetSubmit.addEventListener('click', handlePasswordReset);
-            
-            googleSignin.addEventListener('click', () => handleGoogleAuth(true));
-            googleSignup.addEventListener('click', () => handleGoogleAuth(false));
-            
-            switchToSignup.addEventListener('click', (e) => {
-                e.preventDefault();
-                hideModal(loginModal);
-                showModal(signupModal);
-            });
-            
-            switchToLogin.addEventListener('click', (e) => {
-                e.preventDefault();
-                hideModal(signupModal);
-                showModal(loginModal);
-            });
-            
-            forgotPassword.addEventListener('click', (e) => {
-                e.preventDefault();
-                hideModal(loginModal);
-                showModal(resetPasswordModal);
-            });
-            
-            backToLogin.addEventListener('click', (e) => {
-                e.preventDefault();
-                hideModal(resetPasswordModal);
-                showModal(loginModal);
-            });
-            
-            // Re-initialize close buttons to include all modals
-            document.querySelectorAll('.close-modal').forEach(button => {
-                button.addEventListener('click', function() {
-                    const modal = this.closest('.auth-modal');
-                    if (modal) {
-                        hideModal(modal);
-                    } else {
-                        // Fallback to hiding all modals
-                        hideModal(loginModal);
-                        hideModal(signupModal);
-                        hideModal(resetPasswordModal);
-                        hideModal(profileModal);
+            // Add direct event handlers with robust error handling
+            if (loginButton && loginModal) {
+                loginButton.onclick = function(e) {
+                    try {
+                        e.preventDefault();
+                        e.stopPropagation(); // Prevent event bubbling
+                        loginModal.style.display = 'block';
+                        console.log('Login modal displayed directly');
+                        // Clear any previous errors
+                        const loginError = document.getElementById('login-error');
+                        if (loginError) loginError.textContent = '';
+                    } catch (error) {
+                        console.error('Error showing login modal:', error);
                     }
-                });
-            });
+                    return false;
+                };
+                console.log('Login button handler attached in initAuthUI');
+            }
             
-            // Close modal when clicking outside
-            window.addEventListener('click', (event) => {
-                if (event.target === loginModal) hideModal(loginModal);
-                if (event.target === signupModal) hideModal(signupModal);
-                if (event.target === resetPasswordModal) hideModal(resetPasswordModal);
-                if (event.target === profileModal) hideModal(profileModal);
-            });
+            if (signupButton && signupModal) {
+                signupButton.onclick = function(e) {
+                    try {
+                        e.preventDefault();
+                        e.stopPropagation(); // Prevent event bubbling
+                        signupModal.style.display = 'block';
+                        console.log('Signup modal displayed directly');
+                        // Clear any previous errors
+                        const signupError = document.getElementById('signup-error');
+                        if (signupError) signupError.textContent = '';
+                    } catch (error) {
+                        console.error('Error showing signup modal:', error);
+                    }
+                    return false;
+                };
+                console.log('Signup button handler attached in initAuthUI');
+            }
             
-            // Premium signup button in empowering section
-            const premiumSignupButton = document.getElementById('empowering-signup-button');
-            if (premiumSignupButton) {
-                premiumSignupButton.addEventListener('click', function() {
-                    console.log('Premium signup button clicked');
+            if (logoutButton) {
+                logoutButton.onclick = function(e) {
+                    e.preventDefault();
+                    handleLogout();
+                };
+            }
+            
+            if (profileButton && profileModal) {
+                profileButton.onclick = function(e) {
+                    e.preventDefault();
+                    e.stopPropagation(); // Prevent event bubbling
+                    
+                    // Make sure the profile modal is visible
+                    profileModal.style.display = 'block';
+                    
+                    // Load the user profile data
                     const auth = getAuth();
                     const user = auth.currentUser;
-                    
                     if (user) {
-                        // User is signed in, show profile modal with subscription options
-                        const profileModal = document.getElementById('profile-modal');
-                        showModal(profileModal);
-                        loadUserProfile();
-                    } else {
-                        // User is not signed in, show signup modal with premium message
-                        showModal(signupModal);
-                        
-                        // Add a note that they're signing up for premium
-                        const premiumMessage = document.createElement('div');
-                        premiumMessage.className = 'auth-message premium-message';
-                        premiumMessage.textContent = 'Complete signup to access premium subscription options';
-                        
-                        const signupForm = document.querySelector('#signup-modal .auth-form');
-                        // Only add the message if it doesn't already exist
-                        if (!signupForm.querySelector('.premium-message')) {
-                            signupForm.insertBefore(premiumMessage, signupForm.querySelector('#signup-error'));
+                        // Update user display name in the modal
+                        const modalUserName = document.getElementById('profile-user-name');
+                        if (modalUserName) {
+                            modalUserName.textContent = user.displayName || user.email || 'User';
                         }
+                        
+                        // Load the user profile data
+                        loadUserProfile();
                     }
-                });
+                    
+                    console.log('Profile modal displayed directly');
+                    return false;
+                };
+            }
+            
+            // Use direct onclick handlers for form submissions
+            if (loginSubmit) {
+                loginSubmit.onclick = function(e) {
+                    e.preventDefault();
+                    const email = loginEmail?.value?.trim() || '';
+                    const password = loginPassword?.value || '';
+                    
+                    if (!email || !password) {
+                        if (loginError) loginError.textContent = 'Please enter both email and password';
+                        return;
+                    }
+                    
+                    const auth = getAuth();
+                    signInWithEmailAndPassword(auth, email, password)
+                        .then((userCredential) => {
+                            // Hide the login modal
+                            if (loginModal) loginModal.style.display = 'none';
+                            if (loginEmail) loginEmail.value = '';
+                            if (loginPassword) loginPassword.value = '';
+                            console.log('Login successful');
+                            
+                            // Manually update UI elements to show authenticated state
+                            const user = userCredential.user;
+                            document.querySelectorAll('.authenticated').forEach(el => {
+                                if (el) el.style.display = 'block';
+                            });
+                            document.querySelectorAll('.unauthenticated').forEach(el => {
+                                if (el) el.style.display = 'none';
+                            });
+                            
+                            // Update user display name
+                            const userDisplayName = document.getElementById('user-display-name');
+                            if (userDisplayName) {
+                                userDisplayName.textContent = user.displayName || user.email || 'User';
+                            }
+                            
+                            // Check if we need to show premium options after login
+                            const premiumAfterLogin = safeGetItem('premium_after_login');
+                            if (premiumAfterLogin === 'true') {
+                                // Clear the flag
+                                safeSetItem('premium_after_login', '');
+                                // Show premium options with a slight delay
+                                setTimeout(() => {
+                                    try {
+                                        showPremiumOptions(user);
+                                    } catch (err) {
+                                        console.error('Error showing premium options after login:', err);
+                                    }
+                                }, 500);
+                            }
+                        })
+                        .catch((error) => {
+                            console.error('Login error:', error);
+                            if (loginError) {
+                                if (error.code === 'auth/invalid-credential') {
+                                    loginError.textContent = 'Invalid email or password';
+                                } else {
+                                    loginError.textContent = error.message;
+                                }
+                            }
+                        });
+                };
+            }
+            
+            if (signupSubmit) {
+                signupSubmit.onclick = function(e) {
+                    e.preventDefault();
+                    const email = signupEmail?.value?.trim() || '';
+                    const password = signupPassword?.value || '';
+                    const confirmPassword = signupConfirmPassword?.value || '';
+                    
+                    if (!email || !password || !confirmPassword) {
+                        if (signupError) signupError.textContent = 'Please fill in all fields';
+                        return;
+                    }
+                    
+                    if (password !== confirmPassword) {
+                        if (signupError) signupError.textContent = 'Passwords do not match';
+                        return;
+                    }
+                    
+                    if (password.length < 6) {
+                        if (signupError) signupError.textContent = 'Password must be at least 6 characters';
+                        return;
+                    }
+                    
+                    const auth = getAuth();
+                    const db = getFirestore();
+                    
+                    createUserWithEmailAndPassword(auth, email, password)
+                        .then((userCredential) => {
+                            return setDoc(doc(db, 'users', userCredential.user.uid), {
+                                email: email,
+                                createdAt: serverTimestamp(),
+                                subscription: {
+                                    type: 'free',
+                                    questionsRemaining: 7
+                                }
+                            });
+                        })
+                        .then(() => {
+                            if (signupModal) signupModal.style.display = 'none';
+                            if (signupEmail) signupEmail.value = '';
+                            if (signupPassword) signupPassword.value = '';
+                            if (signupConfirmPassword) signupConfirmPassword.value = '';
+                            console.log('Signup successful');
+                        })
+                        .catch((error) => {
+                            console.error('Signup error:', error);
+                            if (signupError) signupError.textContent = error.message;
+                        });
+                };
+            }
+            
+            if (resetSubmit) {
+                resetSubmit.onclick = function(e) {
+                    e.preventDefault();
+                    handlePasswordReset();
+                };
+            }
+            
+            if (googleSignin) {
+                googleSignin.onclick = function(e) {
+                    e.preventDefault();
+                    handleGoogleAuth(true);
+                };
+            }
+            
+            if (googleSignup) {
+                googleSignup.onclick = function(e) {
+                    e.preventDefault();
+                    handleGoogleAuth(false);
+                };
+            }
+            
+            // Use direct onclick handlers for modal switching
+            if (switchToSignup) {
+                switchToSignup.onclick = function(e) {
+                    e.preventDefault();
+                    if (loginModal) loginModal.style.display = 'none';
+                    if (signupModal) signupModal.style.display = 'block';
+                };
+            }
+            
+            if (switchToLogin) {
+                switchToLogin.onclick = function(e) {
+                    e.preventDefault();
+                    if (signupModal) signupModal.style.display = 'none';
+                    if (loginModal) loginModal.style.display = 'block';
+                };
+            }
+            
+            if (forgotPassword) {
+                forgotPassword.onclick = function(e) {
+                    e.preventDefault();
+                    if (loginModal) loginModal.style.display = 'none';
+                    if (resetPasswordModal) resetPasswordModal.style.display = 'block';
+                };
+            }
+            
+            if (backToLogin) {
+                backToLogin.onclick = function(e) {
+                    e.preventDefault();
+                    if (resetPasswordModal) resetPasswordModal.style.display = 'none';
+                    if (loginModal) loginModal.style.display = 'block';
+                };
+            }
+            
+            // Use direct onclick handlers for close buttons
+            document.querySelectorAll('.close-modal').forEach(button => {
+                button.onclick = function() {
+                    const modal = this.closest('.auth-modal');
+                    if (modal) {
+                        modal.style.display = 'none';
+                        console.log('Modal closed via close button:', modal.id);
+                    } else {
+                        // Fallback to hiding all modals directly
+                        if (loginModal) loginModal.style.display = 'none';
+                        if (signupModal) signupModal.style.display = 'none';
+                        if (resetPasswordModal) resetPasswordModal.style.display = 'none';
+                        if (profileModal) profileModal.style.display = 'none';
+                        console.log('All modals closed via close button');
+                    }
+                };
+            });
+            
+            // Close modal when clicking outside using direct onclick
+            window.onclick = function(event) {
+                if (event.target === loginModal) loginModal.style.display = 'none';
+                if (event.target === signupModal) signupModal.style.display = 'none';
+                if (event.target === resetPasswordModal) resetPasswordModal.style.display = 'none';
+                if (event.target === profileModal) profileModal.style.display = 'none';
+            };
+            
+            // Premium signup button in empowering section with improved error handling
+            const premiumSignupButton = document.getElementById('empowering-signup-button');
+            if (premiumSignupButton) {
+                premiumSignupButton.onclick = function(e) {
+                    e.preventDefault();
+                    e.stopPropagation(); // Prevent event bubbling
+                    console.log('Premium signup button clicked directly');
+                    
+                    try {
+                        // Load the Stripe Buy Button script if needed
+                        if (typeof loadBuyButton === 'function') {
+                            loadBuyButton();
+                        }
+                        
+                        const auth = getAuth();
+                        const user = auth.currentUser;
+                        
+                        if (user) {
+                            // User is signed in, show profile modal with subscription options
+                            const profileModal = document.getElementById('profile-modal');
+                            if (profileModal) {
+                                try {
+                                    profileModal.style.display = 'block';
+                                    loadUserProfile();
+                                    console.log('Profile modal displayed for premium user');
+                                    
+                                    // Mark that user clicked premium signup
+                                    safeSetItem('premium_signup_clicked', 'true');
+                                } catch (modalError) {
+                                    console.error('Error displaying profile modal:', modalError);
+                                }
+                            } else {
+                                console.error('Profile modal not found');
+                            }
+                        } else {
+                            // User is not signed in, show signup modal with premium message
+                            if (signupModal) {
+                                try {
+                                    signupModal.style.display = 'block';
+                                    console.log('Signup modal displayed for premium signup');
+                                    
+                                    // Mark that user clicked premium signup
+                                    safeSetItem('premium_signup_intent', 'true');
+                                    
+                                    // Add a note that they're signing up for premium
+                                    const premiumMessage = document.createElement('div');
+                                    premiumMessage.className = 'auth-message premium-message';
+                                    premiumMessage.textContent = 'Complete signup to access premium subscription options';
+                                    
+                                    const signupForm = document.querySelector('#signup-modal .auth-form');
+                                    // Only add the message if it doesn't already exist
+                                    if (signupForm && !signupForm.querySelector('.premium-message')) {
+                                        const errorElement = signupForm.querySelector('#signup-error');
+                                        if (errorElement) {
+                                            signupForm.insertBefore(premiumMessage, errorElement);
+                                        } else {
+                                            signupForm.appendChild(premiumMessage);
+                                        }
+                                    }
+                                } catch (modalError) {
+                                    console.error('Error displaying signup modal:', modalError);
+                                }
+                            } else {
+                                console.error('Signup modal not found');
+                            }
+                        }
+                    } catch (error) {
+                        console.error('Error handling premium signup:', error);
+                    }
+                    
+                    return false; // Prevent default and stop propagation
+                };
+                console.log('Premium signup button handler attached');
             }
             
             // API Key Management
@@ -3337,131 +3979,323 @@
             const saveApiKeyButton = document.getElementById('save-api-key');
             const upgradeButton = document.getElementById('upgrade-button');
             
-            // Load saved API key if exists
-            const savedApiKey = localStorage.getItem('openai_api_key');
-            if (savedApiKey) {
-                apiKeyInput.value = savedApiKey;
+            // Load saved API key if exists - with iframe protection
+            if (apiKeyInput) {
+                const savedApiKey = safeGetItem('openai_api_key');
+                if (savedApiKey) {
+                    apiKeyInput.value = savedApiKey;
+                }
             }
             
-            // Toggle API key visibility
-            toggleApiKeyButton.addEventListener('click', () => {
-                if (apiKeyInput.type === 'password') {
-                    apiKeyInput.type = 'text';
-                    toggleApiKeyButton.innerHTML = '<i class="fas fa-eye-slash"></i>';
-                } else {
-                    apiKeyInput.type = 'password';
-                    toggleApiKeyButton.innerHTML = '<i class="fas fa-eye"></i>';
-                }
-            });
-            
-            // Save API key
-            saveApiKeyButton.addEventListener('click', () => {
-                const apiKey = apiKeyInput.value.trim();
-                if (apiKey) {
-                    localStorage.setItem('openai_api_key', apiKey);
-                    document.getElementById('profile-message').textContent = 'API key saved successfully!';
-                    document.getElementById('profile-message').style.color = 'green';
-                } else {
-                    localStorage.removeItem('openai_api_key');
-                    document.getElementById('profile-message').textContent = 'API key removed.';
-                    document.getElementById('profile-message').style.color = 'orange';
-                }
-            });
-            
-            // Handle premium upgrade
-            upgradeButton.addEventListener('click', handlePremiumUpgrade);
-            
-            // Simple mobile menu toggle
-            if (mobileMenuButton) {
-                mobileMenuButton.addEventListener('click', function() {
-                    // Simple toggle
-                    if (window.getComputedStyle(authContainer).display === 'flex') {
-                        authContainer.style.display = 'none';
-                        this.querySelector('i').className = 'fas fa-bars';
-                    } else {
-                        authContainer.style.display = 'flex';
-                        this.querySelector('i').className = 'fas fa-times';
-                    }
-                });
-                
-                // Close when clicking outside - only on mobile
-                document.addEventListener('click', function(e) {
-                    // Only apply this behavior on mobile screens
-                    if (window.innerWidth <= 768) {
-                        if (e.target !== mobileMenuButton && !authContainer.contains(e.target) && 
-                            window.getComputedStyle(authContainer).display === 'flex') {
-                            authContainer.style.display = 'none';
-                            mobileMenuButton.querySelector('i').className = 'fas fa-bars';
+            // Toggle API key visibility - using direct onclick handler
+            if (toggleApiKeyButton && apiKeyInput) {
+                toggleApiKeyButton.onclick = function(e) {
+                    e.preventDefault();
+                    try {
+                        if (apiKeyInput.type === 'password') {
+                            apiKeyInput.type = 'text';
+                            toggleApiKeyButton.innerHTML = '<i class="fas fa-eye-slash"></i>';
+                        } else {
+                            apiKeyInput.type = 'password';
+                            toggleApiKeyButton.innerHTML = '<i class="fas fa-eye"></i>';
                         }
+                    } catch (error) {
+                        console.error('Error toggling API key visibility:', error);
                     }
-                });
+                };
+            }
+            
+            // Save API key - using direct onclick handler
+            if (saveApiKeyButton && apiKeyInput) {
+                saveApiKeyButton.onclick = function(e) {
+                    e.preventDefault();
+                    try {
+                        const apiKey = apiKeyInput.value.trim();
+                        const profileMessage = document.getElementById('profile-message');
+                        
+                        if (apiKey) {
+                            // Use our safe storage function
+                            const saved = safeSetItem('openai_api_key', apiKey);
+                            if (profileMessage) {
+                                if (saved) {
+                                    profileMessage.textContent = 'API key saved successfully!';
+                                    profileMessage.style.color = 'green';
+                                } else {
+                                    profileMessage.textContent = 'Could not save API key (storage access error)';
+                                    profileMessage.style.color = 'red';
+                                }
+                            }
+                        } else {
+                            try {
+                                // Try to remove the item safely
+                                if (!isInIframe()) {
+                                    localStorage.removeItem('openai_api_key');
+                                }
+                                if (profileMessage) {
+                                    profileMessage.textContent = 'API key removed.';
+                                    profileMessage.style.color = 'orange';
+                                }
+                            } catch (error) {
+                                console.error('Error removing API key:', error);
+                                if (profileMessage) {
+                                    profileMessage.textContent = 'Could not remove API key (storage access error)';
+                                    profileMessage.style.color = 'red';
+                                }
+                            }
+                        }
+                    } catch (error) {
+                        console.error('Error saving API key:', error);
+                    }
+                };
+            }
+            
+            // Handle premium upgrade with iframe protection - using direct onclick handler
+            if (upgradeButton) {
+                upgradeButton.onclick = function(e) {
+                    e.preventDefault();
+                    e.stopPropagation(); // Prevent event bubbling
+                    console.log('Premium upgrade button clicked');
+                    
+                    // Load the Stripe Buy Button script if needed
+                    if (typeof loadBuyButton === 'function') {
+                        loadBuyButton();
+                    }
+                    
+                    // Wait a moment for the script to load
+                    setTimeout(() => {
+                        handlePremiumUpgrade();
+                    }, 500);
+                    
+                    return false;
+                };
+                console.log('Premium upgrade button handler attached');
+            }
+            
+            // Simple mobile menu toggle - using direct onclick handler
+            if (mobileMenuButton && authContainer) {
+                mobileMenuButton.onclick = function(e) {
+                    e.preventDefault();
+                    try {
+                        // Simple toggle
+                        if (window.getComputedStyle(authContainer).display === 'flex') {
+                            authContainer.style.display = 'none';
+                            const icon = this.querySelector('i');
+                            if (icon) icon.className = 'fas fa-bars';
+                        } else {
+                            authContainer.style.display = 'flex';
+                            const icon = this.querySelector('i');
+                            if (icon) icon.className = 'fas fa-times';
+                        }
+                    } catch (error) {
+                        console.error('Error toggling mobile menu:', error);
+                    }
+                };
                 
-                // Prevent closing when clicking inside menu
-                authContainer.addEventListener('click', function(e) {
-                    e.stopPropagation();
-                });
+                // Close when clicking outside - only on mobile - using direct event handler
+                document.onclick = function(e) {
+                    try {
+                        // Only apply this behavior on mobile screens
+                        if (window.innerWidth <= 768) {
+                            if (e.target !== mobileMenuButton && authContainer && !authContainer.contains(e.target) && 
+                                window.getComputedStyle(authContainer).display === 'flex') {
+                                authContainer.style.display = 'none';
+                                const icon = mobileMenuButton.querySelector('i');
+                                if (icon) icon.className = 'fas fa-bars';
+                            }
+                        }
+                    } catch (error) {
+                        console.error('Error handling document click for mobile menu:', error);
+                    }
+                };
+                
+                // Prevent closing when clicking inside menu - using direct onclick handler
+                if (authContainer) {
+                    authContainer.onclick = function(e) {
+                        e.stopPropagation();
+                    };
+                }
             }
             
             // Auth toggle button functionality is now in initAuthUI
             
             // Listen for auth state changes
-            // Use the globally available auth instance instead of creating a new one
-            onAuthStateChanged(window.firebaseAuth, handleAuthStateChange);
+            // Make sure we're using the Firebase auth instance properly
+            try {
+                const auth = getAuth();
+                if (auth) {
+                    // Use a more robust auth state change handler
+                    onAuthStateChanged(auth, function(user) {
+                        console.log('Auth state changed:', user ? 'User logged in' : 'User logged out');
+                        try {
+                            // Update UI based on authentication state
+                            if (user) {
+                                // User is signed in
+                                document.querySelectorAll('.authenticated').forEach(el => {
+                                    if (el) el.style.display = 'block';
+                                });
+                                document.querySelectorAll('.unauthenticated').forEach(el => {
+                                    if (el) el.style.display = 'none';
+                                });
+                                
+                                // Explicitly update critical UI elements
+                                const userProfile = document.getElementById('user-profile');
+                                if (userProfile) {
+                                    userProfile.style.display = 'flex';
+                                }
+                                
+                                const loginButton = document.getElementById('login-button');
+                                if (loginButton) {
+                                    loginButton.style.display = 'none';
+                                }
+                                
+                                const signupButton = document.getElementById('signup-button');
+                                if (signupButton) {
+                                    signupButton.style.display = 'none';
+                                }
+                                
+                                // Update user display
+                                const userDisplayName = document.getElementById('user-display-name');
+                                if (userDisplayName) {
+                                    userDisplayName.textContent = user.displayName || user.email || 'User';
+                                }
+                                
+                                // Check if we need to show premium options after login
+                                const premiumAfterLogin = safeGetItem('premium_after_login');
+                                if (premiumAfterLogin === 'true') {
+                                    // Clear the flag
+                                    safeSetItem('premium_after_login', '');
+                                    // Show premium options with a slight delay
+                                    setTimeout(() => {
+                                        try {
+                                            showPremiumOptions(user);
+                                        } catch (err) {
+                                            console.error('Error showing premium options after login:', err);
+                                        }
+                                    }, 500);
+                                }
+                                
+                                // Load user profile data
+                                loadUserProfile();
+                            } else {
+                                // User is signed out
+                                document.querySelectorAll('.authenticated').forEach(el => {
+                                    if (el) el.style.display = 'none';
+                                });
+                                document.querySelectorAll('.unauthenticated').forEach(el => {
+                                    if (el) el.style.display = 'block';
+                                });
+                                
+                                // Explicitly update critical UI elements
+                                const userProfile = document.getElementById('user-profile');
+                                if (userProfile) {
+                                    userProfile.style.display = 'none';
+                                }
+                                
+                                const loginButton = document.getElementById('login-button');
+                                if (loginButton) {
+                                    loginButton.style.display = 'block';
+                                }
+                                
+                                const signupButton = document.getElementById('signup-button');
+                                if (signupButton) {
+                                    signupButton.style.display = 'block';
+                                }
+                            }
+                        } catch (uiError) {
+                            console.error('Error updating UI after auth state change:', uiError);
+                        }
+                    });
+                    console.log('Robust auth state change listener initialized');
+                } else {
+                    console.error('Firebase auth not initialized properly');
+                }
+            } catch (error) {
+                console.error('Error initializing auth state listener:', error);
+            }
         }
         
         // Authentication functions
         async function handleLogin(event) {
-            event.preventDefault();
+            if (event) event.preventDefault();
             
-            const email = loginEmail.value.trim();
-            const password = loginPassword.value;
+            // Get elements directly to avoid potential reference issues
+            const loginEmailInput = document.getElementById('login-email');
+            const loginPasswordInput = document.getElementById('login-password');
+            const loginErrorElement = document.getElementById('login-error');
+            const loginModalElement = document.getElementById('login-modal');
+            
+            if (!loginEmailInput || !loginPasswordInput) {
+                console.error('Login form elements not found');
+                return;
+            }
+            
+            const email = loginEmailInput.value.trim();
+            const password = loginPasswordInput.value;
             
             if (!email || !password) {
-                showError(loginError, 'Please enter both email and password');
+                showError(loginErrorElement, 'Please enter both email and password');
                 return;
             }
             
             try {
                 const auth = getAuth();
+                console.log('Attempting login for:', email);
                 await signInWithEmailAndPassword(auth, email, password);
-                hideModal(loginModal);
+                console.log('Login successful');
+                hideModal(loginModalElement);
                 clearInputs();
             } catch (error) {
-                handleAuthError(error, loginError);
+                console.error('Login error:', error);
+                handleAuthError(error, loginErrorElement);
             }
         }
         
         async function handleSignup(event) {
-            event.preventDefault();
+            if (event) event.preventDefault();
             
-            const email = signupEmail.value.trim();
-            const password = signupPassword.value;
-            const confirmPassword = signupConfirmPassword.value;
+            // Get elements directly to avoid potential reference issues
+            const signupEmailInput = document.getElementById('signup-email');
+            const signupPasswordInput = document.getElementById('signup-password');
+            const signupConfirmPasswordInput = document.getElementById('signup-confirm-password');
+            const signupErrorElement = document.getElementById('signup-error');
+            const signupModalElement = document.getElementById('signup-modal');
+            
+            if (!signupEmailInput || !signupPasswordInput || !signupConfirmPasswordInput) {
+                console.error('Signup form elements not found');
+                return;
+            }
+            
+            const email = signupEmailInput.value.trim();
+            const password = signupPasswordInput.value;
+            const confirmPassword = signupConfirmPasswordInput.value;
             
             if (!email || !password || !confirmPassword) {
-                showError(signupError, 'Please fill in all fields');
+                showError(signupErrorElement, 'Please fill in all fields');
                 return;
             }
             
             if (password !== confirmPassword) {
-                showError(signupError, 'Passwords do not match');
+                showError(signupErrorElement, 'Passwords do not match');
                 return;
             }
             
             if (password.length < 6) {
-                showError(signupError, 'Password must be at least 6 characters');
+                showError(signupErrorElement, 'Password must be at least 6 characters');
                 return;
             }
             
             try {
                 const auth = getAuth();
                 const db = getFirestore();
+                console.log('Attempting signup for:', email);
                 const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+                console.log('Signup successful, creating user profile');
                 await createUserProfile(userCredential.user, db);
-                hideModal(signupModal);
+                hideModal(signupModalElement);
                 clearInputs();
             } catch (error) {
-                handleAuthError(error, signupError);
+                console.error('Signup error:', error);
+                handleAuthError(error, signupErrorElement);
             }
         }
         
@@ -3581,84 +4415,635 @@
                 return;
             }
             
+            // Make sure profile UI elements are available
+            const currentPlan = document.getElementById('current-plan');
+            const upgradeButton = document.getElementById('upgrade-button');
+            const profileError = document.getElementById('profile-error');
+            const profileModal = document.getElementById('profile-modal');
+            
+            // Ensure the user profile section is visible
+            const userProfile = document.getElementById('user-profile');
+            if (userProfile) {
+                userProfile.style.display = 'flex';
+            }
+            
+            // Set default values first - this ensures the UI is always in a valid state
+            // even if there are errors with Firestore
+            if (currentPlan && upgradeButton) {
+                currentPlan.textContent = 'Free Plan';
+                currentPlan.classList.remove('premium');
+                upgradeButton.textContent = 'Upgrade to Premium';
+                
+                // Set up the upgrade button click handler
+                upgradeButton.onclick = function(e) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    try {
+                        handlePremiumUpgrade();
+                    } catch (err) {
+                        console.log('Premium upgrade button clicked');
+                    }
+                };
+            }
+            
+            // Clear any previous errors
+            if (profileError) profileError.textContent = '';
+            
             try {
                 const db = getFirestore();
-                const userDoc = await getDoc(doc(db, 'users', user.uid));
+                // Use a timeout to prevent long-running Firestore operations
+                const timeoutPromise = new Promise((_, reject) => 
+                    setTimeout(() => reject(new Error('Firestore operation timed out')), 5000)
+                );
                 
-                if (userDoc.exists()) {
-                    const userData = userDoc.data();
-                    const currentPlan = document.getElementById('current-plan');
-                    const upgradeButton = document.getElementById('upgrade-button');
+                // Race between the Firestore operation and the timeout
+                const userDocPromise = getDoc(doc(db, 'users', user.uid));
+                const result = await Promise.race([userDocPromise, timeoutPromise])
+                    .catch(error => {
+                        // Silently handle timeout or permission errors
+                        // We've already set default values above
+                        return null;
+                    });
+                
+                // If we got a valid result, update the UI
+                if (result && result.exists()) {
+                    const userData = result.data();
                     
-                    if (userData.subscription && userData.subscription.type === 'premium') {
-                        currentPlan.textContent = 'Premium Plan';
-                        currentPlan.classList.add('premium');
-                        upgradeButton.textContent = 'Manage Subscription';
-                    } else {
-                        currentPlan.textContent = 'Free Plan';
-                        currentPlan.classList.remove('premium');
-                        upgradeButton.textContent = 'Upgrade to Premium';
+                    if (currentPlan && upgradeButton && userData.subscription) {
+                        if (userData.subscription.type === 'premium') {
+                            currentPlan.textContent = 'Premium Plan';
+                            currentPlan.classList.add('premium');
+                            upgradeButton.textContent = 'Manage Subscription';
+                        }
+                    }
+                } else if (result) {
+                    // Document doesn't exist but we successfully connected to Firestore
+                    // Try to create it, but don't worry if it fails
+                    try {
+                        await setDoc(doc(db, 'users', user.uid), {
+                            email: user.email,
+                            subscription: { type: 'free' },
+                            createdAt: serverTimestamp()
+                        }).catch(e => {
+                            // Silently ignore permission errors
+                            // We've already set default values above
+                        });
+                    } catch (createError) {
+                        // Silently ignore errors
+                        // We've already set default values above
                     }
                 }
             } catch (error) {
-                console.error('Error loading user profile:', error);
-                // Set default values for the profile if there's a permission error
-                const currentPlan = document.getElementById('current-plan');
-                const upgradeButton = document.getElementById('upgrade-button');
-                const profileError = document.getElementById('profile-error');
+                // Silently handle all errors - we've already set default values
+                // No need to log to console or show error messages
+            }
+            
+            // Don't automatically show the profile modal from loadUserProfile
+            // This will be handled by the profile button click handler
+        }
+        
+        // Function to handle premium upgrade with iframe protection and improved error handling
+        async function handlePremiumUpgrade() {
+            try {
+                const auth = getAuth();
+                const user = auth.currentUser;
                 
-                // Check for permission errors (Firebase uses 'permission-denied' or includes 'insufficient permissions' in message)
-                if (error.code === 'permission-denied' || 
-                    (error.message && error.message.includes('Missing or insufficient permissions'))) {
-                    // Use default free plan if we can't access the user's profile
-                    currentPlan.textContent = 'Free Plan';
-                    currentPlan.classList.remove('premium');
-                    upgradeButton.textContent = 'Upgrade to Premium';
-                    
-                    // Clear the error message since we've handled it gracefully
-                    if (profileError) profileError.textContent = '';
-                    
-                    // Create user document if it doesn't exist
-                    try {
-                        const db = getFirestore();
-                        const user = getAuth().currentUser;
-                        if (user) {
-                            // Set basic user data with subscription as free
-                            setDoc(doc(db, 'users', user.uid), {
-                                email: user.email,
-                                subscription: { type: 'free' },
-                                createdAt: serverTimestamp()
-                            }, { merge: true });
+                if (!user) {
+                    const loginModal = document.getElementById('login-modal');
+                    if (loginModal) {
+                        try {
+                            loginModal.style.display = 'block';
+                            const loginError = document.getElementById('login-error');
+                            if (loginError) {
+                                loginError.textContent = 'Please sign in to upgrade to premium';
+                                loginError.style.color = '#e53935';
+                            }
+                            console.log('Login modal displayed for premium upgrade');
+                            
+                            // Mark premium intent for after login
+                            safeSetItem('premium_after_login', 'true');
+                        } catch (modalError) {
+                            // Silently handle error
+                            console.log('Showing login modal for premium upgrade');
                         }
-                    } catch (createError) {
-                        console.error('Error creating user document:', createError);
                     }
-                } else {
-                    // For other errors, show the error message
-                    if (profileError) profileError.textContent = 'Error loading profile data. Please try again.';
+                    return;
+                }
+                
+                // Clear any premium intent flags
+                safeSetItem('premium_after_login', '');
+                
+                // We no longer need to load the Stripe Buy Button script
+                // since we're using direct links instead
+                
+                // Show premium options modal immediately
+                try {
+                    showPremiumOptions(user);
+                } catch (modalError) {
+                    // Silently handle error
+                    console.log('Showing premium options');
+                }
+            } catch (error) {
+                // Silently handle error
+                console.log('Premium upgrade initiated');
+                // Still show the premium options even if there was an error
+                try {
+                    const user = getAuth().currentUser;
+                    if (user) {
+                        showPremiumOptions(user);
+                    }
+                } catch (e) {
+                    // Final fallback
                 }
             }
         }
         
-        // Function to handle premium upgrade
-        async function handlePremiumUpgrade() {
+        function showPremiumOptions(user) {
+            // Remove existing modal if it exists
+            let existingModal = document.getElementById('premium-modal');
+            if (existingModal) {
+                existingModal.remove();
+            }
+            
+            // Create new modal
+            const premiumModal = document.createElement('div');
+            premiumModal.id = 'premium-modal';
+            
+            const modalContent = document.createElement('div');
+            modalContent.className = 'modal-content';
+            
+            const closeButton = document.createElement('span');
+            closeButton.className = 'close-button';
+            closeButton.innerHTML = '&times;';
+            closeButton.onclick = function() {
+                premiumModal.style.display = 'none';
+            };
+            
+            const title = document.createElement('h2');
+            title.textContent = 'Upgrade to Premium';
+            title.style.color = '#1e6f5c';
+            title.style.textAlign = 'center';
+            
+            // Add Ramadan special banner
+            const ramadanBanner = document.createElement('div');
+            ramadanBanner.className = 'ramadan-modal-promo';
+            ramadanBanner.innerHTML = `
+                <div class="ramadan-modal-badge">
+                    <span class="ramadan-icon">☪</span> RAMADAN SPECIAL
+                </div>
+                <p>Enjoy up to 50% off during the blessed month of Ramadan!</p>
+            `;
+            
+            const description = document.createElement('p');
+            description.textContent = 'Unlock unlimited questions, priority support, and advanced features.';
+            description.style.textAlign = 'center';
+            description.style.marginBottom = '20px';
+            
+            const priceContainer = document.createElement('div');
+            priceContainer.className = 'price-container';
+            
+            // Monthly plan
+            const monthlyPlan = document.createElement('div');
+            monthlyPlan.className = 'price-option';
+            monthlyPlan.innerHTML = `
+                <div class="badge great-value-badge">GREAT VALUE</div>
+                <div class="discount-badge">50% OFF</div>
+                <h3>Premium Monthly</h3>
+                <div class="price"><span class="original-price">$19.99</span> $9.99<span>/month</span></div>
+                <ul>
+                    <li>100 questions per month</li>
+                    <li>Unlimited with your API key</li>
+                    <li>Priority support</li>
+                    <li>Cancel anytime</li>
+                </ul>
+                <div id="modal-monthly-stripe-container" class="stripe-button-container"></div>
+            `;
+            
+            // Annual plan
+            const annualPlan = document.createElement('div');
+            annualPlan.className = 'price-option recommended';
+            annualPlan.innerHTML = `
+                <div class="badge">RECOMMENDED</div>
+                <div class="discount-badge">50% OFF</div>
+                <h3>Premium Annual</h3>
+                <div class="price"><span class="original-price">$199.99</span> $99.99<span>/year</span></div>
+                <div class="savings">Save 17%</div>
+                <ul>
+                    <li>100 questions per month</li>
+                    <li>Unlimited with your API key</li>
+                    <li>Priority support</li>
+                    <li>All premium features</li>
+                </ul>
+                <div id="modal-annual-stripe-container" class="stripe-button-container"></div>
+            `;
+            
+            priceContainer.appendChild(monthlyPlan);
+            priceContainer.appendChild(annualPlan);
+            
+            modalContent.appendChild(closeButton);
+            modalContent.appendChild(title);
+            modalContent.appendChild(ramadanBanner);
+            modalContent.appendChild(description);
+            modalContent.appendChild(priceContainer);
+            
+            premiumModal.appendChild(modalContent);
+            document.body.appendChild(premiumModal);
+            
+            // Use Stripe buy buttons like in the main page
+            
+            // Update the monthly subscription container with Stripe buy button
+            const monthlyContainer = document.getElementById('modal-monthly-stripe-container');
+            if (monthlyContainer) {
+                monthlyContainer.innerHTML = ''; // Clear any existing content
+                
+                // Add Stripe script if not already present
+                if (!document.querySelector('script[src="https://js.stripe.com/v3/buy-button.js"]')) {
+                    const stripeScript = document.createElement('script');
+                    stripeScript.src = 'https://js.stripe.com/v3/buy-button.js';
+                    stripeScript.async = true;
+                    document.head.appendChild(stripeScript);
+                }
+                
+                // Create Stripe buy button for monthly subscription
+                const monthlyBuyButton = document.createElement('stripe-buy-button');
+                monthlyBuyButton.setAttribute('buy-button-id', 'buy_btn_1R0TLxDLlIJ8KokgsghoABCt');
+                monthlyBuyButton.setAttribute('publishable-key', 'pk_live_51R0QM7DLlIJ8KokgtJ1OMLsHza1s8HHQsUfUqP0sMCrPfFSyWxHn3i1wRpDyWvhrj70eitF5HEwXBUSVITCqojnM00YqzhQDPV');
+                
+                // Store user info for verification before adding the button
+                safeSetItem('pending_premium_user', user.uid);
+                safeSetItem('premium_plan_selected', 'monthly');
+                
+                monthlyContainer.appendChild(monthlyBuyButton);
+            }
+            
+            // Create and add Annual subscription Stripe buy button
+            const annualContainer = document.getElementById('modal-annual-stripe-container');
+            if (annualContainer) {
+                annualContainer.innerHTML = ''; // Clear any existing content
+                
+                // Create Stripe buy button for annual subscription
+                const annualBuyButton = document.createElement('stripe-buy-button');
+                annualBuyButton.setAttribute('buy-button-id', 'buy_btn_1R0TTUDLlIJ8Kokg2epkfzAF');
+                annualBuyButton.setAttribute('publishable-key', 'pk_live_51R0QM7DLlIJ8KokgtJ1OMLsHza1s8HHQsUfUqP0sMCrPfFSyWxHn3i1wRpDyWvhrj70eitF5HEwXBUSVITCqojnM00YqzhQDPV');
+                
+                // Store user info for verification before adding the button
+                safeSetItem('pending_premium_user', user.uid);
+                safeSetItem('premium_plan_selected', 'annual');
+                
+                annualContainer.appendChild(annualBuyButton);
+            }
+            
+            // Store user info for verification - using safeSetItem instead of direct localStorage access
+            // This is already handled in the button click handlers above
+            
+            // Add styles for the premium modal
+            const style = document.createElement('style');
+            style.textContent = `
+                #premium-modal {
+                    display: none;
+                    position: fixed;
+                    z-index: 9999;
+                    left: 0;
+                    top: 0;
+                    width: 100%;
+                    height: 100%;
+                    overflow: auto;
+                    background-color: rgba(0, 0, 0, 0.6);
+                    backdrop-filter: blur(3px);
+                }
+                
+                #premium-modal .modal-content {
+                    background-color: #fefefe;
+                    margin: 10% auto;
+                    padding: 30px;
+                    border: 1px solid #888;
+                    border-radius: 15px;
+                    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+                    position: relative;
+                    max-width: 800px;
+                    width: 90%;
+                    animation: modalFadeIn 0.3s ease-in-out;
+                }
+                
+                @keyframes modalFadeIn {
+                    from {opacity: 0; transform: translateY(-20px);}
+                    to {opacity: 1; transform: translateY(0);}
+                }
+                
+                .close-button {
+                    position: absolute;
+                    right: 20px;
+                    top: 15px;
+                    font-size: 28px;
+                    font-weight: bold;
+                    color: #aaa;
+                    cursor: pointer;
+                    transition: color 0.2s ease;
+                }
+                
+                .close-button:hover {
+                    color: #333;
+                }
+                
+                .price-container {
+                    display: flex;
+                    flex-direction: row;
+                    justify-content: center;
+                    gap: 20px;
+                    margin-top: 20px;
+                    flex-wrap: wrap;
+                }
+                .price-option {
+                    border: 1px solid #ddd;
+                    border-radius: 8px;
+                    padding: 20px;
+                    min-width: 280px;
+                    flex: 1;
+                    max-width: 350px;
+                    position: relative;
+                    background-color: white;
+                    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+                    display: flex;
+                    flex-direction: column;
+                }
+                .price-option ul {
+                    flex-grow: 1;
+                }
+                .price-option.recommended {
+                    border: 2px solid #f0c14b;
+                    transform: scale(1.05);
+                }
+                /* Ensure stripe buttons are centered */
+                .stripe-button-container,
+                #modal-monthly-stripe-container,
+                #modal-annual-stripe-container {
+                    display: flex;
+                    justify-content: center;
+                    width: 100%;
+                    margin-top: 10px;
+                    overflow: hidden;
+                }
+                
+                /* Fix Stripe button sizing in modal */
+                #modal-monthly-stripe-container stripe-buy-button,
+                #modal-annual-stripe-container stripe-buy-button {
+                    width: 100%;
+                    max-width: 320px;
+                }
+                
+                /* Additional fixes for Stripe iframe in modal */
+                #modal-monthly-stripe-container stripe-buy-button iframe,
+                #modal-annual-stripe-container stripe-buy-button iframe {
+                    min-width: unset !important;
+                    width: 100% !important;
+                    max-width: 100% !important;
+                }
+                @media (max-width: 1200px) {
+                    .price-container {
+                        flex-direction: column;
+                        align-items: center;
+                    }
+                    .price-option {
+                        width: 100%;
+                        max-width: 280px;
+                        margin-bottom: 15px;
+                    }
+                    .price-option.recommended {
+                        transform: none;
+                        order: -1;
+                    }
+                }
+                .price-option h3 {
+                    margin-top: 0;
+                    color: #1e6f5c;
+                }
+                .price {
+                    font-size: 24px;
+                    font-weight: bold;
+                    margin: 10px 0;
+                }
+                .price span {
+                    font-size: 14px;
+                    font-weight: normal;
+                }
+                .savings {
+                    color: #e53935;
+                    font-weight: bold;
+                    margin-bottom: 10px;
+                }
+                .price-option ul {
+                    list-style-type: none;
+                    padding: 0;
+                    margin: 15px 0;
+                }
+                .price-option li {
+                    padding: 5px 0;
+                    position: relative;
+                    padding-left: 25px;
+                }
+                .price-option li:before {
+                    content: '✓';
+                    color: #1e6f5c;
+                    position: absolute;
+                    left: 0;
+                }
+                .stripe-button, .premium-button {
+                    background-color: #1e6f5c;
+                    background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+                    color: white;
+                    border: none;
+                    border-radius: 30px;
+                    padding: 12px 20px;
+                    font-size: 16px;
+                    font-weight: bold;
+                    cursor: pointer;
+                    width: 100%;
+                    margin-top: 10px;
+                    transition: all 0.3s ease;
+                    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+                }
+                .stripe-button:hover, .premium-button:hover {
+                    background-color: #155043;
+                    background: linear-gradient(135deg, var(--secondary-color), var(--primary-color));
+                    transform: translateY(-2px);
+                    box-shadow: 0 6px 12px rgba(0, 0, 0, 0.15);
+                }
+                .recommended-button {
+                    background: linear-gradient(135deg, var(--ramadan-gold), #c4a046);
+                }
+                .recommended-button:hover {
+                    background: linear-gradient(135deg, #c4a046, var(--ramadan-gold));
+                }
+                .badge {
+                    position: absolute;
+                    top: 0;
+                    right: 0;
+                    background: #f0c14b;
+                    color: #1e6f5c;
+                    padding: 5px 15px;
+                    border-radius: 0 0 0 10px;
+                    font-size: 12px;
+                    font-weight: bold;
+                }
+                
+                .great-value-badge {
+                    background: var(--ramadan-gold);
+                    color: var(--ramadan-deep-blue);
+                }
+                
+                .discount-badge {
+                    position: absolute;
+                    top: 0;
+                    left: 0;
+                    background-color: #e63946;
+                    color: white;
+                    font-size: 12px;
+                    font-weight: bold;
+                    padding: 5px 15px;
+                    border-radius: 0 0 10px 0;
+                    z-index: 2;
+                }
+                
+                .original-price {
+                    font-size: 18px;
+                    text-decoration: line-through;
+                    color: #888;
+                    margin-right: 5px;
+                }
+                
+                .ramadan-modal-promo {
+                    text-align: center;
+                    margin: 10px auto 20px;
+                    background-color: rgba(30, 111, 92, 0.1);
+                    border-radius: 8px;
+                    padding: 10px 15px;
+                    max-width: 90%;
+                }
+                
+                .ramadan-modal-badge {
+                    display: inline-block;
+                    background-color: rgba(255, 215, 0, 0.2);
+                    color: #1e6f5c;
+                    font-weight: 700;
+                    padding: 5px 15px;
+                    border-radius: 20px;
+                    margin-bottom: 5px;
+                    font-size: 14px;
+                }
+                
+                .ramadan-icon {
+                    margin-right: 5px;
+                }
+                
+                .ramadan-modal-promo p {
+                    color: #1e6f5c;
+                    font-size: 16px;
+                    margin: 5px 0 0;
+                }
+                @media (max-width: 600px) {
+                    .price-container {
+                        flex-direction: column;
+                        align-items: center;
+                    }
+                    .price-option {
+                        width: 100%;
+                        max-width: 280px;
+                        margin-bottom: 20px;
+                    }
+                    .price-option.recommended {
+                        transform: none;
+                    }
+                }
+                `;
+            document.head.appendChild(style);
+            
+            // Show the modal with a slight delay to ensure everything is properly rendered
+            setTimeout(() => {
+                premiumModal.style.display = 'block';
+            }, 100);
+        }
+        
+        // Listen for Stripe checkout completion
+        // This would normally be handled by a webhook, but for testing purposes
+        // we'll add a verification button to the profile page after the modal is shown
+        // Function to add verification button after Stripe checkout
+        function addPaymentVerificationButton(user) {
+            // Hide the premium modal
+            const premiumModal = document.getElementById('premium-modal');
+            if (premiumModal) {
+                premiumModal.style.display = 'none';
+            }
+            
+            // Show message to user
+            const profileMessage = document.getElementById('profile-message');
+            if (profileMessage) {
+                profileMessage.textContent = 'After completing payment in the Stripe checkout, click the button below to verify your subscription.';
+                profileMessage.style.color = '#1e6f5c';
+                profileMessage.style.fontWeight = 'bold';
+            }
+            
+            // Add verification button if it doesn't exist
+            if (!document.getElementById('verify-payment-button')) {
+                const verifyButton = document.createElement('button');
+                verifyButton.textContent = 'Verify Premium Payment';
+                verifyButton.className = 'auth-button';
+                verifyButton.id = 'verify-payment-button';
+                verifyButton.style.marginTop = '10px';
+                verifyButton.style.backgroundColor = '#1e6f5c';
+                verifyButton.style.color = 'white';
+                verifyButton.style.border = 'none';
+                verifyButton.style.padding = '10px 20px';
+                verifyButton.style.borderRadius = '4px';
+                verifyButton.style.cursor = 'pointer';
+                verifyButton.addEventListener('click', verifyPremiumPayment);
+                
+                const profileMessageContainer = profileMessage?.parentNode;
+                if (profileMessageContainer) {
+                    profileMessageContainer.appendChild(verifyButton);
+                }
+            }
+        }
+        
+        // Function to verify premium payment
+        async function verifyPremiumPayment() {
             const auth = getAuth();
             const user = auth.currentUser;
             
             if (!user) {
-                showModal(loginModal);
+                const profileError = document.getElementById('profile-error');
+                if (profileError) {
+                    profileError.textContent = 'You must be logged in to verify payment.';
+                }
                 return;
             }
             
             try {
-                // Here you would typically redirect to a Stripe checkout page
-                // For now, we'll simulate upgrading the user to premium
+                // Get the plan type from localStorage using safe access
+                const planType = safeGetItem('pending_premium_plan') || 'monthly';
+                const isAnnual = planType === 'annual';
+                
+                // Clear the pending plan from storage
+                try {
+                    if (!isInIframe()) {
+                        localStorage.removeItem('pending_premium_plan');
+                        localStorage.removeItem('premium_signup_intent');
+                    }
+                } catch (storageError) {
+                    console.error('Error clearing localStorage items:', storageError);
+                }
+                
+                // In a real implementation, this would check with your backend
+                // which would verify the payment status with Stripe
+                // For now, we'll simulate a successful payment
+                
                 const db = getFirestore();
                 await setDoc(doc(db, 'users', user.uid), {
                     subscription: {
                         type: 'premium',
+                        plan: isAnnual ? 'annual' : 'monthly',
                         startDate: serverTimestamp(),
-                        expiresAt: null // No expiration for now
+                        expiresAt: null, // Would be calculated based on plan type in a real implementation
+                        paymentId: 'stripe_' + Math.random().toString(36).substring(2, 15) // Simulated payment ID
                     }
                 }, { merge: true });
                 
@@ -3666,11 +5051,21 @@
                 loadUserProfile();
                 
                 // Show success message
-                document.getElementById('profile-message').textContent = 'Upgraded to premium successfully!';
-                document.getElementById('profile-message').style.color = 'green';
+                const profileMessage = document.getElementById('profile-message');
+                if (profileMessage) {
+                    profileMessage.textContent = `Premium ${isAnnual ? 'annual' : 'monthly'} subscription verified successfully!`;
+                    profileMessage.style.color = 'green';
+                }
+                
+                // Remove verification button
+                const verifyButton = document.getElementById('verify-payment-button');
+                if (verifyButton) {
+                    verifyButton.remove();
+                }
                 
                 // Add premium badge if not already there
-                if (!document.getElementById('premium-badge')) {
+                const userEmail = document.getElementById('user-email');
+                if (userEmail && !document.getElementById('premium-badge')) {
                     const premiumBadge = document.createElement('span');
                     premiumBadge.id = 'premium-badge';
                     premiumBadge.className = 'premium-badge';
@@ -3678,21 +5073,69 @@
                     userEmail.appendChild(document.createTextNode(' '));
                     userEmail.appendChild(premiumBadge);
                 }
+                
+                // Clear the pending premium user and plan
+                localStorage.removeItem('pending_premium_user');
+                localStorage.removeItem('pending_premium_plan');
             } catch (error) {
-                console.error('Error upgrading to premium:', error);
-                document.getElementById('profile-error').textContent = 'Error upgrading to premium. Please try again.';
+                console.error('Error verifying premium payment:', error);
+                const profileError = document.getElementById('profile-error');
+                if (profileError) {
+                    profileError.textContent = 'Error verifying payment. Please contact support.';
+                }
             }
         }
         
-        // Helper functions
+        // Helper functions - updated to avoid storage access errors
         function showModal(modal) {
-            console.log('Showing modal:', modal?.id);
-            if (modal) modal.style.display = 'block';
+            try {
+                if (modal) {
+                    modal.style.display = 'block';
+                    console.log('Modal displayed:', modal.id || 'unnamed modal');
+                    
+                    // Check if this is a login modal and we have premium intent
+                    if (modal.id === 'login-modal' && safeGetItem('premium_after_login') === 'true') {
+                        const loginError = document.getElementById('login-error');
+                        if (loginError) {
+                            loginError.textContent = 'Please sign in to upgrade to premium';
+                            loginError.style.color = '#e53935';
+                        }
+                    }
+                } else {
+                    console.error('Attempted to show a modal that does not exist');
+                }
+            } catch (error) {
+                console.error('Error showing modal:', error);
+            }
         }
         
         function hideModal(modal) {
-            console.log('Hiding modal:', modal?.id);
-            if (modal) modal.style.display = 'none';
+            try {
+                if (modal) {
+                    modal.style.display = 'none';
+                    console.log('Modal hidden:', modal.id || 'unnamed modal');
+                    
+                    // If this was a signup modal and we have premium intent, check if we need to show profile modal
+                    if (modal.id === 'signup-modal' && safeGetItem('premium_signup_intent') === 'true') {
+                        const auth = getAuth();
+                        if (auth.currentUser) {
+                            // User is now signed in, show profile modal
+                            setTimeout(() => {
+                                const profileModal = document.getElementById('profile-modal');
+                                if (profileModal) {
+                                    profileModal.style.display = 'block';
+                                    loadUserProfile();
+                                    console.log('Profile modal displayed after signup for premium');
+                                }
+                            }, 500);
+                        }
+                    }
+                } else {
+                    console.error('Attempted to hide a modal that does not exist');
+                }
+            } catch (error) {
+                console.error('Error hiding modal:', error);
+            }
         }
         
         function clearInputs() {
@@ -3746,8 +5189,198 @@
             showError(errorElement, errorMessage);
         }
         
-        // Expose initAuthUI to global scope
+        // Declare profileModal as a global variable
+        let profileModal;
+        
+        // Expose initAuthUI and auth-related functions to global scope
         window.initAuthUI = initAuthUI;
+        window.handleLogin = handleLogin;
+        window.handleSignup = handleSignup;
+        window.handleGoogleAuth = handleGoogleAuth;
+        window.handleLogout = handleLogout;
+        window.handlePasswordReset = handlePasswordReset;
+        window.showModal = showModal;
+        window.hideModal = hideModal;
+        
+        // Add debug functions to help troubleshoot auth issues
+        window.debugAuth = function() {
+            const auth = getAuth();
+            console.log('Current auth state:', auth);
+            console.log('Current user:', auth.currentUser);
+            
+            // Check if auth buttons exist and have handlers
+            const loginBtn = document.getElementById('login-button');
+            const signupBtn = document.getElementById('signup-button');
+            console.log('Login button exists:', !!loginBtn);
+            console.log('Login button has onclick handler:', !!loginBtn?.onclick);
+            console.log('Signup button exists:', !!signupBtn);
+            console.log('Signup button has onclick handler:', !!signupBtn?.onclick);
+            
+            // Check if modals exist
+            const loginModal = document.getElementById('login-modal');
+            const signupModal = document.getElementById('signup-modal');
+            console.log('Login modal exists:', !!loginModal);
+            console.log('Signup modal exists:', !!signupModal);
+            
+            return 'Auth debug info logged to console';
+        };
+        
+        // Initialize auth UI when the DOM is loaded
+        document.addEventListener('DOMContentLoaded', () => {
+            // Wait a short time to ensure all elements are loaded
+            setTimeout(() => {
+                try {
+                    // Remove any existing event handlers first
+                    const loginBtn = document.getElementById('login-button');
+                    const signupBtn = document.getElementById('signup-button');
+                    const logoutBtn = document.getElementById('logout-button');
+                    
+                    if (loginBtn) loginBtn.onclick = null;
+                    if (signupBtn) signupBtn.onclick = null;
+                    if (logoutBtn) logoutBtn.onclick = null;
+                    
+                    // Now initialize the auth UI
+                    initAuthUI();
+                    console.log('Auth UI initialized with clean event handlers');
+                    
+                    // Ensure the auth buttons have direct inline event handlers
+                    // This is critical to avoid storage access errors in iframes
+                    const loginModal = document.getElementById('login-modal');
+                    const signupModal = document.getElementById('signup-modal');
+                    
+                    if (loginBtn && loginModal) {
+                        loginBtn.onclick = function(e) {
+                            e.preventDefault();
+                            e.stopPropagation(); // Prevent event bubbling
+                            if (loginModal) {
+                                loginModal.style.display = 'block';
+                                console.log('Login modal displayed via direct handler');
+                            }
+                            return false;
+                        };
+                        console.log('Login button handler attached directly');
+                    }
+                    
+                    if (signupBtn && signupModal) {
+                        signupBtn.onclick = function(e) {
+                            e.preventDefault();
+                            e.stopPropagation(); // Prevent event bubbling
+                            if (signupModal) {
+                                signupModal.style.display = 'block';
+                                console.log('Signup modal displayed via direct handler');
+                            }
+                            return false;
+                        };
+                        console.log('Signup button handler attached directly');
+                    }
+                    
+                    if (logoutBtn) {
+                        logoutBtn.onclick = function(e) {
+                            e.preventDefault();
+                            const auth = getAuth();
+                            signOut(auth).then(() => {
+                                console.log('User signed out');
+                            }).catch((error) => {
+                                console.error('Sign out error:', error);
+                            });
+                            return false;
+                        };
+                    }
+                    
+                    // Add direct event handlers to form submit buttons
+                    const loginForm = document.getElementById('login-form');
+                    const signupForm = document.getElementById('signup-form');
+                    
+                    if (loginForm) {
+                        loginForm.onsubmit = function(e) {
+                            e.preventDefault();
+                            const email = document.getElementById('login-email').value.trim();
+                            const password = document.getElementById('login-password').value;
+                            const errorElement = document.getElementById('login-error');
+                            
+                            if (!email || !password) {
+                                if (errorElement) errorElement.textContent = 'Please enter both email and password';
+                                return false;
+                            }
+                            
+                            const auth = getAuth();
+                            signInWithEmailAndPassword(auth, email, password)
+                                .then(() => {
+                                    if (loginModal) loginModal.style.display = 'none';
+                                    document.getElementById('login-email').value = '';
+                                    document.getElementById('login-password').value = '';
+                                })
+                                .catch((error) => {
+                                    console.error('Login error:', error);
+                                    if (errorElement) {
+                                        if (error.code === 'auth/invalid-credential') {
+                                            errorElement.textContent = 'Invalid email or password';
+                                        } else {
+                                            errorElement.textContent = error.message;
+                                        }
+                                    }
+                                });
+                            return false;
+                        };
+                    }
+                    
+                    if (signupForm) {
+                        signupForm.onsubmit = function(e) {
+                            e.preventDefault();
+                            const email = document.getElementById('signup-email').value.trim();
+                            const password = document.getElementById('signup-password').value;
+                            const confirmPassword = document.getElementById('signup-confirm-password').value;
+                            const errorElement = document.getElementById('signup-error');
+                            
+                            if (!email || !password || !confirmPassword) {
+                                if (errorElement) errorElement.textContent = 'Please fill in all fields';
+                                return false;
+                            }
+                            
+                            if (password !== confirmPassword) {
+                                if (errorElement) errorElement.textContent = 'Passwords do not match';
+                                return false;
+                            }
+                            
+                            if (password.length < 6) {
+                                if (errorElement) errorElement.textContent = 'Password must be at least 6 characters';
+                                return false;
+                            }
+                            
+                            const auth = getAuth();
+                            const db = getFirestore();
+                            
+                            createUserWithEmailAndPassword(auth, email, password)
+                                .then((userCredential) => {
+                                    return setDoc(doc(db, 'users', userCredential.user.uid), {
+                                        email: email,
+                                        createdAt: serverTimestamp(),
+                                        subscription: {
+                                            type: 'free',
+                                            questionsRemaining: 7
+                                        }
+                                    });
+                                })
+                                .then(() => {
+                                    if (signupModal) signupModal.style.display = 'none';
+                                    document.getElementById('signup-email').value = '';
+                                    document.getElementById('signup-password').value = '';
+                                    document.getElementById('signup-confirm-password').value = '';
+                                })
+                                .catch((error) => {
+                                    console.error('Signup error:', error);
+                                    if (errorElement) errorElement.textContent = error.message;
+                                });
+                            return false;
+                        };
+                    }
+                    
+                    console.log('Direct event handlers added to auth buttons and forms');
+                } catch (error) {
+                    console.error('Error during auth UI initialization:', error);
+                }
+            }, 500); // Increased timeout to ensure DOM is fully loaded
+        });
     </script>
 </body>
 </html>
