@@ -1795,7 +1795,7 @@
             <div class="mobile-menu-button">
                 <i class="fas fa-bars" style="font-size: 24px; width: 100%; text-align: center;"></i>
             </div>
-            <div class="auth-container" id="auth-container">
+            <div class="auth-container" id="auth-container" style="display: none;">
                 <button id="login-button" class="auth-button">Sign In</button>
                 <button id="signup-button" class="auth-button">Sign Up</button>
                 <div id="user-profile" class="user-profile" style="display: none;">
@@ -3599,6 +3599,14 @@
             mobileMenuButton = document.querySelector('.mobile-menu-button');
             authContainer = document.getElementById('auth-container');
             
+            // Ensure auth container is hidden by default on mobile
+            if (authContainer && window.innerWidth <= 768) {
+                authContainer.style.display = 'none';
+            } else if (authContainer && window.innerWidth > 768) {
+                // On desktop, we want it visible
+                authContainer.style.display = 'flex';
+            }
+            
             loginModal = document.getElementById('login-modal');
             signupModal = document.getElementById('signup-modal');
             resetPasswordModal = document.getElementById('reset-password-modal');
@@ -4174,6 +4182,22 @@
                                     }, 500);
                                 }
                                 
+                                // Check if we need to verify a pending payment
+                                const pendingUser = safeGetItem('pending_premium_user');
+                                if (pendingUser === user.uid) {
+                                    // Check if we have a payment verification from Stripe
+                                    if (window.location.hash.includes('succeeded')) {
+                                        console.log('Payment succeeded, verifying from URL hash...');
+                                        setTimeout(() => {
+                                            try {
+                                                verifyPremiumPayment();
+                                            } catch (err) {
+                                                console.error('Error verifying payment after redirect:', err);
+                                            }
+                                        }, 1000);
+                                    }
+                                }
+                                
                                 // Load user profile data
                                 loadUserProfile();
                             } else {
@@ -4419,7 +4443,11 @@
             const currentPlan = document.getElementById('current-plan');
             const upgradeButton = document.getElementById('upgrade-button');
             const profileError = document.getElementById('profile-error');
+            const profileMessage = document.getElementById('profile-message');
             const profileModal = document.getElementById('profile-modal');
+            
+            // Clear any previous messages
+            if (profileMessage) profileMessage.textContent = '';
             
             // Ensure the user profile section is visible
             const userProfile = document.getElementById('user-profile');
@@ -4439,7 +4467,14 @@
                     e.preventDefault();
                     e.stopPropagation();
                     try {
-                        handlePremiumUpgrade();
+                        // Close profile modal first
+                        const profileModal = document.getElementById('profile-modal');
+                        if (profileModal) profileModal.style.display = 'none';
+                        
+                        // Then handle premium upgrade with a slight delay
+                        setTimeout(() => {
+                            handlePremiumUpgrade();
+                        }, 100);
                     } catch (err) {
                         console.log('Premium upgrade button clicked');
                     }
@@ -4470,10 +4505,47 @@
                     const userData = result.data();
                     
                     if (currentPlan && upgradeButton && userData.subscription) {
-                        if (userData.subscription.type === 'premium') {
-                            currentPlan.textContent = 'Premium Plan';
-                            currentPlan.classList.add('premium');
-                            upgradeButton.textContent = 'Manage Subscription';
+                        if (userData.subscription.type === 'premium' && userData.subscription.active) {
+                            // Check if subscription is still valid (not expired)
+                            let isValid = true;
+                            if (userData.subscription.endDate) {
+                                const now = new Date();
+                                const endDate = new Date(userData.subscription.endDate);
+                                isValid = now <= endDate;
+                            }
+                            
+                            if (isValid) {
+                                currentPlan.textContent = 'Premium Plan';
+                                currentPlan.classList.add('premium');
+                                upgradeButton.textContent = 'Manage Subscription';
+                                
+                                // Show subscription details
+                                if (profileMessage) {
+                                    const planType = userData.subscription.plan || 'monthly';
+                                    const endDate = userData.subscription.endDate ? new Date(userData.subscription.endDate).toLocaleDateString() : 'N/A';
+                                    profileMessage.innerHTML = `<span style="color: green">Premium ${planType} plan active until: ${endDate}</span>`;
+                                }
+                            } else {
+                                // Subscription expired
+                                currentPlan.textContent = 'Free Plan (Premium Expired)';
+                                currentPlan.classList.remove('premium');
+                                upgradeButton.textContent = 'Renew Premium';
+                                
+                                // Reset the upgrade button to show premium options
+                                upgradeButton.onclick = function(e) {
+                                    e.preventDefault();
+                                    e.stopPropagation();
+                                    try {
+                                        handlePremiumUpgrade();
+                                    } catch (err) {
+                                        console.log('Premium upgrade button clicked');
+                                    }
+                                };
+                                
+                                if (profileMessage) {
+                                    profileMessage.innerHTML = '<span style="color: #e53935">Your premium subscription has expired.</span>';
+                                }
+                            }
                         }
                     }
                 } else if (result) {
@@ -4505,10 +4577,24 @@
         // Function to handle premium upgrade with iframe protection and improved error handling
         async function handlePremiumUpgrade() {
             try {
+                // First, close any open modals
+                const profileModal = document.getElementById('profile-modal');
+                if (profileModal) profileModal.style.display = 'none';
+                
+                const premiumModal = document.getElementById('premium-modal');
+                if (premiumModal) premiumModal.style.display = 'none';
+                
                 const auth = getAuth();
                 const user = auth.currentUser;
                 
                 if (!user) {
+                    // Close all other modals first
+                    const signupModal = document.getElementById('signup-modal');
+                    if (signupModal) signupModal.style.display = 'none';
+                    
+                    const resetPasswordModal = document.getElementById('reset-password-modal');
+                    if (resetPasswordModal) resetPasswordModal.style.display = 'none';
+                    
                     const loginModal = document.getElementById('login-modal');
                     if (loginModal) {
                         try {
@@ -4528,6 +4614,42 @@
                         }
                     }
                     return;
+                }
+                
+                // Check if user is already premium before showing upgrade options
+                try {
+                    const db = getFirestore();
+                    const userDoc = await getDoc(doc(db, 'users', user.uid));
+                    
+                    if (userDoc.exists()) {
+                        const userData = userDoc.data();
+                        if (userData.subscription && 
+                            userData.subscription.type === 'premium' && 
+                            userData.subscription.active) {
+                            
+                            // Check if subscription is still valid (not expired)
+                            let isValid = true;
+                            if (userData.subscription.endDate) {
+                                const now = new Date();
+                                const endDate = new Date(userData.subscription.endDate);
+                                isValid = now <= endDate;
+                            }
+                            
+                            if (isValid) {
+                                // User already has a valid premium subscription
+                                // Just show the profile modal
+                                const profileModal = document.getElementById('profile-modal');
+                                if (profileModal) {
+                                    profileModal.style.display = 'block';
+                                    console.log('Profile modal displayed for premium user');
+                                }
+                                return;
+                            }
+                        }
+                    }
+                } catch (error) {
+                    console.error('Error checking premium status:', error);
+                    // Continue with premium upgrade flow
                 }
                 
                 // Clear any premium intent flags
@@ -4559,7 +4681,23 @@
         }
         
         function showPremiumOptions(user) {
-            // Remove existing modal if it exists
+            // Close any open modals first
+            const profileModal = document.getElementById('profile-modal');
+            if (profileModal && profileModal.style.display === 'block') {
+                profileModal.style.display = 'none';
+            }
+            
+            // Close any other auth modals that might be open
+            const loginModal = document.getElementById('login-modal');
+            if (loginModal) loginModal.style.display = 'none';
+            
+            const signupModal = document.getElementById('signup-modal');
+            if (signupModal) signupModal.style.display = 'none';
+            
+            const resetPasswordModal = document.getElementById('reset-password-modal');
+            if (resetPasswordModal) resetPasswordModal.style.display = 'none';
+            
+            // Remove existing premium modal if it exists
             let existingModal = document.getElementById('premium-modal');
             if (existingModal) {
                 existingModal.remove();
@@ -4673,6 +4811,20 @@
                 safeSetItem('pending_premium_user', user.uid);
                 safeSetItem('premium_plan_selected', 'monthly');
                 
+                // Add event listener to detect Stripe checkout completion
+                monthlyBuyButton.addEventListener('buyButtonStateChange', function(event) {
+                    console.log('Monthly button state change:', event.detail.state);
+                    if (event.detail.state === 'succeeded') {
+                        console.log('Monthly payment succeeded, verifying...');
+                        verifyPremiumPayment();
+                        // Close the premium modal
+                        const premiumModal = document.getElementById('premium-modal');
+                        if (premiumModal) {
+                            premiumModal.style.display = 'none';
+                        }
+                    }
+                });
+                
                 monthlyContainer.appendChild(monthlyBuyButton);
             }
             
@@ -4690,6 +4842,20 @@
                 safeSetItem('pending_premium_user', user.uid);
                 safeSetItem('premium_plan_selected', 'annual');
                 
+                // Add event listener to detect Stripe checkout completion
+                annualBuyButton.addEventListener('buyButtonStateChange', function(event) {
+                    console.log('Annual button state change:', event.detail.state);
+                    if (event.detail.state === 'succeeded') {
+                        console.log('Annual payment succeeded, verifying...');
+                        verifyPremiumPayment();
+                        // Close the premium modal
+                        const premiumModal = document.getElementById('premium-modal');
+                        if (premiumModal) {
+                            premiumModal.style.display = 'none';
+                        }
+                    }
+                });
+                
                 annualContainer.appendChild(annualBuyButton);
             }
             
@@ -4700,7 +4866,7 @@
             const style = document.createElement('style');
             style.textContent = `
                 #premium-modal {
-                    display: none;
+                    display: block; /* Show immediately */
                     position: fixed;
                     z-index: 9999;
                     left: 0;
@@ -4723,6 +4889,26 @@
                     max-width: 800px;
                     width: 90%;
                     animation: modalFadeIn 0.3s ease-in-out;
+                    box-sizing: border-box;
+                    overflow: hidden;
+                }
+                
+                /* Fix for mobile premium cards */
+                .modal-content > * {
+                    max-width: 100%;
+                }
+                
+                /* Additional fixes for premium card alignment */
+                #premium-modal .price-container {
+                    width: 100%;
+                    box-sizing: border-box;
+                }
+                
+                /* Force premium cards to stay within container */
+                .price-option {
+                    max-width: 100%;
+                    margin-left: auto;
+                    margin-right: auto;
                 }
                 
                 @keyframes modalFadeIn {
@@ -4752,12 +4938,14 @@
                     gap: 20px;
                     margin-top: 20px;
                     flex-wrap: wrap;
+                    max-width: 100%;
+                    overflow: hidden;
                 }
                 .price-option {
                     border: 1px solid #ddd;
                     border-radius: 8px;
                     padding: 20px;
-                    min-width: 280px;
+                    min-width: 0;
                     flex: 1;
                     max-width: 350px;
                     position: relative;
@@ -4765,6 +4953,8 @@
                     box-shadow: 0 2px 10px rgba(0,0,0,0.1);
                     display: flex;
                     flex-direction: column;
+                    box-sizing: border-box;
+                    width: 100%;
                 }
                 .price-option ul {
                     flex-grow: 1;
@@ -4772,6 +4962,11 @@
                 .price-option.recommended {
                     border: 2px solid #f0c14b;
                     transform: scale(1.05);
+                }
+                @media (max-width: 768px) {
+                    .price-option.recommended {
+                        transform: none;
+                    }
                 }
                 /* Ensure stripe buttons are centered */
                 .stripe-button-container,
@@ -4802,6 +4997,7 @@
                     .price-container {
                         flex-direction: column;
                         align-items: center;
+                        width: 100%;
                     }
                     .price-option {
                         width: 100%;
@@ -4811,6 +5007,40 @@
                     .price-option.recommended {
                         transform: none;
                         order: -1;
+                    }
+                }
+                
+                @media (max-width: 480px) {
+                    #premium-modal .modal-content {
+                        width: 95%;
+                        padding: 15px 10px;
+                        margin: 5% auto;
+                    }
+                    .price-option {
+                        min-width: 0;
+                        width: 90%;
+                        max-width: 90%;
+                        padding: 15px 10px;
+                        margin: 0 auto;
+                    }
+                    .price-container {
+                        padding: 0;
+                        gap: 15px;
+                        margin: 0;
+                        width: 100%;
+                    }
+                    .price-option ul {
+                        padding-left: 20px;
+                    }
+                    .price-option h3 {
+                        font-size: 18px;
+                    }
+                    .price {
+                        font-size: 20px;
+                    }
+                    /* Ensure no overflow */
+                    .price-option.recommended {
+                        transform: none;
                     }
                 }
                 .price-option h3 {
@@ -5004,6 +5234,77 @@
             }
         }
         
+        // Add a downgrade subscription function
+        async function downgradeSubscription() {
+            const auth = getAuth();
+            const user = auth.currentUser;
+            
+            if (!user) {
+                alert('You must be logged in to downgrade your subscription.');
+                return;
+            }
+            
+            try {
+                const db = getFirestore();
+                await setDoc(doc(db, 'users', user.uid), {
+                    subscription: {
+                        type: 'free',
+                        plan: 'free',
+                        active: false,
+                        downgradeDate: new Date().toISOString(),
+                        questionsRemaining: 7 // Reset to free tier question limit
+                    }
+                }, { merge: true });
+                
+                // Update UI
+                loadUserProfile();
+                
+                // Show success message
+                const profileMessage = document.getElementById('profile-message');
+                if (profileMessage) {
+                    profileMessage.innerHTML = '<span style="color: #e53935">Your subscription has been downgraded to the free plan.</span>';
+                } else {
+                    alert('Your subscription has been downgraded to the free plan.');
+                }
+                
+                // Remove premium badge if present
+                const premiumBadge = document.getElementById('premium-badge');
+                if (premiumBadge) {
+                    premiumBadge.remove();
+                }
+                
+                // Reset the upgrade button to show premium options
+                const upgradeButton = document.getElementById('upgrade-button');
+                if (upgradeButton) {
+                    upgradeButton.textContent = 'Upgrade to Premium';
+                    upgradeButton.onclick = function(e) {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        try {
+                            // Close profile modal first
+                            const profileModal = document.getElementById('profile-modal');
+                            if (profileModal) profileModal.style.display = 'none';
+                            
+                            // Then handle premium upgrade
+                            setTimeout(() => {
+                                handlePremiumUpgrade();
+                            }, 100);
+                        } catch (err) {
+                            console.log('Premium upgrade button clicked');
+                        }
+                    };
+                }
+            } catch (error) {
+                console.error('Error downgrading subscription:', error);
+                const profileError = document.getElementById('profile-error');
+                if (profileError) {
+                    profileError.textContent = 'Error downgrading subscription. Please try again later.';
+                } else {
+                    alert('Error downgrading subscription. Please try again later.');
+                }
+            }
+        }
+        
         // Function to verify premium payment
         async function verifyPremiumPayment() {
             const auth = getAuth();
@@ -5017,33 +5318,45 @@
                 return;
             }
             
+            // Check if the pending premium user matches the current user
+            const pendingUser = safeGetItem('pending_premium_user');
+            if (pendingUser && pendingUser !== user.uid) {
+                console.error('User mismatch during payment verification');
+                const profileError = document.getElementById('profile-error');
+                if (profileError) {
+                    profileError.textContent = 'User mismatch during payment verification.';
+                }
+                return;
+            }
+            
             try {
                 // Get the plan type from localStorage using safe access
-                const planType = safeGetItem('pending_premium_plan') || 'monthly';
+                const planType = safeGetItem('premium_plan_selected') || 'monthly';
                 const isAnnual = planType === 'annual';
-                
-                // Clear the pending plan from storage
-                try {
-                    if (!isInIframe()) {
-                        localStorage.removeItem('pending_premium_plan');
-                        localStorage.removeItem('premium_signup_intent');
-                    }
-                } catch (storageError) {
-                    console.error('Error clearing localStorage items:', storageError);
-                }
                 
                 // In a real implementation, this would check with your backend
                 // which would verify the payment status with Stripe
-                // For now, we'll simulate a successful payment
+                // For now, we'll simulate a successful payment verification
+                
+                // Calculate end date based on plan type
+                const now = new Date();
+                let endDate = new Date();
+                if (isAnnual) {
+                    endDate.setFullYear(endDate.getFullYear() + 1);
+                } else {
+                    endDate.setMonth(endDate.getMonth() + 1);
+                }
                 
                 const db = getFirestore();
                 await setDoc(doc(db, 'users', user.uid), {
                     subscription: {
                         type: 'premium',
                         plan: isAnnual ? 'annual' : 'monthly',
-                        startDate: serverTimestamp(),
-                        expiresAt: null, // Would be calculated based on plan type in a real implementation
-                        paymentId: 'stripe_' + Math.random().toString(36).substring(2, 15) // Simulated payment ID
+                        startDate: now.toISOString(),
+                        endDate: endDate.toISOString(),
+                        active: true,
+                        paymentId: 'stripe_' + Math.random().toString(36).substring(2, 15), // Simulated payment ID
+                        questionLimit: 100
                     }
                 }, { merge: true });
                 
@@ -5053,8 +5366,7 @@
                 // Show success message
                 const profileMessage = document.getElementById('profile-message');
                 if (profileMessage) {
-                    profileMessage.textContent = `Premium ${isAnnual ? 'annual' : 'monthly'} subscription verified successfully!`;
-                    profileMessage.style.color = 'green';
+                    profileMessage.innerHTML = `<span style="color: green">Premium ${isAnnual ? 'annual' : 'monthly'} subscription verified successfully!</span>`;
                 }
                 
                 // Remove verification button
@@ -5075,8 +5387,15 @@
                 }
                 
                 // Clear the pending premium user and plan
-                localStorage.removeItem('pending_premium_user');
-                localStorage.removeItem('pending_premium_plan');
+                try {
+                    if (!isInIframe()) {
+                        localStorage.removeItem('pending_premium_user');
+                        localStorage.removeItem('premium_plan_selected');
+                        localStorage.removeItem('premium_after_login');
+                    }
+                } catch (storageError) {
+                    console.error('Error clearing localStorage items:', storageError);
+                }
             } catch (error) {
                 console.error('Error verifying premium payment:', error);
                 const profileError = document.getElementById('profile-error');
