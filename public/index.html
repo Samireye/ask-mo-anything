@@ -1304,6 +1304,19 @@
             transform: translateY(-5px);
             box-shadow: 0 5px 15px rgba(0,0,0,0.15);
         }
+        
+        .topic-card-active {
+            transform: translateY(-5px);
+            box-shadow: 0 5px 15px rgba(30, 111, 92, 0.4);
+            border: 2px solid var(--primary-color);
+            animation: pulse-highlight 1s ease-in-out;
+        }
+        
+        @keyframes pulse-highlight {
+            0% { box-shadow: 0 0 0 0 rgba(30, 111, 92, 0.7); }
+            70% { box-shadow: 0 0 0 10px rgba(30, 111, 92, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(30, 111, 92, 0); }
+        }
 
         .topic-icon {
             width: 50px;
@@ -2948,8 +2961,20 @@
                 card.addEventListener('click', function() {
                     const topic = this.getAttribute('data-topic');
                     if (topic) {
+                        // Highlight the clicked card
+                        document.querySelectorAll('.topic-card').forEach(c => c.classList.remove('topic-card-active'));
+                        this.classList.add('topic-card-active');
+                        
+                        // Set the input value
                         userInput.value = topic;
-                        sendMessage();
+                        
+                        // Scroll to the chat input with smooth animation
+                        document.querySelector('.input-section').scrollIntoView({ behavior: 'smooth' });
+                        
+                        // Add a slight delay before sending the message to allow the scroll to complete
+                        setTimeout(() => {
+                            sendMessage();
+                        }, 500);
                     }
                 });
             });
@@ -2961,8 +2986,26 @@
             const unescapedTopic = topic
                 .replace(/\\'/g, "'")
                 .replace(/\\\"/g, '"');
+            
+            // Find and highlight the matching topic card if it exists
+            document.querySelectorAll('.topic-card').forEach(card => {
+                const cardTopic = card.getAttribute('data-topic');
+                if (cardTopic === topic) {
+                    document.querySelectorAll('.topic-card').forEach(c => c.classList.remove('topic-card-active'));
+                    card.classList.add('topic-card-active');
+                }
+            });
+            
+            // Set the input value
             userInput.value = unescapedTopic;
-            sendMessage(unescapedTopic);
+            
+            // Scroll to the chat input with smooth animation
+            document.querySelector('.input-section').scrollIntoView({ behavior: 'smooth' });
+            
+            // Add a slight delay before sending the message
+            setTimeout(() => {
+                sendMessage(unescapedTopic);
+            }, 500);
         }
 
         let currentReader = null;
