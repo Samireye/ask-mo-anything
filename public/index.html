@@ -85,7 +85,14 @@
             doc, 
             setDoc, 
             getDoc, 
-            serverTimestamp 
+            serverTimestamp,
+            collection,
+            addDoc,
+            query,
+            where,
+            orderBy,
+            limit,
+            getDocs
         } from 'https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js';
 
         // Firebase configuration
@@ -1155,6 +1162,179 @@
             margin-top: 10px;
         }
         
+        /* Profile Tabs Styles */
+        .profile-tabs {
+            display: flex;
+            border-bottom: 1px solid #ddd;
+            margin-bottom: 20px;
+            overflow-x: auto;
+            -webkit-overflow-scrolling: touch;
+        }
+        
+        .profile-tab-btn {
+            background: none;
+            border: none;
+            padding: 10px 20px;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: 500;
+            color: #555;
+            position: relative;
+            transition: all 0.3s ease;
+        }
+        
+        .profile-tab-btn:hover {
+            color: var(--primary-color);
+        }
+        
+        .profile-tab-btn.active {
+            color: var(--primary-color);
+        }
+        
+        .profile-tab-btn.active::after {
+            content: '';
+            position: absolute;
+            bottom: -1px;
+            left: 0;
+            width: 100%;
+            height: 3px;
+            background-color: var(--primary-color);
+            border-radius: 3px 3px 0 0;
+        }
+        
+        .profile-tab-content {
+            display: none;
+            animation: fadeIn 0.3s ease;
+        }
+        
+        .profile-tab-content.active {
+            display: block;
+        }
+        
+        /* Premium Feature Container Styles */
+        .premium-feature-container {
+            position: relative;
+            min-height: 300px;
+        }
+        
+        .premium-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(255, 255, 255, 0.9);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 10;
+            border-radius: 8px;
+        }
+        
+        .premium-message {
+            text-align: center;
+            padding: 30px;
+            max-width: 400px;
+        }
+        
+        .premium-message i {
+            font-size: 40px;
+            color: gold;
+            margin-bottom: 15px;
+            text-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+        }
+        
+        .premium-message h3 {
+            margin-bottom: 15px;
+            color: var(--primary-color);
+        }
+        
+        /* Responses and History Containers */
+        .responses-container, .history-container {
+            padding: 20px 0;
+        }
+        
+        .feature-description {
+            color: #666;
+            margin-bottom: 20px;
+        }
+        
+        .responses-list, .history-list {
+            max-height: 400px;
+            overflow-y: auto;
+            border: 1px solid #eee;
+            border-radius: 8px;
+            padding: 10px;
+        }
+        
+        .empty-state {
+            text-align: center;
+            padding: 40px 20px;
+            color: #999;
+        }
+        
+        .empty-icon {
+            font-size: 40px;
+            margin-bottom: 15px;
+            opacity: 0.5;
+        }
+        
+        .empty-description {
+            font-size: 14px;
+            margin-top: 10px;
+            max-width: 250px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+        
+        /* Response and History Items */
+        .response-item, .history-item {
+            background: #f9f9f9;
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 10px;
+            border-left: 3px solid var(--primary-color);
+            transition: all 0.2s ease;
+        }
+        
+        .response-item:hover, .history-item:hover {
+            box-shadow: 0 3px 8px rgba(0, 0, 0, 0.05);
+            transform: translateY(-2px);
+        }
+        
+        .response-content, .history-title {
+            font-weight: 500;
+            margin-bottom: 5px;
+        }
+        
+        .response-date, .history-date {
+            font-size: 12px;
+            color: #999;
+            margin-bottom: 10px;
+        }
+        
+        .response-actions, .history-actions {
+            display: flex;
+            justify-content: flex-end;
+            gap: 10px;
+        }
+        
+        .action-button {
+            background: none;
+            border: none;
+            color: #666;
+            cursor: pointer;
+            font-size: 14px;
+            padding: 5px;
+            border-radius: 4px;
+            transition: all 0.2s ease;
+        }
+        
+        .action-button:hover {
+            color: var(--primary-color);
+            background: rgba(30, 111, 92, 0.1);
+        }
+        
         .auth-error {
             color: #d9534f;
             text-align: center;
@@ -1304,6 +1484,19 @@
             transform: translateY(-5px);
             box-shadow: 0 5px 15px rgba(0,0,0,0.15);
         }
+        
+        .topic-card-active {
+            transform: translateY(-5px);
+            box-shadow: 0 5px 15px rgba(30, 111, 92, 0.4);
+            border: 2px solid var(--primary-color);
+            animation: pulse-highlight 1s ease-in-out;
+        }
+        
+        @keyframes pulse-highlight {
+            0% { box-shadow: 0 0 0 0 rgba(30, 111, 92, 0.7); }
+            70% { box-shadow: 0 0 0 10px rgba(30, 111, 92, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(30, 111, 92, 0); }
+        }
 
         .topic-icon {
             width: 50px;
@@ -1425,6 +1618,102 @@
             box-shadow: 0 2px 4px rgba(0,0,0,0.05);
             border: 1px solid #eee;
             position: relative;
+        }
+        
+        .message-actions {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            opacity: 0;
+            transition: opacity 0.2s ease;
+        }
+        
+        .bot-message:hover .message-actions {
+            opacity: 1;
+        }
+        
+        .bookmark-button {
+            background: none;
+            border: none;
+            color: var(--primary-color);
+            cursor: pointer;
+            padding: 5px;
+            font-size: 16px;
+            border-radius: 50%;
+            width: 30px;
+            height: 30px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s ease;
+        }
+        
+        .bookmark-button:hover {
+            background-color: rgba(30, 111, 92, 0.1);
+        }
+        
+        .toast {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            padding: 12px 20px;
+            border-radius: 8px;
+            color: white;
+            font-weight: 500;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+            z-index: 1000;
+            animation: slideIn 0.3s ease, fadeOut 0.3s ease 2.7s forwards;
+        }
+        
+        .success-toast {
+            background-color: var(--primary-color);
+        }
+        
+        .error-toast {
+            background-color: #e74c3c;
+        }
+        
+        /* Styling for the limit message */
+        .limit-message {
+            background-color: #f8f9fa;
+            border-left: 3px solid #4caf50;
+            padding: 10px 15px;
+            margin-bottom: 15px;
+            border-radius: 4px;
+            font-size: 0.9rem;
+        }
+        
+        .limit-message p {
+            margin: 0;
+            color: #555;
+        }
+        
+        .limit-message i {
+            color: #4caf50;
+            margin-right: 5px;
+        }
+        
+        .limit-message a {
+            color: #1a73e8;
+            text-decoration: none;
+            font-weight: 500;
+        }
+        
+        .limit-message a:hover {
+            text-decoration: underline;
+        }
+        
+        @keyframes slideIn {
+            from { transform: translateX(100%); opacity: 0; }
+            to { transform: translateX(0); opacity: 1; }
+        }
+        
+        @keyframes fadeOut {
+            from { opacity: 1; }
+            to { opacity: 0; }
         }
 
         .share-section {
@@ -1917,8 +2206,15 @@
         <div class="chat-container">
             <div class="chat-messages" id="chat-messages">
                 <div class="message bot-message">
-                    <div lang="ar">السَّلاَمُ عَلَيْكُمْ وَرَحْمَةُ اللهِ وَبَرَكَاتُهُ</div>
-                    Welcome! I'm here to help answer your questions about Prophet Muhammad ﷺ and Islamic teachings. What would you like to know?
+                    <div class="message-content">
+                        <div lang="ar">السَّلاَمُ عَلَيْكُمْ وَرَحْمَةُ اللهِ وَبَرَكَاتُهُ</div>
+                        Welcome! I'm here to help answer your questions about Prophet Muhammad ﷺ and Islamic teachings. What would you like to know?
+                    </div>
+                    <div class="message-actions">
+                        <button class="bookmark-button" title="Save this response">
+                            <i class="far fa-bookmark"></i>
+                        </button>
+                    </div>
                 </div>
             </div>
             <div class="input-section">
@@ -2408,32 +2704,93 @@
         <div class="auth-modal-content">
             <span class="close-modal">&times;</span>
             <h2>User Profile</h2>
-            <div class="auth-form">
-                <div id="subscription-status" class="subscription-status">
-                    <h3>Subscription Status</h3>
-                    <div id="current-plan" class="current-plan">Free Plan</div>
-                    <p>Free plan users have a limit of 7 questions per day.</p>
-                    <button id="upgrade-button" class="cta-button">Upgrade to Premium</button>
+            
+            <!-- Tab Navigation -->
+            <div class="profile-tabs">
+                <button class="profile-tab-btn active" data-tab="account-tab">Account</button>
+                <button class="profile-tab-btn" data-tab="saved-responses-tab">Saved Responses</button>
+                <button class="profile-tab-btn" data-tab="chat-history-tab">Chat History</button>
+            </div>
+            
+            <!-- Account Tab Content -->
+            <div id="account-tab" class="profile-tab-content active">
+                <div class="auth-form">
+                    <div id="subscription-status" class="subscription-status">
+                        <h3>Subscription Status</h3>
+                        <div id="current-plan" class="current-plan">Free Plan</div>
+                        <p>Free plan users have a limit of 7 questions per day.</p>
+                        <button id="upgrade-button" class="cta-button">Upgrade to Premium</button>
+                    </div>
+                    
+                    <div class="api-key-section">
+                        <h3>Your OpenAI API Key</h3>
+                        <p>Using your own API key gives you unlimited questions without counting against your daily limit.</p>
+                        <div class="form-group">
+                            <label for="api-key-input">API Key</label>
+                            <div class="api-key-input-container">
+                                <input type="password" id="api-key-input" placeholder="Enter your OpenAI API key">
+                                <button id="toggle-api-key" class="toggle-password-button">
+                                    <i class="fas fa-eye"></i>
+                                </button>
+                            </div>
+                        </div>
+                        <button id="save-api-key" class="auth-submit-button">Save API Key</button>
+                        <p class="api-key-message">Your API key is stored securely in your browser and is only sent with your questions.</p>
+                    </div>
+                    
+                    <div id="profile-message" class="auth-message"></div>
+                    <div id="profile-error" class="auth-error"></div>
                 </div>
-                
-                <div class="api-key-section">
-                    <h3>Your OpenAI API Key</h3>
-                    <p>Using your own API key gives you unlimited questions without counting against your daily limit.</p>
-                    <div class="form-group">
-                        <label for="api-key-input">API Key</label>
-                        <div class="api-key-input-container">
-                            <input type="password" id="api-key-input" placeholder="Enter your OpenAI API key">
-                            <button id="toggle-api-key" class="toggle-password-button">
-                                <i class="fas fa-eye"></i>
-                            </button>
+            </div>
+            
+            <!-- Saved Responses Tab Content -->
+            <div id="saved-responses-tab" class="profile-tab-content">
+                <div class="premium-feature-container">
+                    <div id="saved-responses-container" class="responses-container">
+                        <h3>Saved Responses</h3>
+                        <p class="feature-description">Save important responses for future reference.</p>
+                        <div id="saved-responses-list" class="responses-list">
+                            <div class="empty-state">
+                                <i class="fas fa-bookmark empty-icon"></i>
+                                <p>No saved responses yet</p>
+                                <p class="empty-description">When you find a helpful response, click the bookmark icon to save it here.</p>
+                            </div>
                         </div>
                     </div>
-                    <button id="save-api-key" class="auth-submit-button">Save API Key</button>
-                    <p class="api-key-message">Your API key is stored securely in your browser and is only sent with your questions.</p>
+                    <div id="saved-responses-premium-overlay" class="premium-overlay">
+                        <div class="premium-message">
+                            <i class="fas fa-crown"></i>
+                            <h3>Premium Feature</h3>
+                            <p>Upgrade to premium to save and access your favorite responses anytime.</p>
+                            <button id="saved-responses-upgrade" class="cta-button">Upgrade to Premium</button>
+                        </div>
+                    </div>
                 </div>
-                
-                <div id="profile-message" class="auth-message"></div>
-                <div id="profile-error" class="auth-error"></div>
+            </div>
+            
+            <!-- Chat History Tab Content -->
+            <div id="chat-history-tab" class="profile-tab-content">
+                <div class="premium-feature-container">
+                    <div id="chat-history-container" class="history-container">
+                        <h3>Chat History</h3>
+                        <p class="feature-description">Access your previous conversations.</p>
+                        <div id="chat-history-list" class="history-list">
+                            <div class="empty-state">
+                                <i class="fas fa-history empty-icon"></i>
+                                <p>No chat history yet</p>
+                                <p class="empty-description">Your conversation history will appear here.</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div id="chat-history-premium-overlay" class="premium-overlay">
+                        <div class="premium-message">
+                            <i class="fas fa-crown"></i>
+                            <h3>Premium Feature</h3>
+                            <p>Upgrade to premium to access your complete conversation history.</p>
+                            <button id="chat-history-upgrade" class="cta-button">Upgrade to Premium</button>
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
@@ -2948,21 +3305,540 @@
                 card.addEventListener('click', function() {
                     const topic = this.getAttribute('data-topic');
                     if (topic) {
+                        // Highlight the clicked card
+                        document.querySelectorAll('.topic-card').forEach(c => c.classList.remove('topic-card-active'));
+                        this.classList.add('topic-card-active');
+                        
+                        // Set the input value
                         userInput.value = topic;
-                        sendMessage();
+                        
+                        // Scroll to the chat input with smooth animation
+                        document.querySelector('.input-section').scrollIntoView({ behavior: 'smooth' });
+                        
+                        // Add a slight delay before sending the message to allow the scroll to complete
+                        setTimeout(() => {
+                            sendMessage();
+                        }, 500);
                     }
                 });
             });
+            
+            // Add event listener for bookmark buttons
+            document.addEventListener('click', function(event) {
+                if (event.target.closest('.bookmark-button')) {
+                    const button = event.target.closest('.bookmark-button');
+                    const botMessage = button.closest('.bot-message');
+                    
+                    // Debug the message element
+                    console.log('Bookmarking message element:', botMessage);
+                    
+                    // Try to get the full response if available
+                    let messageContent = '';
+                    
+                    // First check if this is inside a complete response container
+                    // Try multiple approaches to find the complete conversation
+                    let completeResponseContainer = botMessage.closest('.complete-response-container');
+                    
+                    // Debug what we found
+                    console.log('Initial container search result:', completeResponseContainer);
+                    
+                    // If not found directly, try to find the parent message container
+                    if (!completeResponseContainer) {
+                        // Try to find the parent message-container which might contain the full conversation
+                        const messageContainer = botMessage.closest('.message-container');
+                        console.log('Found message container:', messageContainer);
+                        
+                        if (messageContainer) {
+                            // The parent of message-container might be the complete response container
+                            const parentContainer = messageContainer.parentElement;
+                            console.log('Parent container:', parentContainer);
+                            
+                            if (parentContainer && (parentContainer.classList.contains('chat-container') || 
+                                                   parentContainer.classList.contains('chat-messages') ||
+                                                   parentContainer.id === 'chat-messages')) {
+                                completeResponseContainer = parentContainer;
+                                console.log('Using parent container as complete response container');
+                            }
+                        }
+                    }
+                    
+                    if (completeResponseContainer) {
+                        console.log('Found complete response container, saving entire conversation');
+                        
+                        // Get all messages in the conversation
+                        const allMessages = [];
+                        
+                        // Try different approaches to find the user question
+                        // First, look for the most recent user message before this bot message
+                        let userQuestion = '';
+                        
+                        // Method 1: Find the last user-message before this bot message
+                        const allUserMessages = completeResponseContainer.querySelectorAll('.user-message, .message.user');
+                        console.log('All user messages found:', allUserMessages.length);
+                        
+                        if (allUserMessages.length > 0) {
+                            // Get the last user message
+                            const lastUserMessage = allUserMessages[allUserMessages.length - 1];
+                            console.log('Last user message:', lastUserMessage);
+                            
+                            // Extract content from the user message
+                            const userContent = lastUserMessage.querySelector('.message-content') || lastUserMessage;
+                            if (userContent) {
+                                userQuestion = userContent.innerText || userContent.textContent;
+                                console.log('Found user question:', userQuestion);
+                            }
+                        }
+                        
+                        // Method 2: If we couldn't find a user message, try to find the input field value
+                        if (!userQuestion) {
+                            const inputField = document.getElementById('question-input');
+                            if (inputField && inputField.value) {
+                                userQuestion = inputField.value;
+                                console.log('Using input field value as user question:', userQuestion);
+                            }
+                        }
+                        
+                        // Add the user question to our messages array
+                        if (userQuestion) {
+                            allMessages.push({
+                                role: 'user',
+                                content: userQuestion
+                            });
+                        }
+                        
+                        // Get the current bot response
+                        // First try to get the full response if it's a complete response
+                        let botResponse = '';
+                        
+                        // Method 1: Try to get the content from the current message
+                        const botContent = botMessage.querySelector('.message-content');
+                        if (botContent) {
+                            botResponse = botContent.innerText || botContent.textContent;
+                            console.log('Found bot response from current message:', botResponse.substring(0, 50) + '...');
+                        }
+                        
+                        // Method 2: If we're in a complete response container, try to get all sections
+                        if (!botResponse || botResponse.trim() === '') {
+                            // Try to find all message sections in the container
+                            const sections = completeResponseContainer.querySelectorAll('.message-section, .bot-message');
+                            console.log('Found message sections:', sections.length);
+                            
+                            if (sections.length > 0) {
+                                const sectionContents = [];
+                                sections.forEach(section => {
+                                    const sectionContent = section.querySelector('.message-content');
+                                    if (sectionContent) {
+                                        sectionContents.push(sectionContent.innerText || sectionContent.textContent);
+                                    }
+                                });
+                                
+                                if (sectionContents.length > 0) {
+                                    botResponse = sectionContents.join('\n\n');
+                                    console.log('Combined bot response from sections:', botResponse.substring(0, 50) + '...');
+                                }
+                            }
+                        }
+                        
+                        // Method 3: Last resort - try to find the full response in the page
+                        if (!botResponse || botResponse.trim() === '') {
+                            // Look for the response in the current view
+                            const visibleResponse = document.querySelector('.complete-response-content');
+                            if (visibleResponse) {
+                                botResponse = visibleResponse.innerText || visibleResponse.textContent;
+                                console.log('Found response from complete-response-content:', botResponse.substring(0, 50) + '...');
+                            }
+                        }
+                        
+                        // Method 4: Try to find the response in the current message's parent elements
+                        if (!botResponse || botResponse.trim() === '') {
+                            // Walk up the DOM tree to find the complete response
+                            let currentElement = botMessage.parentElement;
+                            while (currentElement && !botResponse) {
+                                // Check if this element has substantial text content
+                                const textContent = currentElement.innerText || currentElement.textContent;
+                                if (textContent && textContent.length > 100) { // Assuming a meaningful response is at least 100 chars
+                                    botResponse = textContent;
+                                    console.log('Found response from parent element:', botResponse.substring(0, 50) + '...');
+                                    break;
+                                }
+                                currentElement = currentElement.parentElement;
+                            }
+                        }
+                        
+                        // Add the bot response to our messages array
+                        if (botResponse) {
+                            allMessages.push({
+                                role: 'assistant',
+                                content: botResponse
+                            });
+                        }
+                        
+                        // Format the full conversation
+                        if (allMessages.length > 0) {
+                            messageContent = allMessages.map(msg => {
+                                return `${msg.role === 'user' ? 'You' : 'Mo'}:\n${msg.content}`;
+                            }).join('\n\n');
+                            console.log('Formatted conversation to save:', messageContent.substring(0, 100) + '...');
+                        }
+                    }
+                    // If not in a complete response container, try other methods
+                    else if (botMessage.fullResponse) {
+                        console.log('Using fullResponse property');
+                        messageContent = botMessage.fullResponse;
+                    } 
+                    // Try to get content from the message-content div
+                    else {
+                        const contentDiv = botMessage.querySelector('.message-content');
+                        if (contentDiv) {
+                            console.log('Using message-content div');
+                            // Prefer innerText as it gives the rendered text without HTML tags
+                            messageContent = contentDiv.innerText || contentDiv.textContent;
+                        }
+                    }
+                    
+                    // Fallback if we still don't have content
+                    if (!messageContent || messageContent.trim() === '') {
+                        console.log('Using fallback content extraction');
+                        // Get all text content from the message, excluding the bookmark button text
+                        const buttonText = button.innerText || '';
+                        const fullText = botMessage.innerText || botMessage.textContent || '';
+                        messageContent = fullText.replace(buttonText, '').trim() || 'No content available';
+                    }
+                    
+                    // Log the content we're about to save
+                    console.log('Content to be saved:', messageContent);
+                    
+                    // Update the bookmark icon to filled
+                    const bookmarkIcon = button.querySelector('i');
+                    if (bookmarkIcon) {
+                        bookmarkIcon.className = 'fas fa-bookmark';
+                    }
+                    
+                    // Save the response
+                    saveResponse(messageContent, button);
+                }
+            });
         });
 
+        // Function to directly save the complete response stored in window.completeResponse
+        window.saveDirectResponse = async function(button) {
+            try {
+                if (!window.completeResponse) {
+                    console.error('No complete response available to save');
+                    return;
+                }
+                
+                console.log('Saving direct response from window.completeResponse');
+                
+                // Get the user question from the data attribute
+                let userQuestion = '';
+                const questionInput = document.getElementById('question-input');
+                if (questionInput) {
+                    userQuestion = questionInput.getAttribute('data-last-question') || '';
+                }
+                
+                // Format the complete conversation
+                let messageContent = '';
+                if (userQuestion) {
+                    messageContent = `You:\n${userQuestion}\n\nMo:\n${window.completeResponse}`;
+                } else {
+                    messageContent = window.completeResponse;
+                }
+                
+                // Use the global related topics array that was populated during response generation
+                let relatedTopics = window.relatedTopics || [];
+                
+                // If the global array is empty, try to get topics from the DOM as a fallback
+                if (relatedTopics.length === 0) {
+                    console.log('No related topics found in global array, trying DOM...');
+                    const topicTiles = document.querySelectorAll('.related-topic-tile');
+                    if (topicTiles && topicTiles.length > 0) {
+                        topicTiles.forEach(topic => {
+                            if (topic.textContent && topic.textContent.trim()) {
+                                relatedTopics.push(topic.textContent.trim());
+                            }
+                        });
+                    }
+                }
+                
+                // If still no topics found, try to extract them from the complete response
+                if (relatedTopics.length === 0) {
+                    console.log('No related topics found in DOM, trying text extraction...');
+                    
+                    // First try to extract from the [RELATED TOPICS] section (most reliable)
+                    const relatedTopicsSectionBrackets = window.completeResponse.match(/\[RELATED TOPICS\][\s\S]*?(\n\n|$)/i);
+                    const relatedTopicsSectionHeader = window.completeResponse.match(/Related Topics:[\s\S]*$/i);
+                    
+                    let topicsText = '';
+                    if (relatedTopicsSectionBrackets) {
+                        topicsText = relatedTopicsSectionBrackets[0];
+                        console.log('Found [RELATED TOPICS] section');
+                    } else if (relatedTopicsSectionHeader) {
+                        topicsText = relatedTopicsSectionHeader[0];
+                        console.log('Found Related Topics: header');
+                    }
+                    
+                    if (topicsText) {
+                        console.log('Topics section text:', topicsText);
+                        
+                        // Try multiple regex patterns to ensure we capture all topics
+                        // First try to match complete numbered topics with question marks or periods
+                        const fullTopicRegex = /\d+\.\s*([^\n]+?(\?|\.))/g;
+                        // Then try to match any numbered topics (for incomplete or malformed topics)
+                        const partialTopicRegex = /\d+\.\s*([^\n]+)/g;
+                        // Special case for topics that might span multiple lines
+                        const multiLineTopicRegex = /\d+\.\s*([^\d\n][^\n]*)/g;
+                        
+                        // Try each regex in order of specificity
+                        const topicMatches = topicsText.match(fullTopicRegex) || 
+                                           topicsText.match(partialTopicRegex) || 
+                                           topicsText.match(multiLineTopicRegex);
+                        
+                        if (topicMatches && topicMatches.length > 0) {
+                            console.log('Raw matched topics:', topicMatches);
+                            
+                            relatedTopics = topicMatches.map(topic => {
+                                // Clean up the topic text
+                                let cleanTopic = topic
+                                    .replace(/^\d+\.\s*/, '')  // Remove leading numbers
+                                    .replace(/\s+/g, ' ')       // Normalize whitespace
+                                    .trim();
+                                
+                                // Convert honorifics to English
+                                cleanTopic = cleanTopic
+                                    .replace(/\ufdfa/g, ' (PBUH) ')
+                                    .replace(/\u0631\u0636\u064a \u0627\u0644\u0644\u0647 \u0639\u0646\u0647|\u0631\u0636\u064a \u0627\u0644\u0644\u0647 \u0639\u0646\u0647\u0627/g, ' (RA) ')
+                                    .replace(/\u0639\u0644\u064a\u0647 \u0627\u0644\u0633\u0644\u0627\u0645/g, ' (AS) ')
+                                    .replace(/\s+/g, ' ')  // Normalize whitespace again
+                                    .trim();
+                                
+                                return cleanTopic;
+                            }).filter(topic => topic && topic.length > 0);
+                            
+                            console.log('Extracted and cleaned topics:', relatedTopics);
+                        } else {
+                            console.log('No topic matches found in section');
+                        }
+                    } else {
+                        console.log('No topics section found in text');
+                    }
+                }
+                
+                console.log('Found related topics:', relatedTopics);
+                
+                // Always add related topics to the content if they exist
+                if (relatedTopics.length > 0) {
+                    console.log('Adding related topics to saved content:', relatedTopics);
+                    
+                    // Remove any existing Related Topics section to avoid duplicates
+                    // This ensures we have a clean, complete section
+                    if (messageContent.includes('Related Topics:')) {
+                        console.log('Removing existing Related Topics section');
+                        messageContent = messageContent.replace(/\n\nRelated Topics:[\s\S]*$/, '');
+                    }
+                    
+                    // Format topics with proper numbering and line breaks
+                    const formattedTopics = relatedTopics.map((topic, index) => `${index + 1}. ${topic}`).join('\n');
+                    
+                    // Add a clear separator and the related topics
+                    messageContent += '\n\nRelated Topics:\n' + formattedTopics;
+                    console.log('Final formatted topics:', formattedTopics);
+                } else {
+                    console.log('No related topics to add');
+                }
+                
+                console.log('Formatted direct response to save:', messageContent.substring(0, 100) + '...');
+                
+                // Update the bookmark icon
+                if (button) {
+                    const bookmarkIcon = button.querySelector('i');
+                    if (bookmarkIcon) {
+                        bookmarkIcon.className = 'fas fa-bookmark';
+                    }
+                }
+                
+                // Save the response
+                await saveResponse(messageContent, button);
+                
+            } catch (error) {
+                console.error('Error in saveDirectResponse:', error);
+            }
+        };
+        
+        // Function to save the full response from the complete response container
+        window.saveFullResponse = async function(container) {
+            try {
+                if (!container) {
+                    console.error('No container provided to saveFullResponse');
+                    return;
+                }
+                
+                console.log('Saving full response from container:', container);
+                
+                // First try to get the current question from the input field
+                let userQuestion = '';
+                const questionInput = document.getElementById('question-input');
+                if (questionInput) {
+                    userQuestion = questionInput.getAttribute('data-last-question') || '';
+                    console.log('Found user question from data attribute:', userQuestion);
+                }
+                
+                // If we couldn't get it from the data attribute, try other methods
+                if (!userQuestion) {
+                    // Try to get it from the user message in the container
+                    const userMessage = container.querySelector('.user-message') || 
+                                       document.querySelector('.user-message');
+                    if (userMessage) {
+                        const userContent = userMessage.querySelector('.message-content');
+                        if (userContent) {
+                            userQuestion = userContent.innerText || userContent.textContent;
+                            console.log('Found user question from message:', userQuestion);
+                        }
+                    }
+                }
+                
+                // Get the bot response content
+                let botResponse = '';
+                
+                // First try to get it from the complete response container
+                if (container.classList.contains('complete-response-container')) {
+                    // Get only the message content divs, not the share section
+                    const messageContents = container.querySelectorAll('.message-content');
+                    if (messageContents && messageContents.length > 0) {
+                        const contentTexts = [];
+                        messageContents.forEach(content => {
+                            contentTexts.push(content.innerText || content.textContent);
+                        });
+                        botResponse = contentTexts.join('\n\n');
+                        console.log('Got response from message-content divs:', botResponse.substring(0, 50) + '...');
+                    } else {
+                        // If no message-content divs found, try to get the content but exclude the share section
+                        const shareSection = container.querySelector('.share-section');
+                        const shareIndicator = container.querySelector('div[style*="color: #1e6f5c"]'); // The "Found this helpful?" text
+                        
+                        // Clone the container to avoid modifying the original
+                        const tempContainer = container.cloneNode(true);
+                        
+                        // Remove the share section and indicator if they exist
+                        if (shareSection) {
+                            const shareInContainer = tempContainer.querySelector('.share-section');
+                            if (shareInContainer) shareInContainer.remove();
+                        }
+                        if (shareIndicator) {
+                            const indicatorInContainer = tempContainer.querySelector('div[style*="color: #1e6f5c"]');
+                            if (indicatorInContainer) indicatorInContainer.remove();
+                        }
+                        
+                        // Now get the text content without the share section
+                        botResponse = tempContainer.innerText || tempContainer.textContent;
+                        console.log('Got response from container (excluding share section):', botResponse.substring(0, 50) + '...');
+                    }
+                } else {
+                    // If not in a complete container, try to find all bot messages
+                    const botMessages = document.querySelectorAll('.bot-message');
+                    const responseTexts = [];
+                    botMessages.forEach(msg => {
+                        const content = msg.querySelector('.message-content');
+                        if (content) {
+                            responseTexts.push(content.innerText || content.textContent);
+                        }
+                    });
+                    if (responseTexts.length > 0) {
+                        botResponse = responseTexts.join('\n\n');
+                        console.log('Combined response from bot messages:', botResponse.substring(0, 50) + '...');
+                    }
+                }
+                
+                // If we still don't have a response, try one more approach
+                if (!botResponse || botResponse.trim() === '') {
+                    // Try to get it from the window.completeResponse variable
+                    if (window.completeResponse) {
+                        botResponse = window.completeResponse;
+                        console.log('Using window.completeResponse:', botResponse.substring(0, 50) + '...');
+                    }
+                }
+                
+                // Format the conversation
+                let messageContent = '';
+                if (userQuestion && botResponse) {
+                    messageContent = `You:\n${userQuestion}\n\nMo:\n${botResponse}`;
+                    console.log('Formatted conversation to save:', messageContent.substring(0, 100) + '...');
+                } else if (botResponse) {
+                    messageContent = botResponse;
+                    console.log('Saving just the response:', messageContent.substring(0, 100) + '...');
+                }
+                
+                // If we have content, save it
+                if (messageContent && messageContent.trim() !== '') {
+                    // Find the bookmark button and update its icon
+                    const bookmarkButton = container.querySelector('.share-btn i.far.fa-bookmark');
+                    if (bookmarkButton) {
+                        bookmarkButton.className = 'fas fa-bookmark';
+                    }
+                    
+                    // Save the response
+                    await saveResponse(messageContent, container.querySelector('.share-btn:last-child'));
+                } else {
+                    console.error('No content found to save');
+                }
+            } catch (error) {
+                console.error('Error in saveFullResponse:', error);
+            }
+        };
+        
+        // Make helper functions globally available
+        window.showAuthModal = function(modalType) {
+            try {
+                if (modalType === 'login') {
+                    const loginModal = document.getElementById('login-modal');
+                    if (loginModal) {
+                        loginModal.style.display = 'block';
+                        console.log('Login modal displayed via global function');
+                        // Clear any previous errors
+                        const loginError = document.getElementById('login-error');
+                        if (loginError) loginError.textContent = '';
+                    }
+                } else if (modalType === 'signup') {
+                    const signupModal = document.getElementById('signup-modal');
+                    if (signupModal) {
+                        signupModal.style.display = 'block';
+                        console.log('Signup modal displayed via global function');
+                        // Clear any previous errors
+                        const signupError = document.getElementById('signup-error');
+                        if (signupError) signupError.textContent = '';
+                    }
+                }
+            } catch (error) {
+                console.error('Error showing auth modal:', error);
+            }
+        };
+        
         // Make selectTopic globally available
         window.selectTopic = function(topic) {
             // Handle escaped quotes in the topic
             const unescapedTopic = topic
                 .replace(/\\'/g, "'")
                 .replace(/\\\"/g, '"');
+            
+            // Find and highlight the matching topic card if it exists
+            document.querySelectorAll('.topic-card').forEach(card => {
+                const cardTopic = card.getAttribute('data-topic');
+                if (cardTopic === topic) {
+                    document.querySelectorAll('.topic-card').forEach(c => c.classList.remove('topic-card-active'));
+                    card.classList.add('topic-card-active');
+                }
+            });
+            
+            // Set the input value
             userInput.value = unescapedTopic;
-            sendMessage(unescapedTopic);
+            
+            // Scroll to the chat input with smooth animation
+            document.querySelector('.input-section').scrollIntoView({ behavior: 'smooth' });
+            
+            // Add a slight delay before sending the message
+            setTimeout(() => {
+                sendMessage(unescapedTopic);
+            }, 500);
         }
 
         let currentReader = null;
@@ -2983,6 +3859,9 @@
             // If no message provided, get it from the input
             if (!message) message = userInput.value;
             if (!message || !message.trim()) return;
+            
+            // Store the question for later reference (used in saving responses)
+            userInput.setAttribute('data-last-question', message);
             
             // Clear input and show user message
             userInput.value = '';
@@ -3028,6 +3907,9 @@
                 // Clear previous response when starting a new one
                 window.completeResponse = '';
             }
+            
+            // Initialize or clear the related topics array
+            window.relatedTopics = [];
             
             let currentSection = '';
             
@@ -3188,6 +4070,21 @@
                                                 // Create a new message for topics
                                                 currentMessage = document.createElement('div');
                                                 currentMessage.className = 'message bot-message';
+                                                
+                                                // Create message content container
+                                                const messageContent = document.createElement('div');
+                                                messageContent.className = 'message-content';
+                                                currentMessage.appendChild(messageContent);
+                                                
+                                                // Add bookmark button
+                                                const messageActions = document.createElement('div');
+                                                messageActions.className = 'message-actions';
+                                                messageActions.innerHTML = `
+                                                    <button class="bookmark-button" title="Save this response">
+                                                        <i class="far fa-bookmark"></i>
+                                                    </button>
+                                                `;
+                                                currentMessage.appendChild(messageActions);
                                                 currentSection = 'RELATED TOPICS';
                                                 
                                                 // Create topics container
@@ -3197,11 +4094,16 @@
                                                 header.className = 'related-topics-header';
                                                 header.textContent = 'Related Topics:';
                                                 topicsDiv.appendChild(header);
-                                                currentMessage.appendChild(topicsDiv);
+                                                currentMessage.querySelector('.message-content').appendChild(topicsDiv);
                                                 chatMessages.appendChild(currentMessage);
                                                 
                                                 // Add related topics header to complete response
                                                 window.completeResponse += '\n\nRelated Topics:\n';
+                                                
+                                                // Initialize related topics array if needed
+                                                if (!window.relatedTopics) {
+                                                    window.relatedTopics = [];
+                                                }
                                             }
                                         } else {
                                             // For other sections
@@ -3211,11 +4113,26 @@
                                             }
                                             currentMessage = document.createElement('div');
                                             currentMessage.className = 'message bot-message';
+                                            
+                                            // Create message content container
+                                            const messageContent = document.createElement('div');
+                                            messageContent.className = 'message-content';
+                                            currentMessage.appendChild(messageContent);
+                                            
+                                            // Add bookmark button
+                                            const messageActions = document.createElement('div');
+                                            messageActions.className = 'message-actions';
+                                            messageActions.innerHTML = `
+                                                <button class="bookmark-button" title="Save this response">
+                                                    <i class="far fa-bookmark"></i>
+                                                </button>
+                                            `;
+                                            currentMessage.appendChild(messageActions);
                                             currentSection = sectionName;
                                             const header = document.createElement('div');
                                             header.className = 'section-header';
                                             header.textContent = chunk;
-                                            currentMessage.appendChild(header);
+                                            currentMessage.querySelector('.message-content').appendChild(header);
                                             
                                             // Add section header to complete response
                                             window.completeResponse += '\n\n' + chunk + '\n';
@@ -3233,14 +4150,32 @@
                                                 
                                                 // Handle honorifics or normal text
                                                 let processedChunk = chunk;
-                                                if (chunk.includes('ﷺ')) {  // Prophet Muhammad (PBUH)
+                                                
+                                                // Process all honorifics regardless of whether they're in this chunk
+                                                // This ensures we catch honorifics that might be split across chunks
+                                                
+                                                // Prophet Muhammad (PBUH)
+                                                if (processedChunk.includes('ﷺ') || topicsDiv.currentTopic.includes('ﷺ')) {
                                                     processedChunk = processedChunk.replace(/ﷺ/g, ' (PBUH) ');
+                                                    // Also check and fix the accumulated topic text
+                                                    topicsDiv.currentTopic = topicsDiv.currentTopic.replace(/ﷺ/g, ' (PBUH) ');
                                                     topicsDiv.honorificPending = true;
-                                                } else if (chunk.includes('رضي الله عنه') || chunk.includes('رضي الله عنها')) {  // RA
+                                                } 
+                                                
+                                                // Companions (RA)
+                                                if (processedChunk.includes('رضي الله عنه') || processedChunk.includes('رضي الله عنها') ||
+                                                    topicsDiv.currentTopic.includes('رضي الله عنه') || topicsDiv.currentTopic.includes('رضي الله عنها')) {
                                                     processedChunk = processedChunk.replace(/رضي الله عنه|رضي الله عنها/g, ' (RA) ');
+                                                    // Also check and fix the accumulated topic text
+                                                    topicsDiv.currentTopic = topicsDiv.currentTopic.replace(/رضي الله عنه|رضي الله عنها/g, ' (RA) ');
                                                     topicsDiv.honorificPending = true;
-                                                } else if (chunk.includes('عليه السلام')) {  // AS
+                                                } 
+                                                
+                                                // Prophets (AS)
+                                                if (processedChunk.includes('عليه السلام') || topicsDiv.currentTopic.includes('عليه السلام')) {
                                                     processedChunk = processedChunk.replace(/عليه السلام/g, ' (AS) ');
+                                                    // Also check and fix the accumulated topic text
+                                                    topicsDiv.currentTopic = topicsDiv.currentTopic.replace(/عليه السلام/g, ' (AS) ');
                                                     topicsDiv.honorificPending = true;
                                                 }
                                             
@@ -3256,9 +4191,17 @@
                                                 if (questionMatches && !topicsDiv.honorificPending) {
                                                     for (const question of questionMatches) {
                                                         // Clean up the question text
-                                                        const cleanQuestion = question
+                                                        let cleanQuestion = question
                                                             .replace(/^\d+\.\s*/, '')  // Remove leading numbers
                                                             .replace(/\s+/g, ' ')       // Normalize whitespace
+                                                            .trim();
+                                                            
+                                                        // Make sure all honorifics are properly converted to English
+                                                        cleanQuestion = cleanQuestion
+                                                            .replace(/\ufdfa/g, ' (PBUH) ')
+                                                            .replace(/\u0631\u0636\u064a \u0627\u0644\u0644\u0647 \u0639\u0646\u0647|\u0631\u0636\u064a \u0627\u0644\u0644\u0647 \u0639\u0646\u0647\u0627/g, ' (RA) ')
+                                                            .replace(/\u0639\u0644\u064a\u0647 \u0627\u0644\u0633\u0644\u0627\u0645/g, ' (AS) ')
+                                                            .replace(/\s+/g, ' ')  // Normalize whitespace again after replacements
                                                             .trim();
                                                         
                                                         // Create button for the question
@@ -3267,6 +4210,21 @@
                                                         button.textContent = cleanQuestion;
                                                         button.onclick = () => selectTopic(cleanQuestion);
                                                         topicsDiv.appendChild(button);
+                                                        
+                                                        // Store the topic in the global array with full text
+                                                        // Make sure we don't add duplicates and the topic is complete
+                                                        if (cleanQuestion && cleanQuestion.length > 0 && !window.relatedTopics.includes(cleanQuestion)) {
+                                                            // Ensure honorifics are properly converted
+                                                            const processedTopic = cleanQuestion
+                                                                .replace(/\ufdfa/g, ' (PBUH) ')
+                                                                .replace(/\u0631\u0636\u064a \u0627\u0644\u0644\u0647 \u0639\u0646\u0647|\u0631\u0636\u064a \u0627\u0644\u0644\u0647 \u0639\u0646\u0647\u0627/g, ' (RA) ')
+                                                                .replace(/\u0639\u0644\u064a\u0647 \u0627\u0644\u0633\u0644\u0627\u0645/g, ' (AS) ')
+                                                                .replace(/\s+/g, ' ')
+                                                                .trim();
+                                                                
+                                                            window.relatedTopics.push(processedTopic);
+                                                            console.log('Added related topic:', processedTopic);
+                                                        }
                                                     }
                                                     
                                                     // Keep any remaining partial question
@@ -3279,6 +4237,21 @@
                                             if (!currentMessage) {
                                                 currentMessage = document.createElement('div');
                                                 currentMessage.className = 'message bot-message';
+                                                
+                                                // Create message content container
+                                                const messageContent = document.createElement('div');
+                                                messageContent.className = 'message-content';
+                                                currentMessage.appendChild(messageContent);
+                                                
+                                                // Add bookmark button
+                                                const messageActions = document.createElement('div');
+                                                messageActions.className = 'message-actions';
+                                                messageActions.innerHTML = `
+                                                    <button class="bookmark-button" title="Save this response">
+                                                        <i class="far fa-bookmark"></i>
+                                                    </button>
+                                                `;
+                                                currentMessage.appendChild(messageActions);
                                             }
                                             const content = document.createElement('span');
                                             content.innerHTML = processMessageText(chunk);
@@ -3355,6 +4328,9 @@
                         <button class="share-btn" onclick="copyToClipboard(this.closest('.complete-response-container'))" title="Copy to clipboard">
                             <i class="far fa-copy"></i>
                         </button>
+                        <button class="share-btn" onclick="saveDirectResponse(this)" title="Save this response">
+                            <i class="far fa-bookmark"></i>
+                        </button>
                     </div>
                 `;
                 completeResponseContainer.appendChild(shareSection);
@@ -3429,12 +4405,34 @@
         
         // Function to display a random hadith
         function displayRandomHadith() {
-            const randomIndex = Math.floor(Math.random() * ramadanHadiths.length);
-            const hadith = ramadanHadiths[randomIndex];
+            // Get a random hadith that's different from the current one
+            let currentArabic = document.querySelector('.hadith-arabic').textContent;
+            let randomIndex;
+            let hadith;
             
-            document.querySelector('.hadith-arabic').textContent = hadith.arabic;
-            document.querySelector('.hadith-english').textContent = hadith.english;
-            document.querySelector('.hadith-source').textContent = hadith.source;
+            // Make sure we get a different hadith
+            do {
+                randomIndex = Math.floor(Math.random() * ramadanHadiths.length);
+                hadith = ramadanHadiths[randomIndex];
+            } while (hadith.arabic === currentArabic && ramadanHadiths.length > 1);
+            
+            // Add a small animation effect
+            const hadithContent = document.getElementById('daily-hadith');
+            hadithContent.style.opacity = '0';
+            
+            // Update the hadith after a short delay for animation
+            setTimeout(() => {
+                // Update the hadith text
+                document.querySelector('.hadith-arabic').textContent = hadith.arabic;
+                document.querySelector('.hadith-english').textContent = hadith.english;
+                document.querySelector('.hadith-source').textContent = hadith.source;
+                
+                // Fade back in
+                hadithContent.style.opacity = '1';
+                
+                // Log for debugging
+                console.log('Displayed new hadith:', hadith.english.substring(0, 30) + '...');
+            }, 300);
         }
         
         // Function to get user's location and fetch prayer times
@@ -3575,7 +4573,14 @@
             doc, 
             setDoc, 
             getDoc, 
-            serverTimestamp 
+            serverTimestamp,
+            collection,
+            addDoc,
+            query,
+            where,
+            orderBy,
+            limit,
+            getDocs
         } from 'https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js';
         
         // DOM Elements
@@ -4430,6 +5435,1602 @@
             }
         }
         
+        // Function to handle profile tab switching
+        function initProfileTabs() {
+            const tabButtons = document.querySelectorAll('.profile-tab-btn');
+            const tabContents = document.querySelectorAll('.profile-tab-content');
+            
+            tabButtons.forEach(button => {
+                button.addEventListener('click', () => {
+                    const tabId = button.getAttribute('data-tab');
+                    
+                    // Remove active class from all buttons and contents
+                    tabButtons.forEach(btn => btn.classList.remove('active'));
+                    tabContents.forEach(content => content.classList.remove('active'));
+                    
+                    // Add active class to current button and content
+                    button.classList.add('active');
+                    document.getElementById(tabId).classList.add('active');
+                    
+                    // If this is the saved responses or chat history tab, load the data
+                    if (tabId === 'saved-responses-tab') {
+                        loadSavedResponses();
+                    } else if (tabId === 'chat-history-tab') {
+                        loadChatHistory();
+                    }
+                });
+            });
+        }
+        
+        // Function to load saved responses
+        async function loadSavedResponses() {
+            console.log('Loading saved responses...');
+            const auth = getAuth();
+            const user = auth.currentUser;
+            
+            if (!user) {
+                console.log('No user logged in');
+                return;
+            }
+            
+            console.log('User ID:', user.uid);
+            
+            const savedResponsesList = document.getElementById('saved-responses-list');
+            if (!savedResponsesList) {
+                console.error('savedResponsesList element not found');
+                return;
+            }
+            
+            const savedResponsesOverlay = document.getElementById('saved-responses-premium-overlay');
+            
+            // Check if user is premium
+            const isPremium = await checkUserIsPremium(user.uid);
+            console.log('User is premium:', isPremium);
+            
+            // For free users, we'll still show their most recent responses up to the limit
+            let limitQuery = false;
+            let freeUserResponseCount = 0;
+            
+            // Initially hide the premium overlay for everyone
+            if (savedResponsesOverlay) {
+                savedResponsesOverlay.style.display = 'none';
+            }
+            
+            // If not premium, we'll limit the query
+            if (!isPremium) {
+                try {
+                    // Check how many saved responses they have
+                    const db = getFirestore();
+                    const savedResponsesRef = collection(db, 'savedResponses');
+                    const q = query(savedResponsesRef, where('userId', '==', user.uid));
+                    const querySnapshot = await getDocs(q);
+                    
+                    freeUserResponseCount = querySnapshot.size;
+                    console.log(`Free user has ${freeUserResponseCount} saved responses`);
+                    
+                    // Always limit the query for free users
+                    limitQuery = true;
+                    
+                    // Set up upgrade button for when they need more
+                    const upgradeButton = document.getElementById('saved-responses-upgrade');
+                    if (upgradeButton) {
+                        upgradeButton.onclick = function() {
+                            // Close profile modal first
+                            const profileModal = document.getElementById('profile-modal');
+                            if (profileModal) profileModal.style.display = 'none';
+                            
+                            // Show premium options with slight delay
+                            setTimeout(() => {
+                                handlePremiumUpgrade();
+                            }, 100);
+                        };
+                    }
+                } catch (error) {
+                    console.error('Error checking saved responses count:', error);
+                }
+            }
+            
+            // User is premium, load saved responses
+            try {
+                console.log('Starting Firestore query for saved responses');
+                const db = getFirestore();
+                const savedResponsesRef = collection(db, 'savedResponses');
+                
+                // Log the collection path
+                console.log('Collection path:', savedResponsesRef.path);
+                
+                // Create a query - for free users, limit to FREE_USER_SAVE_LIMIT items
+                let q;
+                if (limitQuery) {
+                    q = query(
+                        savedResponsesRef,
+                        where('userId', '==', user.uid),
+                        orderBy('timestamp', 'desc'),
+                        limit(FREE_USER_SAVE_LIMIT) // Limit to 3 most recent items for free users
+                    );
+                    console.log(`Limited saved responses query to ${FREE_USER_SAVE_LIMIT} items for free user`);
+                } else {
+                    q = query(
+                        savedResponsesRef,
+                        where('userId', '==', user.uid),
+                        orderBy('timestamp', 'desc')
+                    );
+                    console.log('No limit for premium user');
+                }
+                
+                console.log('Executing query...');
+                const querySnapshot = await getDocs(q);
+                console.log('Query complete. Empty?', querySnapshot.empty);
+                console.log('Number of documents:', querySnapshot.size);
+                
+                // Clear previous content
+                if (savedResponsesList) {
+                    savedResponsesList.innerHTML = '';
+                    
+                    // For free users, add a message about the limit
+                    if (limitQuery && freeUserResponseCount > FREE_USER_SAVE_LIMIT) {
+                        const limitMessage = document.createElement('div');
+                        limitMessage.className = 'limit-message';
+                        limitMessage.innerHTML = `
+                            <p><i class="fas fa-info-circle"></i> Showing your ${FREE_USER_SAVE_LIMIT} most recent saved responses. 
+                            <a href="#" id="saved-responses-upgrade-link">Upgrade to premium</a> for all ${freeUserResponseCount} responses.</p>
+                        `;
+                        savedResponsesList.appendChild(limitMessage);
+                        
+                        // Add event listener to the upgrade link
+                        setTimeout(() => {
+                            const upgradeLink = document.getElementById('saved-responses-upgrade-link');
+                            if (upgradeLink) {
+                                upgradeLink.addEventListener('click', function(e) {
+                                    e.preventDefault();
+                                    // Close profile modal
+                                    const profileModal = document.getElementById('profile-modal');
+                                    if (profileModal) profileModal.style.display = 'none';
+                                    // Show premium options
+                                    setTimeout(() => handlePremiumUpgrade(), 100);
+                                });
+                            }
+                        }, 100);
+                    }
+                }
+                
+                if (querySnapshot.empty) {
+                    console.log('No saved responses found');
+                    // Show empty state
+                    savedResponsesList.innerHTML = `
+                        <div class="empty-state">
+                            <i class="fas fa-bookmark empty-icon"></i>
+                            <p>No saved responses yet</p>
+                            <p class="empty-description">When you find a helpful response, click the bookmark icon to save it here.</p>
+                        </div>
+                    `;
+                    return;
+                }
+                
+                console.log('Found saved responses, processing...');
+                
+                // Limit to the 5 most recent saved responses
+                const savedResponseItems = [];
+                querySnapshot.forEach((doc) => {
+                    savedResponseItems.push({
+                        id: doc.id,
+                        data: doc.data()
+                    });
+                });
+                
+                // Sort by timestamp (newest first) and take only the 5 most recent
+                savedResponseItems.sort((a, b) => {
+                    const timestampA = a.data.timestamp || 0;
+                    const timestampB = b.data.timestamp || 0;
+                    return timestampB - timestampA;
+                });
+                
+                const recentSavedResponses = savedResponseItems.slice(0, 5);
+                console.log(`Displaying ${recentSavedResponses.length} most recent saved responses`);
+                
+                // Display saved responses
+                recentSavedResponses.forEach((item) => {
+                    const docId = item.id;
+                    const data = item.data;
+                    
+                    // Debug log to see what's in the data
+                    console.log('Saved response data:', data);
+                    console.log('Content type:', typeof data.content);
+                    
+                    // Handle Firestore special object format
+                    // This is critical - Firestore sometimes returns data in a special format
+                    // where the actual value is nested inside an object with type-specific properties
+                    if (data.content && typeof data.content === 'object') {
+                        // Check if this is a Firestore special object format
+                        const specialKeys = ['stringValue', 'integerValue', 'doubleValue', 'booleanValue', 'arrayValue', 'mapValue', 'timestampValue', 'geoPointValue', 'bytesValue', 'referenceValue', 'nullValue'];
+                        const hasSpecialKey = specialKeys.some(key => key in data.content);
+                        
+                        if (hasSpecialKey) {
+                            console.log('Detected Firestore special object format');
+                            // Extract the actual value based on its type
+                            if ('stringValue' in data.content) {
+                                data.content = data.content.stringValue;
+                                console.log('Extracted stringValue:', data.content);
+                            } else if ('mapValue' in data.content && data.content.mapValue.fields) {
+                                data.content = data.content.mapValue.fields;
+                                console.log('Extracted mapValue fields');
+                            }
+                            // Add more type conversions as needed
+                        } else {
+                            console.log('Regular object with keys:', Object.keys(data.content));
+                            for (const key in data.content) {
+                                console.log(`Content.${key}:`, data.content[key]);
+                            }
+                        }
+                    }
+                    
+                    // Handle content with fallbacks
+                    let contentText = 'No content available';
+                    try {
+                        // Check for answer property first (used in this app)
+                        if (data.answer) {
+                            // If answer is a string, use it directly
+                            if (typeof data.answer === 'string') {
+                                contentText = data.answer;
+                                console.log('Using answer property as content');
+                            } 
+                            // If answer is an object with special format
+                            else if (typeof data.answer === 'object') {
+                                if ('stringValue' in data.answer) {
+                                    contentText = data.answer.stringValue;
+                                    console.log('Using answer.stringValue');
+                                } else {
+                                    // Try to stringify the object
+                                    contentText = JSON.stringify(data.answer);
+                                    console.log('Stringified answer object');
+                                }
+                            }
+                        }
+                        // Fall back to content property if answer doesn't exist
+                        else if (data.content) {
+                            // If content is a string, use it directly
+                            if (typeof data.content === 'string') {
+                                contentText = data.content;
+                                console.log('Using content property');
+                            } 
+                            // If content is an object with a text property (legacy format)
+                            else if (typeof data.content === 'object') {
+                                if (data.content.text) {
+                                    contentText = data.content.text;
+                                } else if (data.content.stringValue) {
+                                    // Handle Firestore encoded values
+                                    contentText = data.content.stringValue;
+                                } else if (data.content.value) {
+                                    contentText = data.content.value;
+                                } else {
+                                    // Try to stringify the object
+                                    contentText = JSON.stringify(data.content);
+                                }
+                            }
+                        }
+                        
+                        // Add question to the display if available
+                        if (data.question && typeof data.question === 'string') {
+                            contentText = data.question + ': ' + contentText;
+                            console.log('Added question to content text');
+                        }
+                        
+                        // Clean up any HTML tags for display in the list
+                        contentText = contentText.replace(/<[^>]*>/g, ' ');
+                        
+                        // Truncate for display in list
+                        contentText = contentText.substring(0, 100) + (contentText.length > 100 ? '...' : '');
+                        
+                        console.log('Final content text:', contentText);
+                    } catch (e) {
+                        console.error('Error processing content:', e);
+                    }
+                    
+                    // Safely handle timestamp
+                    let dateStr = 'Date not available';
+                    try {
+                        dateStr = formatTimestamp(data.timestamp);
+                    } catch (e) {
+                        console.error('Error formatting date:', e);
+                    }
+                    
+                    // Create a better display title from the question if available
+                    let displayText = contentText;
+                    if (data.question && typeof data.question === 'string') {
+                        displayText = data.question;
+                        console.log('Using question for display text:', displayText);
+                    }
+                    
+                    const responseItem = document.createElement('div');
+                    responseItem.className = 'response-item';
+                    responseItem.innerHTML = `
+                        <div class="response-content">${displayText}</div>
+                        <div class="response-date">${dateStr}</div>
+                        <div class="response-actions">
+                            <button class="action-button view-response" data-id="${docId}">
+                                <i class="fas fa-eye"></i> View
+                            </button>
+                            <button class="action-button delete-response" data-id="${docId}">
+                                <i class="fas fa-trash"></i> Delete
+                            </button>
+                        </div>
+                    `;
+                    savedResponsesList.appendChild(responseItem);
+                });
+                
+                // Add event listeners for view and delete buttons
+                document.querySelectorAll('.view-response').forEach(button => {
+                    button.addEventListener('click', async (e) => {
+                        const responseId = e.currentTarget.getAttribute('data-id');
+                        // View the full response
+                        await viewSavedResponse(responseId);
+                    });
+                });
+                
+                document.querySelectorAll('.delete-response').forEach(button => {
+                    button.addEventListener('click', async (e) => {
+                        const responseId = e.currentTarget.getAttribute('data-id');
+                        // Delete the response
+                        await deleteSavedResponse(responseId);
+                        // Reload the list
+                        loadSavedResponses();
+                    });
+                });
+                
+            } catch (error) {
+                console.error('Error loading saved responses:', error);
+                if (savedResponsesList) {
+                    savedResponsesList.innerHTML = `
+                        <div class="empty-state">
+                            <i class="fas fa-exclamation-circle empty-icon"></i>
+                            <p>Error loading saved responses</p>
+                            <p class="empty-description">Please try again later.</p>
+                        </div>
+                    `;
+                }
+            }
+        }
+        
+        // Helper function to format timestamps safely
+        function formatTimestamp(timestamp) {
+            try {
+                if (timestamp && typeof timestamp.toDate === 'function') {
+                    return new Date(timestamp.toDate()).toLocaleString();
+                } else if (timestamp && timestamp.seconds) {
+                    return new Date(timestamp.seconds * 1000).toLocaleString();
+                } else if (timestamp) {
+                    return new Date(timestamp).toLocaleString();
+                }
+                return 'Date not available';
+            } catch (e) {
+                console.log('Error formatting timestamp:', e);
+                return 'Date not available';
+            }
+        }
+        
+        // Function to view a saved response
+        async function viewSavedResponse(responseId) {
+            try {
+                const db = getFirestore();
+                const responseDoc = await getDoc(doc(db, 'savedResponses', responseId));
+                
+                if (responseDoc.exists()) {
+                    const data = responseDoc.data();
+                    console.log('Viewing saved response data:', data);
+                    
+                    // Create a modal to show the full response
+                    const viewModal = document.createElement('div');
+                    viewModal.className = 'auth-modal';
+                    viewModal.style.display = 'block';
+                    viewModal.style.zIndex = '1001'; // Higher than profile modal
+                    
+                    // Extract content with fallbacks
+                    let content = 'No content available';
+                    let question = '';
+                    
+                    // Log the data structure to understand what we're working with
+                    console.log('Saved response data structure:', Object.keys(data));
+                    
+                    // Check for answer property first (used in this app)
+                    if (data.answer) {
+                        console.log('Answer type in viewSavedResponse:', typeof data.answer);
+                        
+                        // If answer is a string, use it directly
+                        if (typeof data.answer === 'string') {
+                            content = data.answer;
+                            console.log('Using answer as content:', content.substring(0, 50));
+                        } 
+                        // If answer is an object with special format
+                        else if (typeof data.answer === 'object') {
+                            console.log('Answer is an object with keys:', Object.keys(data.answer));
+                            
+                            if ('stringValue' in data.answer) {
+                                content = data.answer.stringValue;
+                                console.log('Using answer.stringValue');
+                            } else {
+                                // Try to stringify the object
+                                try {
+                                    content = JSON.stringify(data.answer);
+                                    console.log('Using stringified answer');
+                                } catch (e) {
+                                    console.error('Error stringifying answer:', e);
+                                }
+                            }
+                        }
+                    }
+                    // Fall back to content property if answer doesn't exist
+                    else if (data.content) {
+                        console.log('Content type in viewSavedResponse:', typeof data.content);
+                        
+                        // If content is a string, use it directly
+                        if (typeof data.content === 'string') {
+                            content = data.content;
+                            console.log('Using string content:', content.substring(0, 50));
+                        } 
+                        // If content is an object, try to extract the actual content
+                        else if (typeof data.content === 'object') {
+                            console.log('Content is an object with keys:', Object.keys(data.content));
+                            
+                            if (data.content.text) {
+                                content = data.content.text;
+                                console.log('Using content.text');
+                            } else if (data.content.stringValue) {
+                                // Handle Firestore encoded values
+                                content = data.content.stringValue;
+                                console.log('Using content.stringValue');
+                            } else if (data.content.value) {
+                                content = data.content.value;
+                                console.log('Using content.value');
+                            } else {
+                                // Try to stringify the object
+                                try {
+                                    content = JSON.stringify(data.content);
+                                    console.log('Using stringified content');
+                                } catch (e) {
+                                    console.error('Error stringifying content:', e);
+                                }
+                            }
+                        }
+                    }
+                    
+                    // Get the question if available
+                    if (data.question) {
+                        if (typeof data.question === 'string') {
+                            question = data.question;
+                            console.log('Found question:', question);
+                        } else if (typeof data.question === 'object' && 'stringValue' in data.question) {
+                            question = data.question.stringValue;
+                            console.log('Found question from stringValue:', question);
+                        }
+                    }
+                    
+                    // Format content for better display
+                    console.log('Content before formatting:', content);
+                    
+                    // Clean up any null or undefined content
+                    if (!content || content === 'undefined' || content === 'null') {
+                        content = 'No content available';
+                    }
+                    
+                    // If content is plain text (no HTML tags), add proper formatting
+                    if (content && typeof content === 'string' && !content.includes('<') && !content.includes('>')) {
+                        // Convert plain text to formatted HTML with paragraphs
+                        content = content.split('\n\n').map(paragraph => `<p>${paragraph}</p>`).join('');
+                        // Handle single line breaks
+                        content = content.replace(/\n/g, '<br>');
+                    } else if (typeof content === 'object') {
+                        // If content is still an object, stringify it for display
+                        try {
+                            content = '<pre>' + JSON.stringify(content, null, 2) + '</pre>';
+                        } catch (e) {
+                            console.error('Error stringifying content for display:', e);
+                            content = 'Error displaying content';
+                        }
+                    }
+                    
+                    console.log('Content after formatting:', content.substring(0, 100) + '...');
+                    
+                    // Add styling for better readability
+                    const formattedContent = `
+                        <div style="font-family: 'Roboto', sans-serif; line-height: 1.6;">
+                            ${content}
+                        </div>
+                    `;
+                    
+                    // Add question section if available
+                    const questionSection = question ? `
+                        <div class="saved-question" style="margin-bottom: 15px; padding: 10px 15px; background: #e8f4ff; border-left: 4px solid #4a90e2; border-radius: 4px;">
+                            <strong>Question:</strong> ${question}
+                        </div>
+                    ` : '';
+                    
+                    viewModal.innerHTML = `
+                        <div class="auth-modal-content" style="max-width: 700px;">
+                            <span class="close-modal">&times;</span>
+                            <h3>Saved Response</h3>
+                            ${questionSection}
+                            <div class="saved-response-content" style="margin: 20px 0; max-height: 500px; overflow-y: auto; padding: 20px; background: #f9f9f9; border-radius: 8px; box-shadow: inset 0 0 5px rgba(0,0,0,0.05);">
+                                ${formattedContent}
+                            </div>
+                            <div style="text-align: right;">
+                                <button class="auth-submit-button close-view-button">Close</button>
+                            </div>
+                        </div>
+                    `;
+                    
+                    document.body.appendChild(viewModal);
+                    
+                    // Add event listeners to close the modal
+                    const closeButton = viewModal.querySelector('.close-modal');
+                    const closeViewButton = viewModal.querySelector('.close-view-button');
+                    
+                    closeButton.addEventListener('click', () => {
+                        document.body.removeChild(viewModal);
+                    });
+                    
+                    closeViewButton.addEventListener('click', () => {
+                        document.body.removeChild(viewModal);
+                    });
+                }
+            } catch (error) {
+                console.error('Error viewing saved response:', error);
+            }
+        }
+        
+        // Function to delete a saved response
+        async function deleteSavedResponse(responseId) {
+            try {
+                const db = getFirestore();
+                await deleteDoc(doc(db, 'savedResponses', responseId));
+            } catch (error) {
+                console.error('Error deleting saved response:', error);
+            }
+        }
+        
+        // Function to load chat history
+        async function loadChatHistory() {
+            console.log('Loading chat history...');
+            const auth = getAuth();
+            const user = auth.currentUser;
+            
+            if (!user) {
+                console.log('No user logged in');
+                return;
+            }
+            
+            console.log('User ID:', user.uid);
+            
+            const chatHistoryList = document.getElementById('chat-history-list');
+            if (!chatHistoryList) {
+                console.error('chatHistoryList element not found');
+                return;
+            }
+            
+            const chatHistoryOverlay = document.getElementById('chat-history-premium-overlay');
+            
+            // Debug: Log all DOM elements
+            console.log('Chat history list element:', chatHistoryList);
+            console.log('Chat history overlay element:', chatHistoryOverlay);
+            
+            // Check if user is premium
+            const isPremium = await checkUserIsPremium(user.uid);
+            console.log('User is premium:', isPremium);
+            
+            // For free users, we'll still show their most recent chat history up to the limit
+            let limitQuery = false;
+            
+            // Initially hide the premium overlay for everyone
+            if (chatHistoryOverlay) {
+                chatHistoryOverlay.style.display = 'none';
+            }
+            
+            // If not premium, we'll limit the query
+            if (!isPremium) {
+                console.log(`Free user will see up to ${FREE_USER_SAVE_LIMIT} recent chat history items`);
+                limitQuery = true;
+                
+                // Set up upgrade button for when they scroll down
+                const upgradeButton = document.getElementById('chat-history-upgrade');
+                if (upgradeButton) {
+                    upgradeButton.onclick = function() {
+                        // Close profile modal first
+                        const profileModal = document.getElementById('profile-modal');
+                        if (profileModal) profileModal.style.display = 'none';
+                        
+                        // Show premium options with slight delay
+                        setTimeout(() => {
+                            handlePremiumUpgrade();
+                        }, 100);
+                    };
+                }
+            }
+            
+            // User is premium, load chat history
+            try {
+                console.log('Starting Firestore query for chat history');
+                const db = getFirestore();
+                const chatHistoryRef = collection(db, 'chatHistory');
+                
+                // Log the collection path
+                console.log('Collection path:', chatHistoryRef.path);
+                
+                // Create a query - for free users, limit to FREE_USER_SAVE_LIMIT items
+                let q;
+                if (limitQuery) {
+                    q = query(
+                        chatHistoryRef,
+                        where('userId', '==', user.uid),
+                        orderBy('timestamp', 'desc'),
+                        limit(FREE_USER_SAVE_LIMIT) // Limit to 3 most recent items for free users
+                    );
+                    console.log(`Limited query to ${FREE_USER_SAVE_LIMIT} items for free user`);
+                } else {
+                    q = query(
+                        chatHistoryRef,
+                        where('userId', '==', user.uid),
+                        orderBy('timestamp', 'desc')
+                    );
+                    console.log('No limit for premium user');
+                }
+                
+                console.log('Executing chat history query...');
+                const querySnapshot = await getDocs(q);
+                console.log('Chat history query complete. Empty?', querySnapshot.empty);
+                console.log('Number of chat history documents:', querySnapshot.size);
+                
+                // Clear previous content
+                if (chatHistoryList) {
+                    chatHistoryList.innerHTML = '';
+                    
+                    // For free users, add a message about the limit
+                    if (limitQuery) {
+                        const limitMessage = document.createElement('div');
+                        limitMessage.className = 'limit-message';
+                        limitMessage.innerHTML = `
+                            <p><i class="fas fa-info-circle"></i> Showing your ${FREE_USER_SAVE_LIMIT} most recent conversations. 
+                            <a href="#" id="chat-history-upgrade-link">Upgrade to premium</a> for full history.</p>
+                        `;
+                        chatHistoryList.appendChild(limitMessage);
+                        
+                        // Add event listener to the upgrade link
+                        setTimeout(() => {
+                            const upgradeLink = document.getElementById('chat-history-upgrade-link');
+                            if (upgradeLink) {
+                                upgradeLink.addEventListener('click', function(e) {
+                                    e.preventDefault();
+                                    // Close profile modal
+                                    const profileModal = document.getElementById('profile-modal');
+                                    if (profileModal) profileModal.style.display = 'none';
+                                    // Show premium options
+                                    setTimeout(() => handlePremiumUpgrade(), 100);
+                                });
+                            }
+                        }, 100);
+                    }
+                }
+                
+                if (querySnapshot.empty) {
+                    console.log('No chat history found');
+                    // Show empty state
+                    chatHistoryList.innerHTML = `
+                        <div class="empty-state">
+                            <i class="fas fa-history empty-icon"></i>
+                            <p>No chat history yet</p>
+                            <p class="empty-description">Your conversation history will appear here.</p>
+                        </div>
+                    `;
+                    return;
+                }
+                
+                console.log('Found chat history, processing...');
+                
+                // Limit to the 5 most recent conversations
+                const chatHistoryItems = [];
+                querySnapshot.forEach((doc) => {
+                    chatHistoryItems.push({
+                        id: doc.id,
+                        data: doc.data()
+                    });
+                });
+                
+                // Sort by timestamp (newest first)
+                chatHistoryItems.sort((a, b) => {
+                    const timestampA = a.data.timestamp || 0;
+                    const timestampB = b.data.timestamp || 0;
+                    return timestampB - timestampA;
+                });
+                
+                console.log('Chat history items before deduplication:', chatHistoryItems.length);
+                
+                // Deduplicate chat history items based on content
+                const uniqueHistoryItems = [];
+                const seenContentHashes = new Set();
+                
+                chatHistoryItems.forEach(item => {
+                    // Create a content hash based on the first message or content
+                    let contentHash = '';
+                    
+                    try {
+                        // Try to get content from messages array
+                        if (item.data.messages && item.data.messages.length > 0) {
+                            const firstMessage = item.data.messages[0];
+                            if (firstMessage.content) {
+                                if (typeof firstMessage.content === 'string') {
+                                    contentHash = firstMessage.content.substring(0, 100);
+                                } else if (typeof firstMessage.content === 'object') {
+                                    if ('stringValue' in firstMessage.content) {
+                                        contentHash = firstMessage.content.stringValue.substring(0, 100);
+                                    } else {
+                                        contentHash = JSON.stringify(firstMessage.content).substring(0, 100);
+                                    }
+                                }
+                            }
+                        }
+                        // If no messages, try the content field
+                        else if (item.data.content) {
+                            if (typeof item.data.content === 'string') {
+                                contentHash = item.data.content.substring(0, 100);
+                            } else if (typeof item.data.content === 'object') {
+                                if ('stringValue' in item.data.content) {
+                                    contentHash = item.data.content.stringValue.substring(0, 100);
+                                } else {
+                                    contentHash = JSON.stringify(item.data.content).substring(0, 100);
+                                }
+                            }
+                        }
+                        
+                        // If we couldn't get a content hash, use the document ID
+                        if (!contentHash) {
+                            contentHash = item.id;
+                        }
+                        
+                        // Log the content hash for debugging
+                        console.log(`Content hash for item ${item.id}: ${contentHash}`);
+                        
+                        // Only add the item if we haven't seen this content before
+                        if (!seenContentHashes.has(contentHash)) {
+                            seenContentHashes.add(contentHash);
+                            uniqueHistoryItems.push(item);
+                        } else {
+                            console.log(`Skipping duplicate item ${item.id} with hash ${contentHash}`);
+                        }
+                    } catch (e) {
+                        console.error('Error creating content hash:', e);
+                        // If there's an error, include the item to be safe
+                        uniqueHistoryItems.push(item);
+                    }
+                });
+                
+                console.log('Unique chat history items after deduplication:', uniqueHistoryItems.length);
+                
+                // Take only the 5 most recent unique conversations
+                const recentChatHistory = uniqueHistoryItems.slice(0, 5);
+                console.log(`Displaying ${recentChatHistory.length} most recent chat history items`);
+                
+                // Display chat history
+                recentChatHistory.forEach((item) => {
+                    const data = item.data;
+                    const docId = item.id;
+                    console.log('Processing chat history item:', docId);
+                    
+                    const historyItem = document.createElement('div');
+                    historyItem.className = 'history-item';
+                    
+                    let title = 'Conversation';
+                    let dateStr = 'Date not available';
+                    
+                    // Process messages to handle Firestore special object format
+                    try {
+                        if (data.messages && data.messages.length > 0) {
+                            // Process each message to handle Firestore special format
+                            data.messages = data.messages.map(msg => {
+                                // Handle content if it's an object (Firestore special format)
+                                if (msg.content && typeof msg.content === 'object') {
+                                    const specialKeys = ['stringValue', 'integerValue', 'doubleValue', 'booleanValue', 'arrayValue', 'mapValue', 'timestampValue', 'geoPointValue', 'bytesValue', 'referenceValue', 'nullValue'];
+                                    const hasSpecialKey = specialKeys.some(key => key in msg.content);
+                                    
+                                    if (hasSpecialKey) {
+                                        console.log('Detected Firestore special format in list item message');
+                                        if ('stringValue' in msg.content) {
+                                            msg.content = msg.content.stringValue;
+                                        } else if ('mapValue' in msg.content && msg.content.mapValue.fields) {
+                                            msg.content = msg.content.mapValue.fields;
+                                        }
+                                    }
+                                }
+                                
+                                // Also handle role if it's in special format
+                                if (msg.role && typeof msg.role === 'object' && 'stringValue' in msg.role) {
+                                    msg.role = msg.role.stringValue;
+                                }
+                                
+                                return msg;
+                            });
+                            
+                            // Now create the title from the processed message
+                            if (data.messages[0].content) {
+                                let contentForTitle = data.messages[0].content;
+                                
+                                // If content is still an object after processing, try to stringify it
+                                if (typeof contentForTitle === 'object') {
+                                    try {
+                                        contentForTitle = JSON.stringify(contentForTitle);
+                                    } catch (e) {
+                                        console.error('Error stringifying content for title:', e);
+                                        contentForTitle = 'Conversation';
+                                    }
+                                }
+                                
+                                // Create the title from the content
+                                title = contentForTitle.substring(0, 50) + 
+                                      (contentForTitle.length > 50 ? '...' : '');
+                            }
+                        }
+                    } catch (e) {
+                        console.log('Error creating title:', e);
+                    }
+                    
+                    // Try to extract a meaningful title from the conversation
+                    // First check if we have a user message to use as title
+                    if (data.messages && data.messages.length > 0) {
+                        console.log('Tryin act title from messages array');
+                        // Look for the first user message to use as title
+                        const userMessage = data.messages.find(msg => {
+                            if (typeof msg === 'object') {
+                                // Check if role is 'user' (handling Firestore special format)
+                                if (msg.role === 'user') {
+                                    return true;
+                                } else if (typeof msg.role === 'object' && msg.role.stringValue === 'user') {
+                                    return true;
+                                }
+                            }
+                            return false;
+                        });
+                        
+                        if (userMessage) {
+                            console.log('Found user message for title');
+                            let contentForTitle = '';
+                            
+                            // Extract content from user message
+                            if (typeof userMessage.content === 'string') {
+                                contentForTitle = userMessage.content;
+                            } else if (typeof userMessage.content === 'object') {
+                                if ('stringValue' in userMessage.content) {
+                                    contentForTitle = userMessage.content.stringValue;
+                                } else {
+                                    try {
+                                        contentForTitle = JSON.stringify(userMessage.content);
+                                    } catch (e) {
+                                        contentForTitle = '';
+                                    }
+                                }
+                            }
+                            
+                            if (contentForTitle) {
+                                // Use the first line or first 50 characters
+                                const firstLine = contentForTitle.split('\n')[0];
+                                title = firstLine.substring(0, 50) + (firstLine.length > 50 ? '...' : '');
+                                // Add a unique identifier from the document ID to ensure uniqueness
+                                title = `${title} (${docId.substring(0, 4)})`;
+                                console.log('Using user message for title with ID:', title);
+                            }
+                        }
+                    }
+                    
+                    // If no title from messages, try single message format
+                    if (title === 'Conversation' && data.content) {
+                        console.log('Using content for title in single message format');
+                        let contentForTitle = '';
+                        
+                        if (typeof data.content === 'string') {
+                            contentForTitle = data.content;
+                        } else if (typeof data.content === 'object') {
+                            if ('stringValue' in data.content) {
+                                contentForTitle = data.content.stringValue;
+                            } else {
+                                try {
+                                    contentForTitle = JSON.stringify(data.content);
+                                } catch (e) {
+                                    contentForTitle = 'Conversation';
+                                }
+                            }
+                        }
+                        
+                        if (contentForTitle) {
+                            // Use the first line or first 50 characters
+                            const firstLine = contentForTitle.split('\n')[0];
+                            title = firstLine.substring(0, 50) + (firstLine.length > 50 ? '...' : '');
+                            // Add a unique identifier from the document ID to ensure uniqueness
+                            title = `${title} (${docId.substring(0, 4)})`;
+                            console.log('Using content for title with ID:', title);
+                        }
+                    }
+                    
+                    // Add document ID to make titles more unique
+                    if (title === 'Conversation') {
+                        title = `Conversation ${docId.substring(0, 4)}`;
+                        console.log('Using document ID in title:', title);
+                    }
+                    
+                    // Safely handle timestamp
+                    try {
+                        console.log('Timestamp type:', typeof data.timestamp);
+                        console.log('Timestamp value:', data.timestamp);
+                        
+                        if (data.timestamp && typeof data.timestamp.toDate === 'function') {
+                            console.log('Using Firestore timestamp with toDate()');
+                            dateStr = new Date(data.timestamp.toDate()).toLocaleString();
+                        } else if (data.timestamp && data.timestamp.seconds) {
+                            // Handle timestamp stored as seconds
+                            console.log('Using timestamp with seconds property');
+                            dateStr = new Date(data.timestamp.seconds * 1000).toLocaleString();
+                        } else if (data.timestamp && typeof data.timestamp === 'number') {
+                            // Handle numeric timestamp (milliseconds since epoch)
+                            console.log('Using numeric timestamp');
+                            dateStr = new Date(data.timestamp).toLocaleString();
+                        } else if (data.timestamp) {
+                            // Try to convert directly if it's a date string or timestamp
+                            console.log('Using timestamp as is');
+                            dateStr = new Date(data.timestamp).toLocaleString();
+                        }
+                        
+                        console.log('Formatted date:', dateStr);
+                        
+                        // If title is still just 'Conversation', add date to make it unique
+                        if (title === 'Conversation') {
+                            title = 'Conversation ' + dateStr.split(',')[0];
+                        }
+                    } catch (e) {
+                        console.log('Error formatting date:', e);
+                    }
+                    
+                    historyItem.innerHTML = `
+                        <div class="history-title">${title}</div>
+                        <div class="history-date">${dateStr}</div>
+                        <div class="history-actions">
+                            <button class="action-button view-history" data-id="${docId}">
+                                <i class="fas fa-eye"></i> View
+                            </button>
+                            <button class="action-button delete-history" data-id="${docId}">
+                                <i class="fas fa-trash"></i> Delete
+                            </button>
+                        </div>
+                    `;
+                    chatHistoryList.appendChild(historyItem);
+                });
+                
+                // Add event listeners for view and delete buttons
+                document.querySelectorAll('.view-history').forEach(button => {
+                    button.addEventListener('click', async (e) => {
+                        const historyId = e.currentTarget.getAttribute('data-id');
+                        // View the full conversation
+                        await viewChatHistory(historyId);
+                    });
+                });
+                
+                document.querySelectorAll('.delete-history').forEach(button => {
+                    button.addEventListener('click', async (e) => {
+                        const historyId = e.currentTarget.getAttribute('data-id');
+                        // Delete the conversation
+                        await deleteChatHistory(historyId);
+                        // Reload the list
+                        loadChatHistory();
+                    });
+                });
+                
+            } catch (error) {
+                console.error('Error loading chat history:', error);
+                if (chatHistoryList) {
+                    chatHistoryList.innerHTML = `
+                        <div class="empty-state">
+                            <i class="fas fa-exclamation-circle empty-icon"></i>
+                            <p>Error loading chat history</p>
+                            <p class="empty-description">Please try again later.</p>
+                        </div>
+                    `;
+                }
+            }
+        }
+        
+        // Function to view chat history
+        async function viewChatHistory(historyId) {
+            try {
+                console.log('Viewing chat history for ID:', historyId);
+                const db = getFirestore();
+                
+                // Check if we're online before attempting to fetch
+                if (!navigator.onLine) {
+                    throw new Error('You are currently offline. Please check your internet connection and try again.');
+                }
+                
+                // Attempt to get the document with timeout
+                const historyDocPromise = getDoc(doc(db, 'chatHistory', historyId));
+                
+                // Create a timeout promise
+                const timeoutPromise = new Promise((_, reject) => {
+                    setTimeout(() => reject(new Error('Request timed out. Please try again.')), 10000);
+                });
+                
+                // Race the document fetch against the timeout
+                const historyDoc = await Promise.race([historyDocPromise, timeoutPromise]);
+                
+                if (historyDoc.exists()) {
+                    const data = historyDoc.data();
+                    console.log('Chat history data for ID ' + historyId + ':', data);
+                    
+                    // Create a modal to show the full conversation
+                    const viewModal = document.createElement('div');
+                    viewModal.className = 'auth-modal';
+                    viewModal.style.display = 'block';
+                    viewModal.style.zIndex = '1001'; // Higher than profile modal
+                    
+                    // Add a unique ID to the modal for easier debugging
+                    viewModal.id = 'chat-history-modal-' + historyId.substring(0, 8);
+                    
+                    // Initialize messages array
+                    let processedMessages = [];
+                    
+                    // Process messages if they exist
+                    if (data.messages && Array.isArray(data.messages) && data.messages.length > 0) {
+                        console.log('Processing messages array with length:', data.messages.length);
+                        
+                        // Skip empty messages or messages with no content
+                        const validMessages = data.messages.filter(msg => {
+                            // Check if message has content
+                            if (!msg || !msg.content) return false;
+                            
+                            // If content is a string, check if it's empty after trimming
+                            if (typeof msg.content === 'string' && msg.content.trim() === '') return false;
+                            
+                            return true;
+                        });
+                        
+                        if (validMessages.length === 0) {
+                            console.log('No valid messages found after filtering');
+                            // Create a placeholder message
+                            processedMessages = [];
+                        } else {
+                            console.log('Valid messages after filtering:', validMessages.length);
+                        }
+                        
+                        // Process each message to handle Firestore special object format
+                        processedMessages = validMessages.map(msg => {
+                            let processedMsg = { ...msg }; // Create a copy to avoid modifying the original
+                            
+                            // Process message content if it's an object
+                            if (processedMsg.content && typeof processedMsg.content === 'object') {
+                                // Check if this is a Firestore special object format
+                                const specialKeys = ['stringValue', 'integerValue', 'doubleValue', 'booleanValue', 'arrayValue', 'mapValue', 'timestampValue', 'geoPointValue', 'bytesValue', 'referenceValue', 'nullValue'];
+                                const hasSpecialKey = specialKeys.some(key => key in processedMsg.content);
+                                
+                                if (hasSpecialKey) {
+                                    console.log('Detected Firestore special object format in message');
+                                    // Extract the actual value based on its type
+                                    if ('stringValue' in processedMsg.content) {
+                                        processedMsg.content = processedMsg.content.stringValue;
+                                    } else if ('mapValue' in processedMsg.content && processedMsg.content.mapValue.fields) {
+                                        processedMsg.content = processedMsg.content.mapValue.fields;
+                                    }
+                                    // Add more type conversions as needed
+                                }
+                            }
+                            
+                            // Also check if role is in special format
+                            if (processedMsg.role && typeof processedMsg.role === 'object' && 'stringValue' in processedMsg.role) {
+                                processedMsg.role = processedMsg.role.stringValue;
+                            }
+                            
+                            return processedMsg;
+                        });
+                        
+                        if (processedMessages.length > 0) {
+                            console.log('First processed message:', processedMessages[0]);
+                            console.log('First message content type:', typeof processedMessages[0].content);
+                            
+                            // Check if we only have a bismillah message and no other content
+                            if (processedMessages.length === 1 && 
+                                processedMessages[0].role === 'assistant' && 
+                                processedMessages[0].content && 
+                                processedMessages[0].content.includes('بِسْمِ اللَّهِ الرَّحْمَنِ الرَّحِيمِ') && 
+                                processedMessages[0].content.trim().split('\n').length <= 2) {
+                                
+                                console.log('Found only bismillah message, attempting to load more content');
+                                
+                                // Try to find a related conversation with more content
+                                try {
+                                    const chatHistoryRef = collection(db, 'chatHistory');
+                                    const q = query(
+                                        chatHistoryRef,
+                                        where('userId', '==', data.userId),
+                                        orderBy('timestamp', 'desc')
+                                    );
+                                    
+                                    const querySnapshot = await getDocs(q);
+                                    
+                                    // Look for a conversation with similar timestamp (within 5 minutes)
+                                    const currentTimestamp = data.timestamp instanceof Date ? data.timestamp.getTime() : 
+                                                           (data.timestamp && data.timestamp.toDate ? data.timestamp.toDate().getTime() : 
+                                                           (typeof data.timestamp === 'number' ? data.timestamp : Date.now()));
+                                    
+                                    let fullConversation = null;
+                                    
+                                    querySnapshot.forEach(doc => {
+                                        if (doc.id !== historyId) { // Skip the current document
+                                            const docData = doc.data();
+                                            const docTimestamp = docData.timestamp instanceof Date ? docData.timestamp.getTime() : 
+                                                              (docData.timestamp && docData.timestamp.toDate ? docData.timestamp.toDate().getTime() : 
+                                                              (typeof docData.timestamp === 'number' ? docData.timestamp : 0));
+                                            
+                                            // Check if timestamps are within 5 minutes (300000 ms) of each other
+                                            const timeDiff = Math.abs(currentTimestamp - docTimestamp);
+                                            if (timeDiff < 300000) { // 5 minutes
+                                                // Check if this document has more messages
+                                                if (docData.messages && docData.messages.length > 1) {
+                                                    fullConversation = docData;
+                                                    console.log('Found more complete conversation:', doc.id);
+                                                }
+                                            }
+                                        }
+                                    });
+                                    
+                                    // If we found a more complete conversation, use its messages
+                                    if (fullConversation && fullConversation.messages && fullConversation.messages.length > 0) {
+                                        console.log('Using messages from more complete conversation');
+                                        
+                                        // Process these messages as well
+                                        processedMessages = fullConversation.messages.map(msg => {
+                                            let processedMsg = { ...msg };
+                                            
+                                            // Process message content if it's an object
+                                            if (processedMsg.content && typeof processedMsg.content === 'object') {
+                                                const specialKeys = ['stringValue', 'integerValue', 'doubleValue', 'booleanValue', 'arrayValue', 'mapValue', 'timestampValue', 'geoPointValue', 'bytesValue', 'referenceValue', 'nullValue'];
+                                                const hasSpecialKey = specialKeys.some(key => key in processedMsg.content);
+                                                
+                                                if (hasSpecialKey) {
+                                                    if ('stringValue' in processedMsg.content) {
+                                                        processedMsg.content = processedMsg.content.stringValue;
+                                                    } else if ('mapValue' in processedMsg.content && processedMsg.content.mapValue.fields) {
+                                                        processedMsg.content = processedMsg.content.mapValue.fields;
+                                                    }
+                                                }
+                                            }
+                                            
+                                            // Also check if role is in special format
+                                            if (processedMsg.role && typeof processedMsg.role === 'object' && 'stringValue' in processedMsg.role) {
+                                                processedMsg.role = processedMsg.role.stringValue;
+                                            }
+                                            
+                                            return processedMsg;
+                                        });
+                                    }
+                                } catch (e) {
+                                    console.error('Error finding related conversation:', e);
+                                }
+                            }
+                        }
+                    } 
+                    // Handle single message format (older format)
+                    else if (data.content) {
+                        console.log('Converting single message format to messages array');
+                        // Create a messages array from the single content
+                        let content = data.content;
+                        
+                        // Handle Firestore special format for content
+                        if (typeof content === 'object') {
+                            if ('stringValue' in content) {
+                                content = content.stringValue;
+                            } else {
+                                try {
+                                    content = JSON.stringify(content);
+                                } catch (e) {
+                                    console.error('Error stringifying content:', e);
+                                    content = 'Error displaying content';
+                                }
+                            }
+                        }
+                        
+                        // Check if we only have a user question with no response
+                        if (data.type === 'user' || (content && content.toLowerCase().includes('what') && content.includes('?'))) {
+                            console.log('Found only user question, attempting to find response');
+                            
+                            try {
+                                const chatHistoryRef = collection(db, 'chatHistory');
+                                const q = query(
+                                    chatHistoryRef,
+                                    where('userId', '==', data.userId),
+                                    orderBy('timestamp', 'desc')
+                                );
+                                
+                                const querySnapshot = await getDocs(q);
+                                
+                                // Look for a conversation with similar timestamp (within 5 minutes)
+                                const currentTimestamp = data.timestamp instanceof Date ? data.timestamp.getTime() : 
+                                                       (data.timestamp && data.timestamp.toDate ? data.timestamp.toDate().getTime() : 
+                                                       (typeof data.timestamp === 'number' ? data.timestamp : Date.now()));
+                                
+                                let responseMessage = null;
+                                
+                                querySnapshot.forEach(doc => {
+                                    if (doc.id !== historyId) { // Skip the current document
+                                        const docData = doc.data();
+                                        const docTimestamp = docData.timestamp instanceof Date ? docData.timestamp.getTime() : 
+                                                          (docData.timestamp && docData.timestamp.toDate ? docData.timestamp.toDate().getTime() : 
+                                                          (typeof docData.timestamp === 'number' ? docData.timestamp : 0));
+                                        
+                                        // Check if timestamps are within 5 minutes (300000 ms) of each other
+                                        const timeDiff = Math.abs(currentTimestamp - docTimestamp);
+                                        if (timeDiff < 300000) { // 5 minutes
+                                            // Check if this document has an assistant response
+                                            if (docData.type === 'assistant' || 
+                                                (docData.messages && docData.messages.some(m => m.role === 'assistant'))) {
+                                                responseMessage = docData;
+                                                console.log('Found assistant response:', doc.id);
+                                            }
+                                        }
+                                    }
+                                });
+                                
+                                // If we found a response, combine it with the user question
+                                if (responseMessage) {
+                                    console.log('Adding assistant response to user question');
+                                    
+                                    // Create a combined conversation
+                                    processedMessages = [
+                                        {
+                                            role: 'user',
+                                            content: content
+                                        }
+                                    ];
+                                    
+                                    // Add the assistant response
+                                    if (responseMessage.messages && responseMessage.messages.length > 0) {
+                                        // Find the first assistant message
+                                        const assistantMsg = responseMessage.messages.find(m => 
+                                            m.role === 'assistant' || 
+                                            (m.role && typeof m.role === 'object' && m.role.stringValue === 'assistant')
+                                        );
+                                        
+                                        if (assistantMsg) {
+                                            let assistantContent = assistantMsg.content;
+                                            
+                                            // Process the content if needed
+                                            if (typeof assistantContent === 'object') {
+                                                if ('stringValue' in assistantContent) {
+                                                    assistantContent = assistantContent.stringValue;
+                                                } else {
+                                                    try {
+                                                        assistantContent = JSON.stringify(assistantContent);
+                                                    } catch (e) {
+                                                        assistantContent = 'Error displaying content';
+                                                    }
+                                                }
+                                            }
+                                            
+                                            processedMessages.push({
+                                                role: 'assistant',
+                                                content: assistantContent
+                                            });
+                                        }
+                                    } else if (responseMessage.content) {
+                                        // Handle single message format
+                                        let assistantContent = responseMessage.content;
+                                        
+                                        // Process the content if needed
+                                        if (typeof assistantContent === 'object') {
+                                            if ('stringValue' in assistantContent) {
+                                                assistantContent = assistantContent.stringValue;
+                                            } else {
+                                                try {
+                                                    assistantContent = JSON.stringify(assistantContent);
+                                                } catch (e) {
+                                                    assistantContent = 'Error displaying content';
+                                                }
+                                            }
+                                        }
+                                        
+                                        processedMessages.push({
+                                            role: 'assistant',
+                                            content: assistantContent
+                                        });
+                                    }
+                                } else {
+                                    // If no response found, just use the user question
+                                    processedMessages = [
+                                        {
+                                            role: 'user',
+                                            content: content
+                                        }
+                                    ];
+                                }
+                            } catch (e) {
+                                console.error('Error finding response message:', e);
+                                // Fallback to just the user message
+                                processedMessages = [
+                                    {
+                                        role: 'user',
+                                        content: content
+                                    }
+                                ];
+                            }
+                        } else {
+                            // Regular single message format
+                            processedMessages = [
+                                {
+                                    role: data.type || 'assistant',
+                                    content: content
+                                }
+                            ];
+                        }
+                    }
+                    
+                    // If we still have no messages, create a placeholder
+                    if (processedMessages.length === 0) {
+                        console.log('No messages found in chat history, creating placeholder');
+                        processedMessages = [
+                            {
+                                role: 'assistant',
+                                content: 'No messages found in this conversation.'
+                            }
+                        ];
+                    }
+                    
+                    // Generate HTML for messages
+                    let messagesHtml = '';
+                    if (processedMessages.length > 0) {
+                        // Only show warning for very specific incomplete cases
+                        let incompleteNote = '';
+                        
+                        // Case 1: Only bismillah and nothing else
+                        if (processedMessages.length === 1 && 
+                            processedMessages[0].role === 'assistant' && 
+                            processedMessages[0].content && 
+                            typeof processedMessages[0].content === 'string' &&
+                            processedMessages[0].content.includes('بِسْمِ اللَّهِ الرَّحْمَنِ الرَّحِيمِ') && 
+                            processedMessages[0].content.trim().length < 100) {
+                                
+                            incompleteNote = `
+                                <div style="padding: 10px; margin-bottom: 15px; background: #fff8e1; border-left: 3px solid #ffc107; border-radius: 4px;">
+                                    <p style="color: #333; margin: 0; font-size: 14px;">
+                                        <i class="fas fa-info-circle" style="margin-right: 5px;"></i>
+                                        This only shows the beginning of a response. The full answer may be in another chat history entry.
+                                    </p>
+                                </div>
+                            `;
+                        }
+                        
+                        // Case 2: Only user question with no response
+                        else if (processedMessages.length === 1 && 
+                                 processedMessages[0].role === 'user') {
+                                
+                            incompleteNote = `
+                                <div style="padding: 10px; margin-bottom: 15px; background: #fff8e1; border-left: 3px solid #ffc107; border-radius: 4px;">
+                                    <p style="color: #333; margin: 0; font-size: 14px;">
+                                        <i class="fas fa-info-circle" style="margin-right: 5px;"></i>
+                                        This only shows your question. The response may be in another chat history entry.
+                                    </p>
+                                </div>
+                            `;
+                        }
+                        
+                        // Case 3: User question + only bismillah response
+                        else if (processedMessages.length === 2 && 
+                                 processedMessages.some(msg => msg.role === 'user') &&
+                                 processedMessages.some(msg => {
+                                     return msg.role === 'assistant' && 
+                                            msg.content && 
+                                            typeof msg.content === 'string' &&
+                                            msg.content.includes('بِسْمِ اللَّهِ الرَّحْمَنِ الرَّحِيمِ') && 
+                                            msg.content.trim().length < 100;
+                                 })) {
+                                
+                            incompleteNote = `
+                                <div style="padding: 10px; margin-bottom: 15px; background: #fff8e1; border-left: 3px solid #ffc107; border-radius: 4px;">
+                                    <p style="color: #333; margin: 0; font-size: 14px;">
+                                        <i class="fas fa-info-circle" style="margin-right: 5px;"></i>
+                                        This appears to be an incomplete conversation. The full response may be in another chat history entry.
+                                    </p>
+                                </div>
+                            `;
+                        }
+                        
+                        messagesHtml = incompleteNote + processedMessages.map(msg => {
+                            const isUser = msg.role === 'user';
+                            
+                            // Process message content with fallbacks
+                            let content = 'No content available';
+                            
+                            try {
+                                // Handle different content formats
+                                if (msg.content) {
+                                    console.log(`Message content type for ${msg.role}:`, typeof msg.content);
+                                    
+                                    // If content is a string, use it directly
+                                    if (typeof msg.content === 'string') {
+                                        content = msg.content;
+                                        console.log('Using string content for message display');
+                                    } 
+                                    // If content is an object, try to extract the actual content
+                                    else if (typeof msg.content === 'object') {
+                                        console.log('Content is an object with keys:', Object.keys(msg.content));
+                                        
+                                        if (msg.content.text) {
+                                            content = msg.content.text;
+                                            console.log('Using content.text');
+                                        } else if (msg.content.stringValue) {
+                                            // Handle Firestore encoded values
+                                            content = msg.content.stringValue;
+                                            console.log('Using content.stringValue');
+                                        } else if (msg.content.value) {
+                                            content = msg.content.value;
+                                            console.log('Using content.value');
+                                        } else {
+                                            // Try to stringify the object
+                                            try {
+                                                content = JSON.stringify(msg.content);
+                                                console.log('Using stringified content');
+                                            } catch (e) {
+                                                console.error('Error stringifying content:', e);
+                                            }
+                                        }
+                                    }
+                                }
+                                
+                                // Clean up any null or undefined content
+                                if (!content || content === 'undefined' || content === 'null') {
+                                    content = 'No content available';
+                                }
+                                
+                                // If content is plain text (no HTML tags), add proper formatting
+                                if (content && typeof content === 'string' && !content.includes('<') && !content.includes('>')) {
+                                    // Convert plain text to formatted HTML with paragraphs
+                                    content = content.split('\n\n').map(paragraph => `<p>${paragraph}</p>`).join('');
+                                    // Handle single line breaks
+                                    content = content.replace(/\n/g, '<br>');
+                                } else if (typeof content === 'object') {
+                                    // If content is still an object, stringify it for display
+                                    try {
+                                        content = '<pre>' + JSON.stringify(content, null, 2) + '</pre>';
+                                    } catch (e) {
+                                        console.error('Error stringifying content for display:', e);
+                                        content = 'Error displaying content';
+                                    }
+                                }
+                            } catch (e) {
+                                console.error('Error processing message content:', e);
+                            }
+                            
+                            return `
+                                <div class="${isUser ? 'user-message' : 'bot-message'}" style="padding: 15px; margin: 15px 0; border-radius: 8px; background: ${isUser ? '#f0f0f0' : '#e6f7f2'}; border-left: 3px solid ${isUser ? '#999' : 'var(--primary-color)'}; box-shadow: 0 1px 3px rgba(0,0,0,0.1);">
+                                    <div style="font-weight: ${isUser ? 'normal' : 'bold'}; margin-bottom: 8px; color: #333;">${isUser ? 'You' : 'Mo'}</div>
+                                    <div style="font-family: 'Roboto', sans-serif; line-height: 1.6; color: #333;">${content}</div>
+                                </div>
+                            `;
+                        }).join('');
+                    } else {
+                        messagesHtml = '<div style="padding: 20px; text-align: center; color: #666;"><i class="fas fa-comment-slash" style="font-size: 24px; margin-bottom: 10px;"></i><p>No messages in this conversation.</p></div>';
+                    }
+                    
+                    viewModal.innerHTML = `
+                        <div class="auth-modal-content" style="max-width: 700px;">
+                            <span class="close-modal">&times;</span>
+                            <h3>Conversation History</h3>
+                            <div class="conversation-date" style="color: #666; margin-bottom: 15px;">
+                                ${formatTimestamp(data.timestamp)}
+                            </div>
+                            <div class="conversation-content" style="margin: 20px 0; max-height: 500px; overflow-y: auto; padding: 15px; background: #f9f9f9; border-radius: 8px; color: #333;">
+                                ${messagesHtml}
+                            </div>
+                            <div style="text-align: right;">
+                                <button class="auth-submit-button close-view-button">Close</button>
+                            </div>
+                        </div>
+                    `;
+                    
+                    document.body.appendChild(viewModal);
+                    
+                    // Add event listeners to close the modal
+                    const closeButton = viewModal.querySelector('.close-modal');
+                    const closeViewButton = viewModal.querySelector('.close-view-button');
+                    
+                    closeButton.addEventListener('click', () => {
+                        document.body.removeChild(viewModal);
+                    });
+                    
+                    closeViewButton.addEventListener('click', () => {
+                        document.body.removeChild(viewModal);
+                    });
+                }
+            } catch (error) {
+                console.error('Error viewing chat history:', error);
+                
+                // Create an error modal
+                const errorModal = document.createElement('div');
+                errorModal.className = 'auth-modal';
+                errorModal.style.display = 'block';
+                errorModal.style.zIndex = '1001';
+                
+                // Determine error message
+                let errorMessage = 'An error occurred while loading the conversation.';
+                
+                if (error.message.includes('offline') || error.code === 'failed-precondition' || error.message.includes('client is offline')) {
+                    errorMessage = 'You appear to be offline. Please check your internet connection and try again.';
+                } else if (error.message.includes('timed out')) {
+                    errorMessage = 'The request timed out. Please try again later.';
+                } else if (error.code === 'permission-denied') {
+                    errorMessage = 'You do not have permission to view this conversation.';
+                }
+                
+                errorModal.innerHTML = `
+                    <div class="auth-modal-content" style="max-width: 500px;">
+                        <span class="close-modal">&times;</span>
+                        <h3>Unable to Load Conversation</h3>
+                        <div style="margin: 20px 0; padding: 15px; background: #fff4f4; border-left: 3px solid #ff6b6b; border-radius: 4px;">
+                            <p style="color: #333; margin: 0;">${errorMessage}</p>
+                        </div>
+                        <div style="text-align: right;">
+                            <button class="auth-submit-button close-error-button">Close</button>
+                        </div>
+                    </div>
+                `;
+                
+                document.body.appendChild(errorModal);
+                
+                // Add event listeners to close the modal
+                const closeButton = errorModal.querySelector('.close-modal');
+                const closeErrorButton = errorModal.querySelector('.close-error-button');
+                
+                closeButton.addEventListener('click', () => {
+                    document.body.removeChild(errorModal);
+                });
+                
+                closeErrorButton.addEventListener('click', () => {
+                    document.body.removeChild(errorModal);
+                });
+            }
+        }
+        
+        // Function to delete chat history
+        async function deleteChatHistory(historyId) {
+            try {
+                const db = getFirestore();
+                await deleteDoc(doc(db, 'chatHistory', historyId));
+            } catch (error) {
+                console.error('Error deleting chat history:', error);
+            }
+        }
+        
+        // Development mode flag - set to true to enable premium features for testing
+        const DEV_MODE_PREMIUM = false; // Set to true to test premium features without subscription
+        
+        // Function to check if user is premium
+        // Expose checkUserIsPremium to the global scope
+        window.checkUserIsPremium = async function(userId) {
+            // If in development mode, return true to enable premium features
+            if (DEV_MODE_PREMIUM) return true;
+            
+            try {
+                const db = getFirestore();
+                const userDoc = await getDoc(doc(db, 'users', userId));
+                
+                if (userDoc.exists()) {
+                    const userData = userDoc.data();
+                    if (userData.subscription && userData.subscription.type === 'premium' && userData.subscription.active) {
+                        // Check if subscription is still valid (not expired)
+                        if (userData.subscription.endDate) {
+                            const now = new Date();
+                            const endDate = new Date(userData.subscription.endDate);
+                            return now <= endDate;
+                        }
+                        return true;
+                    }
+                }
+                return false;
+            } catch (error) {
+                console.error('Error checking premium status:', error);
+                return false;
+            }
+        }
+        
         // Function to load user profile data
         async function loadUserProfile() {
             const auth = getAuth();
@@ -4572,6 +7173,145 @@
             
             // Don't automatically show the profile modal from loadUserProfile
             // This will be handled by the profile button click handler
+            
+            // Initialize profile tabs
+            initProfileTabs();
+            
+            // Check if we should show the premium features or premium overlay
+            const isPremium = await checkUserIsPremium(user.uid);
+            
+            // Update UI based on premium status
+            const savedResponsesOverlay = document.getElementById('saved-responses-premium-overlay');
+            const chatHistoryOverlay = document.getElementById('chat-history-premium-overlay');
+            
+            if (savedResponsesOverlay) {
+                savedResponsesOverlay.style.display = isPremium ? 'none' : 'flex';
+            }
+            
+            if (chatHistoryOverlay) {
+                chatHistoryOverlay.style.display = isPremium ? 'none' : 'flex';
+            }
+        }
+        
+        // Expose the saveResponse function to the global scope
+        // Constants for free user limits
+        const FREE_USER_SAVE_LIMIT = 3;
+        
+        window.saveResponse = async function(content, buttonElement = null) {
+            const auth = getAuth();
+            const user = auth.currentUser;
+            
+            if (!user) {
+                // User is not logged in, show login modal
+                showAuthModal('login');
+                return;
+            }
+            
+            // Check if user is premium
+            const isPremium = await checkUserIsPremium(user.uid);
+            
+            if (!isPremium) {
+                // For free users, check how many responses they've already saved
+                try {
+                    const db = getFirestore();
+                    const savedResponsesRef = collection(db, 'savedResponses');
+                    const q = query(savedResponsesRef, where('userId', '==', user.uid));
+                    const querySnapshot = await getDocs(q);
+                    
+                    if (querySnapshot.size >= FREE_USER_SAVE_LIMIT) {
+                        // User has reached their limit, show premium upgrade modal
+                        const limitToast = document.createElement('div');
+                        limitToast.className = 'toast warning-toast';
+                        limitToast.innerHTML = `
+                            <i class="fas fa-exclamation-circle"></i>
+                            <span>You've reached your limit of ${FREE_USER_SAVE_LIMIT} saved responses. Upgrade to premium for unlimited saves!</span>
+                        `;
+                        document.body.appendChild(limitToast);
+                        
+                        // Remove the toast after 5 seconds
+                        setTimeout(() => {
+                            document.body.removeChild(limitToast);
+                            // Show premium upgrade modal
+                            handlePremiumUpgrade();
+                        }, 5000);
+                        return;
+                    }
+                } catch (error) {
+                    console.error('Error checking saved responses count:', error);
+                }
+            }
+            
+            try {
+                const db = getFirestore();
+                const savedResponsesRef = collection(db, 'savedResponses');
+                
+                // Clean and prepare the content for saving
+                let cleanContent = content;
+                
+                if (typeof cleanContent === 'string') {
+                    // First, remove any script tags for security
+                    cleanContent = cleanContent.replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '');
+                    
+                    // If the content contains HTML, try to extract just the text
+                    if (cleanContent.includes('<') && cleanContent.includes('>')) {
+                        // Create a temporary div to parse HTML and extract text
+                        const tempDiv = document.createElement('div');
+                        tempDiv.innerHTML = cleanContent;
+                        
+                        // Get the text content
+                        const textContent = tempDiv.textContent || tempDiv.innerText || '';
+                        
+                        // Only use the extracted text if it's not empty
+                        if (textContent.trim()) {
+                            cleanContent = textContent;
+                        }
+                    }
+                } else {
+                    cleanContent = 'No content available';
+                }
+                
+                // Debug the content before saving
+                console.log('Saving content to Firestore:', cleanContent);
+                
+                // Add the response to Firestore with consistent format
+                await addDoc(savedResponsesRef, {
+                    userId: user.uid,
+                    content: cleanContent, // Store as plain text
+                    contentType: 'text', // Add content type for future flexibility
+                    timestamp: serverTimestamp()
+                });
+                
+                // Show success message
+                const successToast = document.createElement('div');
+                successToast.className = 'toast success-toast';
+                successToast.innerHTML = `
+                    <i class="fas fa-check-circle"></i>
+                    <span>Response saved successfully!</span>
+                `;
+                document.body.appendChild(successToast);
+                
+                // Remove the toast after 3 seconds
+                setTimeout(() => {
+                    document.body.removeChild(successToast);
+                }, 3000);
+                
+            } catch (error) {
+                console.error('Error saving response:', error);
+                
+                // Show error message
+                const errorToast = document.createElement('div');
+                errorToast.className = 'toast error-toast';
+                errorToast.innerHTML = `
+                    <i class="fas fa-exclamation-circle"></i>
+                    <span>Error saving response. Please try again.</span>
+                `;
+                document.body.appendChild(errorToast);
+                
+                // Remove the toast after 3 seconds
+                setTimeout(() => {
+                    document.body.removeChild(errorToast);
+                }, 3000);
+            }
         }
         
         // Function to handle premium upgrade with iframe protection and improved error handling
