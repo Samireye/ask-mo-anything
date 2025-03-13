@@ -5,7 +5,12 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="description" content="Ask Mo Anything - Islamic Knowledge AI Assistant">
     <title>Ask Mo Anything</title>
-    <link rel="icon" type="image/x-icon" href="/favicon.ico">
+    <link rel="icon" type="image/png" href="/favicon-96x96.png" sizes="96x96" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="shortcut icon" href="/favicon.ico" />
+    <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
+    <meta name="apple-mobile-web-app-title" content="AskMo" />
+    <link rel="manifest" href="/site.webmanifest" />
     <link href="https://fonts.googleapis.com/css2?family=Amiri:wght@400;700&family=Roboto:wght@300;400;500;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
@@ -3166,6 +3171,100 @@
             const text = encodeURIComponent(message.completeResponse || message.fullResponse || message.rawResponse || message.textContent);
             window.open(`https://t.me/share/url?url=${encodeURIComponent('https://ask-mo-anything.vercel.app')}&text=${text}`);
         }
+        
+        async function shareToReddit(message) {
+            try {
+                console.log('Starting Reddit share process');
+                
+                // Get the user's question
+                let userQuestion = '';
+                
+                // First try to get the user question from the chat messages
+                const chatMessages = document.getElementById('chat-messages');
+                if (chatMessages) {
+                    const lastUserMessage = chatMessages.querySelector('.user-message:last-of-type');
+                    if (lastUserMessage) {
+                        userQuestion = lastUserMessage.textContent.trim();
+                        console.log('Found user question from last user message:', userQuestion);
+                    }
+                }
+                
+                // If that didn't work, try from the container
+                if (!userQuestion) {
+                    const container = message.closest('.complete-response-container');
+                    if (container) {
+                        const userMsg = container.querySelector('.user-message');
+                        if (userMsg) {
+                            userQuestion = userMsg.textContent.trim();
+                            console.log('Found user question from container:', userQuestion);
+                        }
+                    }
+                }
+                
+                // Try to get from the most recent conversation
+                if (!userQuestion) {
+                    const allUserMessages = document.querySelectorAll('.user-message');
+                    if (allUserMessages && allUserMessages.length > 0) {
+                        userQuestion = allUserMessages[allUserMessages.length - 1].textContent.trim();
+                        console.log('Found user question from all user messages:', userQuestion);
+                    }
+                }
+                
+                // Fallback if we couldn't get the data
+                if (!userQuestion) {
+                    userQuestion = 'Islamic Knowledge from AskMo';
+                    console.log('Using default question');
+                }
+                
+                // Create a title from the question (limited to 300 chars for Reddit)
+                const title = userQuestion.substring(0, 300);
+                console.log('Using title for Reddit:', title);
+                
+                // Create a modal with instructions
+                const modal = document.createElement('div');
+                modal.style.cssText = 'position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.7); z-index:10000; display:flex; justify-content:center; align-items:center;';
+                
+                const modalContent = document.createElement('div');
+                modalContent.style.cssText = 'background:white; border-radius:8px; padding:25px; max-width:500px; width:90%; position:relative;';
+                
+                // Add close button
+                const closeButton = document.createElement('button');
+                closeButton.innerHTML = '&times;';
+                closeButton.style.cssText = 'position:absolute; top:10px; right:15px; background:none; border:none; font-size:24px; cursor:pointer;';
+                closeButton.onclick = () => document.body.removeChild(modal);
+                
+                // Add content
+                modalContent.innerHTML += `
+                    <h3 style="margin-top:0; margin-bottom:20px; font-size:18px;">Share to Reddit</h3>
+                    <p style="margin-bottom:8px;">1. Use the <strong>"Copy to clipboard"</strong> button below the response to copy the formatted text</p>
+                    <p style="margin-bottom:8px;">2. Click the button below to open Reddit</p>
+                    <p style="margin-bottom:20px;">3. Paste the copied text into the Reddit post body</p>
+                    <div style="text-align:center;">
+                        <button id="redditOpenBtn" style="background:#ff4500; color:white; border:none; padding:10px 20px; border-radius:4px; cursor:pointer; font-weight:bold;">Open Reddit</button>
+                    </div>
+                `;
+                
+                // Add close button to content
+                modalContent.appendChild(closeButton);
+                
+                // Add content to modal
+                modal.appendChild(modalContent);
+                
+                // Add modal to body
+                document.body.appendChild(modal);
+                
+                // Add event listener for Reddit button
+                document.getElementById('redditOpenBtn').addEventListener('click', function() {
+                    window.open(`https://www.reddit.com/submit?selftext=true&title=${encodeURIComponent(title)}`, '_blank');
+                    document.body.removeChild(modal);
+                });
+                
+                console.log('Reddit share modal opened');
+            } catch (error) {
+                console.error('Error sharing to Reddit:', error);
+                alert('Sorry, there was an error sharing to Reddit: ' + error.message);
+            }
+        }
 
         async function copyToClipboard(message) {
             try {
@@ -3217,16 +3316,40 @@
                     relatedTopicsHtml = `<div class="related-topics">
                         <div class="related-topics-header">Related Questions:</div>
                         ${topics.map(topic => {
-                            // Clean up the topic text and add RTL marks
-                            const clean = topic
-                                .replace(/ﷺ/g, '(PBUH)\u200F')
-                                .replace(/(رضي الله عنه|رضي الله عنها)/g, '(RA)\u200F')
-                                .replace(/\s+/g, ' ')
-                                .trim();
+                            // EMERGENCY FIX: Completely different approach to handle Arabic honorifics
+                            // First, convert any non-string to string and ensure we're working with a string
+                            let clean = String(topic || '');
                             
-                            // Create quick-reply button
+                            // Hard-coded replacements for specific Arabic honorifics
+                            clean = clean.replace(/ﷺ/g, '(PBUH)');
+                            clean = clean.replace(/صلى الله عليه وسلم/g, '(PBUH)');
+                            clean = clean.replace(/صلى الله عنه/g, '(PBUH)');
+                            clean = clean.replace(/رضي الله عنه/g, '(RA)');
+                            clean = clean.replace(/رضي الله عنها/g, '(RA)');
+                            clean = clean.replace(/عليه السلام/g, '(AS)');
+                            
+                            // Brute force approach: Remove ALL Arabic characters
+                            // This regex covers the entire Arabic Unicode range
+                            clean = clean.replace(/[\u0600-\u06FF\u0750-\u077F\u08A0-\u08FF\uFB50-\uFDFF\uFE70-\uFEFF]+/g, '');
+                            
+                            // Fix formatting issues
+                            clean = clean.replace(/\s+/g, ' '); // Fix multiple spaces
+                            clean = clean.replace(/\(\s*\)/g, ''); // Remove empty parentheses
+                            clean = clean.replace(/\(PBUH\)\s*\(PBUH\)/g, '(PBUH)'); // Fix duplicates
+                            clean = clean.replace(/\(RA\)\s*\(RA\)/g, '(RA)');
+                            clean = clean.replace(/\(AS\)\s*\(AS\)/g, '(AS)');
+                            
+                            // Final cleanup
+                            clean = clean.trim();
+                            
+                            // If after all cleaning we have an empty string, use a fallback
+                            if (!clean) {
+                                clean = 'More about Prophet Muhammad (PBUH)';
+                            }
+                            
+                            // Create quick-reply button with more reliable event handling
                             const escapedTopic = clean.replace(/["']/g, '\\$&');
-                            return `<button class="related-topic-tile" onclick="selectTopic('${escapedTopic}')">${clean}</button>`;
+                            return `<button class="related-topic-tile" data-topic="${escapedTopic}">${clean}</button>`;
                         }).join('')}
                     </div>`;
                 }
@@ -3321,6 +3444,37 @@
                         }, 500);
                     }
                 });
+            });
+            
+            // Add event delegation for related topic tiles
+            // This implements the functionality from commit b5dc634 that was missing
+            document.addEventListener('click', function(event) {
+                // Find if a related-topic-tile was clicked
+                const tile = event.target.closest('.related-topic-tile');
+                if (tile) {
+                    // Get the topic from the data-topic attribute or from the text content
+                    let topic = tile.getAttribute('data-topic');
+                    if (!topic) {
+                        // If data-topic isn't available, use the text content
+                        topic = tile.textContent.trim();
+                    }
+                    
+                    console.log('Related topic tile clicked:', topic);
+                    
+                    // Set the input value
+                    userInput.value = topic;
+                    
+                    // Scroll to the chat input with smooth animation
+                    document.querySelector('.input-section').scrollIntoView({ behavior: 'smooth' });
+                    
+                    // Focus the input
+                    userInput.focus();
+                    
+                    // Add a slight delay before sending the message
+                    setTimeout(() => {
+                        sendMessage();
+                    }, 500);
+                }
             });
             
             // Add event listener for bookmark buttons
@@ -3815,28 +3969,49 @@
         
         // Make selectTopic globally available
         window.selectTopic = function(topic) {
+            console.log('selectTopic called with:', topic);
+            
             // Handle escaped quotes in the topic
             const unescapedTopic = topic
                 .replace(/\\'/g, "'")
                 .replace(/\\\"/g, '"');
+                
+            console.log('Unescaped topic:', unescapedTopic);
             
             // Find and highlight the matching topic card if it exists
             document.querySelectorAll('.topic-card').forEach(card => {
                 const cardTopic = card.getAttribute('data-topic');
                 if (cardTopic === topic) {
+                    console.log('Found matching topic card, highlighting it');
                     document.querySelectorAll('.topic-card').forEach(c => c.classList.remove('topic-card-active'));
                     card.classList.add('topic-card-active');
                 }
             });
             
             // Set the input value
-            userInput.value = unescapedTopic;
+            const inputElement = document.getElementById('user-input');
+            if (inputElement) {
+                console.log('Setting input value');
+                inputElement.value = unescapedTopic;
+                // Focus the input to ensure it's visible
+                inputElement.focus();
+            } else {
+                console.error('Could not find user-input element');
+            }
             
             // Scroll to the chat input with smooth animation
-            document.querySelector('.input-section').scrollIntoView({ behavior: 'smooth' });
+            const inputSection = document.querySelector('.input-section');
+            if (inputSection) {
+                console.log('Scrolling to input section');
+                inputSection.scrollIntoView({ behavior: 'smooth' });
+            } else {
+                console.error('Could not find input-section element');
+            }
             
             // Add a slight delay before sending the message
+            console.log('Setting timeout to send message');
             setTimeout(() => {
+                console.log('Sending message:', unescapedTopic);
                 sendMessage(unescapedTopic);
             }, 500);
         }
@@ -4322,8 +4497,8 @@
                         <button class="share-btn" onclick="shareToWhatsApp(this.closest('.complete-response-container'))" title="Share on WhatsApp">
                             <i class="fab fa-whatsapp"></i>
                         </button>
-                        <button class="share-btn" onclick="shareToTelegram(this.closest('.complete-response-container'))" title="Share on Telegram">
-                            <i class="fab fa-telegram"></i>
+                        <button class="share-btn" onclick="shareToReddit(this.closest('.complete-response-container'))" title="Share on Reddit">
+                            <i class="fab fa-reddit"></i>
                         </button>
                         <button class="share-btn" onclick="copyToClipboard(this.closest('.complete-response-container'))" title="Copy to clipboard">
                             <i class="far fa-copy"></i>
@@ -6142,69 +6317,82 @@
                 
                 console.log('Chat history items before deduplication:', chatHistoryItems.length);
                 
-                // Deduplicate chat history items based on content
-                const uniqueHistoryItems = [];
-                const seenContentHashes = new Set();
+                // For free users, we want to show exactly FREE_USER_SAVE_LIMIT items if available
+                // For premium users, we'll deduplicate but still show more items
+                let processedItems = [];
                 
-                chatHistoryItems.forEach(item => {
-                    // Create a content hash based on the first message or content
-                    let contentHash = '';
+                if (limitQuery) {
+                    // For free users, just use the items directly without deduplication
+                    // since the query is already limited to FREE_USER_SAVE_LIMIT
+                    processedItems = chatHistoryItems;
+                    console.log(`Using ${processedItems.length} chat history items for free user without deduplication`);
+                } else {
+                    // For premium users, deduplicate to avoid showing the same conversation multiple times
+                    const uniqueHistoryItems = [];
+                    const seenContentHashes = new Set();
                     
-                    try {
-                        // Try to get content from messages array
-                        if (item.data.messages && item.data.messages.length > 0) {
-                            const firstMessage = item.data.messages[0];
-                            if (firstMessage.content) {
-                                if (typeof firstMessage.content === 'string') {
-                                    contentHash = firstMessage.content.substring(0, 100);
-                                } else if (typeof firstMessage.content === 'object') {
-                                    if ('stringValue' in firstMessage.content) {
-                                        contentHash = firstMessage.content.stringValue.substring(0, 100);
-                                    } else {
-                                        contentHash = JSON.stringify(firstMessage.content).substring(0, 100);
+                    chatHistoryItems.forEach(item => {
+                        // Create a content hash based on the first message or content
+                        let contentHash = '';
+                        
+                        try {
+                            // Try to get content from messages array
+                            if (item.data.messages && item.data.messages.length > 0) {
+                                const firstMessage = item.data.messages[0];
+                                if (firstMessage.content) {
+                                    if (typeof firstMessage.content === 'string') {
+                                        contentHash = firstMessage.content.substring(0, 100);
+                                    } else if (typeof firstMessage.content === 'object') {
+                                        if ('stringValue' in firstMessage.content) {
+                                            contentHash = firstMessage.content.stringValue.substring(0, 100);
+                                        } else {
+                                            contentHash = JSON.stringify(firstMessage.content).substring(0, 100);
+                                        }
                                     }
                                 }
                             }
-                        }
-                        // If no messages, try the content field
-                        else if (item.data.content) {
-                            if (typeof item.data.content === 'string') {
-                                contentHash = item.data.content.substring(0, 100);
-                            } else if (typeof item.data.content === 'object') {
-                                if ('stringValue' in item.data.content) {
-                                    contentHash = item.data.content.stringValue.substring(0, 100);
-                                } else {
-                                    contentHash = JSON.stringify(item.data.content).substring(0, 100);
+                            // If no messages, try the content field
+                            else if (item.data.content) {
+                                if (typeof item.data.content === 'string') {
+                                    contentHash = item.data.content.substring(0, 100);
+                                } else if (typeof item.data.content === 'object') {
+                                    if ('stringValue' in item.data.content) {
+                                        contentHash = item.data.content.stringValue.substring(0, 100);
+                                    } else {
+                                        contentHash = JSON.stringify(item.data.content).substring(0, 100);
+                                    }
                                 }
                             }
-                        }
-                        
-                        // If we couldn't get a content hash, use the document ID
-                        if (!contentHash) {
-                            contentHash = item.id;
-                        }
-                        
-                        // Log the content hash for debugging
-                        console.log(`Content hash for item ${item.id}: ${contentHash}`);
-                        
-                        // Only add the item if we haven't seen this content before
-                        if (!seenContentHashes.has(contentHash)) {
-                            seenContentHashes.add(contentHash);
+                            
+                            // If we couldn't get a content hash, use the document ID
+                            if (!contentHash) {
+                                contentHash = item.id;
+                            }
+                            
+                            // Log the content hash for debugging
+                            console.log(`Content hash for item ${item.id}: ${contentHash}`);
+                            
+                            // Only add the item if we haven't seen this content before
+                            if (!seenContentHashes.has(contentHash)) {
+                                seenContentHashes.add(contentHash);
+                                uniqueHistoryItems.push(item);
+                            } else {
+                                console.log(`Skipping duplicate item ${item.id} with hash ${contentHash}`);
+                            }
+                        } catch (e) {
+                            console.error('Error creating content hash:', e);
+                            // If there's an error, include the item to be safe
                             uniqueHistoryItems.push(item);
-                        } else {
-                            console.log(`Skipping duplicate item ${item.id} with hash ${contentHash}`);
                         }
-                    } catch (e) {
-                        console.error('Error creating content hash:', e);
-                        // If there's an error, include the item to be safe
-                        uniqueHistoryItems.push(item);
-                    }
-                });
+                    });
+                    
+                    processedItems = uniqueHistoryItems;
+                    console.log(`Using ${processedItems.length} deduplicated chat history items for premium user`);
+                }
                 
-                console.log('Unique chat history items after deduplication:', uniqueHistoryItems.length);
-                
-                // Take only the 5 most recent unique conversations
-                const recentChatHistory = uniqueHistoryItems.slice(0, 5);
+                // Take only the most recent conversations (up to 5 for premium users, FREE_USER_SAVE_LIMIT for free users)
+                const maxItems = limitQuery ? FREE_USER_SAVE_LIMIT : 5;
+                const recentChatHistory = processedItems.slice(0, maxItems);
                 console.log(`Displaying ${recentChatHistory.length} most recent chat history items`);
                 
                 // Display chat history
