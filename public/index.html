@@ -3217,16 +3217,22 @@
                     relatedTopicsHtml = `<div class="related-topics">
                         <div class="related-topics-header">Related Questions:</div>
                         ${topics.map(topic => {
-                            // Clean up the topic text and add RTL marks
-                            const clean = topic
-                                .replace(/ﷺ/g, '(PBUH)\u200F')
-                                .replace(/(رضي الله عنه|رضي الله عنها)/g, '(RA)\u200F')
+                            // Clean up the topic text and use only English honorifics
+                            let clean = topic
+                                // Replace Arabic honorifics with English equivalents
+                                .replace(/ﷺ/g, '(PBUH)')
+                                .replace(/(رضي الله عنه|رضي الله عنها)/g, '(RA)')
+                                .replace(/عليه السلام/g, '(AS)')
+                                .replace(/صلى الله عليه وسلم/g, '(PBUH)')
+                                // Remove any remaining Arabic honorifics or special characters
+                                .replace(/[\u0600-\u06FF\u0750-\u077F\u08A0-\u08FF\uFB50-\uFDFF\uFE70-\uFEFF]+/g, '')
+                                // Clean up whitespace
                                 .replace(/\s+/g, ' ')
                                 .trim();
                             
-                            // Create quick-reply button
+                            // Create quick-reply button with more reliable event handling
                             const escapedTopic = clean.replace(/["']/g, '\\$&');
-                            return `<button class="related-topic-tile" onclick="selectTopic('${escapedTopic}')">${clean}</button>`;
+                            return `<button class="related-topic-tile" data-topic="${escapedTopic}">${clean}</button>`;
                         }).join('')}
                     </div>`;
                 }
@@ -3321,6 +3327,37 @@
                         }, 500);
                     }
                 });
+            });
+            
+            // Add event delegation for related topic tiles
+            // This implements the functionality from commit b5dc634 that was missing
+            document.addEventListener('click', function(event) {
+                // Find if a related-topic-tile was clicked
+                const tile = event.target.closest('.related-topic-tile');
+                if (tile) {
+                    // Get the topic from the data-topic attribute or from the text content
+                    let topic = tile.getAttribute('data-topic');
+                    if (!topic) {
+                        // If data-topic isn't available, use the text content
+                        topic = tile.textContent.trim();
+                    }
+                    
+                    console.log('Related topic tile clicked:', topic);
+                    
+                    // Set the input value
+                    userInput.value = topic;
+                    
+                    // Scroll to the chat input with smooth animation
+                    document.querySelector('.input-section').scrollIntoView({ behavior: 'smooth' });
+                    
+                    // Focus the input
+                    userInput.focus();
+                    
+                    // Add a slight delay before sending the message
+                    setTimeout(() => {
+                        sendMessage();
+                    }, 500);
+                }
             });
             
             // Add event listener for bookmark buttons
@@ -3815,28 +3852,49 @@
         
         // Make selectTopic globally available
         window.selectTopic = function(topic) {
+            console.log('selectTopic called with:', topic);
+            
             // Handle escaped quotes in the topic
             const unescapedTopic = topic
                 .replace(/\\'/g, "'")
                 .replace(/\\\"/g, '"');
+                
+            console.log('Unescaped topic:', unescapedTopic);
             
             // Find and highlight the matching topic card if it exists
             document.querySelectorAll('.topic-card').forEach(card => {
                 const cardTopic = card.getAttribute('data-topic');
                 if (cardTopic === topic) {
+                    console.log('Found matching topic card, highlighting it');
                     document.querySelectorAll('.topic-card').forEach(c => c.classList.remove('topic-card-active'));
                     card.classList.add('topic-card-active');
                 }
             });
             
             // Set the input value
-            userInput.value = unescapedTopic;
+            const inputElement = document.getElementById('user-input');
+            if (inputElement) {
+                console.log('Setting input value');
+                inputElement.value = unescapedTopic;
+                // Focus the input to ensure it's visible
+                inputElement.focus();
+            } else {
+                console.error('Could not find user-input element');
+            }
             
             // Scroll to the chat input with smooth animation
-            document.querySelector('.input-section').scrollIntoView({ behavior: 'smooth' });
+            const inputSection = document.querySelector('.input-section');
+            if (inputSection) {
+                console.log('Scrolling to input section');
+                inputSection.scrollIntoView({ behavior: 'smooth' });
+            } else {
+                console.error('Could not find input-section element');
+            }
             
             // Add a slight delay before sending the message
+            console.log('Setting timeout to send message');
             setTimeout(() => {
+                console.log('Sending message:', unescapedTopic);
                 sendMessage(unescapedTopic);
             }, 500);
         }
@@ -6142,69 +6200,82 @@
                 
                 console.log('Chat history items before deduplication:', chatHistoryItems.length);
                 
-                // Deduplicate chat history items based on content
-                const uniqueHistoryItems = [];
-                const seenContentHashes = new Set();
+                // For free users, we want to show exactly FREE_USER_SAVE_LIMIT items if available
+                // For premium users, we'll deduplicate but still show more items
+                let processedItems = [];
                 
-                chatHistoryItems.forEach(item => {
-                    // Create a content hash based on the first message or content
-                    let contentHash = '';
+                if (limitQuery) {
+                    // For free users, just use the items directly without deduplication
+                    // since the query is already limited to FREE_USER_SAVE_LIMIT
+                    processedItems = chatHistoryItems;
+                    console.log(`Using ${processedItems.length} chat history items for free user without deduplication`);
+                } else {
+                    // For premium users, deduplicate to avoid showing the same conversation multiple times
+                    const uniqueHistoryItems = [];
+                    const seenContentHashes = new Set();
                     
-                    try {
-                        // Try to get content from messages array
-                        if (item.data.messages && item.data.messages.length > 0) {
-                            const firstMessage = item.data.messages[0];
-                            if (firstMessage.content) {
-                                if (typeof firstMessage.content === 'string') {
-                                    contentHash = firstMessage.content.substring(0, 100);
-                                } else if (typeof firstMessage.content === 'object') {
-                                    if ('stringValue' in firstMessage.content) {
-                                        contentHash = firstMessage.content.stringValue.substring(0, 100);
-                                    } else {
-                                        contentHash = JSON.stringify(firstMessage.content).substring(0, 100);
+                    chatHistoryItems.forEach(item => {
+                        // Create a content hash based on the first message or content
+                        let contentHash = '';
+                        
+                        try {
+                            // Try to get content from messages array
+                            if (item.data.messages && item.data.messages.length > 0) {
+                                const firstMessage = item.data.messages[0];
+                                if (firstMessage.content) {
+                                    if (typeof firstMessage.content === 'string') {
+                                        contentHash = firstMessage.content.substring(0, 100);
+                                    } else if (typeof firstMessage.content === 'object') {
+                                        if ('stringValue' in firstMessage.content) {
+                                            contentHash = firstMessage.content.stringValue.substring(0, 100);
+                                        } else {
+                                            contentHash = JSON.stringify(firstMessage.content).substring(0, 100);
+                                        }
                                     }
                                 }
                             }
-                        }
-                        // If no messages, try the content field
-                        else if (item.data.content) {
-                            if (typeof item.data.content === 'string') {
-                                contentHash = item.data.content.substring(0, 100);
-                            } else if (typeof item.data.content === 'object') {
-                                if ('stringValue' in item.data.content) {
-                                    contentHash = item.data.content.stringValue.substring(0, 100);
-                                } else {
-                                    contentHash = JSON.stringify(item.data.content).substring(0, 100);
+                            // If no messages, try the content field
+                            else if (item.data.content) {
+                                if (typeof item.data.content === 'string') {
+                                    contentHash = item.data.content.substring(0, 100);
+                                } else if (typeof item.data.content === 'object') {
+                                    if ('stringValue' in item.data.content) {
+                                        contentHash = item.data.content.stringValue.substring(0, 100);
+                                    } else {
+                                        contentHash = JSON.stringify(item.data.content).substring(0, 100);
+                                    }
                                 }
                             }
-                        }
-                        
-                        // If we couldn't get a content hash, use the document ID
-                        if (!contentHash) {
-                            contentHash = item.id;
-                        }
-                        
-                        // Log the content hash for debugging
-                        console.log(`Content hash for item ${item.id}: ${contentHash}`);
-                        
-                        // Only add the item if we haven't seen this content before
-                        if (!seenContentHashes.has(contentHash)) {
-                            seenContentHashes.add(contentHash);
+                            
+                            // If we couldn't get a content hash, use the document ID
+                            if (!contentHash) {
+                                contentHash = item.id;
+                            }
+                            
+                            // Log the content hash for debugging
+                            console.log(`Content hash for item ${item.id}: ${contentHash}`);
+                            
+                            // Only add the item if we haven't seen this content before
+                            if (!seenContentHashes.has(contentHash)) {
+                                seenContentHashes.add(contentHash);
+                                uniqueHistoryItems.push(item);
+                            } else {
+                                console.log(`Skipping duplicate item ${item.id} with hash ${contentHash}`);
+                            }
+                        } catch (e) {
+                            console.error('Error creating content hash:', e);
+                            // If there's an error, include the item to be safe
                             uniqueHistoryItems.push(item);
-                        } else {
-                            console.log(`Skipping duplicate item ${item.id} with hash ${contentHash}`);
                         }
-                    } catch (e) {
-                        console.error('Error creating content hash:', e);
-                        // If there's an error, include the item to be safe
-                        uniqueHistoryItems.push(item);
-                    }
-                });
+                    });
+                    
+                    processedItems = uniqueHistoryItems;
+                    console.log(`Using ${processedItems.length} deduplicated chat history items for premium user`);
+                }
                 
-                console.log('Unique chat history items after deduplication:', uniqueHistoryItems.length);
-                
-                // Take only the 5 most recent unique conversations
-                const recentChatHistory = uniqueHistoryItems.slice(0, 5);
+                // Take only the most recent conversations (up to 5 for premium users, FREE_USER_SAVE_LIMIT for free users)
+                const maxItems = limitQuery ? FREE_USER_SAVE_LIMIT : 5;
+                const recentChatHistory = processedItems.slice(0, maxItems);
                 console.log(`Displaying ${recentChatHistory.length} most recent chat history items`);
                 
                 // Display chat history
