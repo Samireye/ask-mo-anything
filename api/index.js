@@ -691,6 +691,11 @@ For each verse:
 - Full English translation
 - Brief tafsir or explanation
 
+IMPORTANT: For questions about Ramadan, duas, fasting, or iftar, you MUST include relevant Quran verses such as:
+- Surah Al-Baqarah 2:183-187 about fasting
+- Surah Al-Baqarah 2:185 about Ramadan
+- Other relevant verses about prayer, supplication, or worship
+
 [HADITH]
 Include at least two relevant hadith:
 For each hadith:
