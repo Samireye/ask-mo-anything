@@ -8,6 +8,7 @@ import { initializeApp } from 'firebase/app';
 import { getFirestore, doc, getDoc, updateDoc, setDoc } from 'firebase/firestore';
 import { getAuth } from 'firebase/auth';
 import admin from 'firebase-admin';
+import { inject } from '@vercel/analytics';
 
 // Load environment variables
 dotenv.config();
@@ -16,6 +17,9 @@ dotenv.config();
 if (!process.env.OPENAI_API_KEY) {
     throw new Error('OPENAI_API_KEY environment variable is not set');
 }
+
+// Initialize Vercel Analytics
+inject();
 
 // Initialize Firebase
 const firebaseConfig = {
