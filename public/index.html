@@ -71,6 +71,13 @@
         
         // We'll call this function when the user clicks on premium upgrade
     </script>
+    <!-- Vercel Analytics (with badge disabled) -->
+    <script>
+        window.va = window.va || function () { (window.vaq = window.vaq || []).push(arguments); };
+        window.va('config', { debug: false, badge: false });
+    </script>
+    <script defer src="/_vercel/insights/script.js"></script>
+    
     <!-- Firebase SDK -->
     <script type="module">
         // Import Firebase modules
@@ -8672,15 +8679,24 @@
                 <h3><i class="fas fa-share-alt"></i> Connect With Us</h3>
                 <p>Follow us on social media for updates and Islamic knowledge.</p>
                 <div class="social-icons">
-                    <a href="#" class="social-icon coming-soon" title="Instagram Coming Soon">
-                        <i class="fab fa-instagram"></i>
-                    </a>
-                    <a href="#" class="social-icon coming-soon" title="X (Twitter) Coming Soon">
-                        <i class="fab fa-x-twitter"></i>
-                    </a>
-                    <a href="https://www.reddit.com/r/askmoanything/" class="social-icon" title="Reddit">
-                        <i class="fab fa-reddit"></i>
-                    </a>
+                    <div class="social-icon-container instagram-container">
+                        <a href="https://www.instagram.com/askmoanything/" class="social-icon instagram-icon" title="Instagram">
+                            <i class="fab fa-instagram"></i>
+                        </a>
+                        <span class="social-label">Follow us on Instagram</span>
+                    </div>
+                    <div class="social-icon-container">
+                        <a href="#" class="social-icon coming-soon" title="X (Twitter) Coming Soon">
+                            <i class="fab fa-x-twitter"></i>
+                        </a>
+                        <span class="social-label coming-soon-label">Coming Soon</span>
+                    </div>
+                    <div class="social-icon-container">
+                        <a href="https://www.reddit.com/r/askmoanything/" class="social-icon reddit-icon" title="Reddit">
+                            <i class="fab fa-reddit"></i>
+                        </a>
+                        <span class="social-label">Reddit Community</span>
+                    </div>
                 </div>
             </div>
         </div>
@@ -8878,6 +8894,54 @@
         
         .social-icon.coming-soon:hover::after {
             opacity: 1;
+        }
+        
+        /* Instagram icon styling */
+        .social-icon-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            margin-right: 1rem;
+            min-width: 40px;
+        }
+        
+        .instagram-container {
+            position: relative;
+        }
+        
+        .instagram-icon {
+            background: linear-gradient(45deg, #f09433 0%, #e6683c 25%, #dc2743 50%, #cc2366 75%, #bc1888 100%);
+            color: white;
+            transform: scale(1.15);
+            box-shadow: 0 3px 10px rgba(0, 0, 0, 0.2);
+        }
+        
+        .instagram-icon:hover {
+            transform: scale(1.25);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+        }
+        
+        .social-label {
+            font-size: 0.7rem;
+            margin-top: 0.5rem;
+            color: #e6c200;
+            font-weight: 600;
+            white-space: nowrap;
+            text-align: center;
+        }
+        
+        .coming-soon-label {
+            opacity: 0.6;
+        }
+        
+        .reddit-icon {
+            background: #FF4500;
+            color: white;
+        }
+        
+        .reddit-icon:hover {
+            transform: scale(1.15);
+            box-shadow: 0 3px 10px rgba(0, 0, 0, 0.2);
         }
         
         .footer-bottom {
