@@ -91,6 +91,38 @@ app.get('/', (req, res) => {
     res.sendFile('index.html', { root: './public' });
 });
 
+// Initialize waitlist collection
+app.get('/api/init-waitlist', async (req, res) => {
+    try {
+        // Get Firestore from admin
+        const adminDb = admin.firestore();
+        
+        // Check if collection exists
+        const collectionRef = adminDb.collection('mobileAppWaitlist');
+        const snapshot = await collectionRef.limit(1).get();
+        
+        if (snapshot.empty) {
+            // Create the collection with a dummy document that we'll delete right away
+            const dummyDoc = await collectionRef.add({
+                _init: true,
+                timestamp: admin.firestore.FieldValue.serverTimestamp()
+            });
+            
+            // Delete the dummy document
+            await dummyDoc.delete();
+            
+            console.log('mobileAppWaitlist collection initialized successfully');
+            res.status(200).json({ success: true, message: 'Waitlist collection initialized' });
+        } else {
+            console.log('mobileAppWaitlist collection already exists');
+            res.status(200).json({ success: true, message: 'Waitlist collection already exists' });
+        }
+    } catch (error) {
+        console.error('Error initializing waitlist collection:', error);
+        res.status(500).json({ success: false, error: error.message });
+    }
+});
+
 // Rate limiting setup
 const limiter = rateLimit({
     windowMs: 15 * 60 * 1000,
@@ -1046,6 +1078,32 @@ app.use((err, req, res, next) => {
 // Start server
 app.listen(port, () => {
     console.log(`Server is running on port ${port}`);
+});
+
+// API endpoint to add email to mobile app waitlist
+app.post('/api/addToWaitlist', async (req, res) => {
+    try {
+        const { email, source } = req.body;
+        
+        if (!email) {
+            return res.status(400).json({ error: 'Email is required' });
+        }
+        
+        // Get Firestore database from the already initialized admin SDK
+        const db = admin.firestore();
+        
+        // Add email to waitlist collection
+        await db.collection('mobileAppWaitlist').add({
+            email: email,
+            timestamp: admin.firestore.FieldValue.serverTimestamp(),
+            source: source || 'website_footer'
+        });
+        
+        res.json({ success: true, message: 'Added to waitlist successfully' });
+    } catch (error) {
+        console.error('Error adding to waitlist:', error);
+        res.status(500).json({ error: 'Failed to add to waitlist' });
+    }
 });
 
 // Export the app for serverless deployment

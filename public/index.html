@@ -120,6 +120,8 @@
         window.firebaseAuth = auth;
         window.firebaseDb = db;
         window.googleProvider = googleProvider;
+        window.firebaseCollection = collection;
+        window.firebaseAddDoc = addDoc;
     </script>
     <style>
         * {
@@ -3320,24 +3322,28 @@
                             // First, convert any non-string to string and ensure we're working with a string
                             let clean = String(topic || '');
                             
-                            // Hard-coded replacements for specific Arabic honorifics
-                            clean = clean.replace(/ﷺ/g, '(PBUH)');
-                            clean = clean.replace(/صلى الله عليه وسلم/g, '(PBUH)');
-                            clean = clean.replace(/صلى الله عنه/g, '(PBUH)');
-                            clean = clean.replace(/رضي الله عنه/g, '(RA)');
-                            clean = clean.replace(/رضي الله عنها/g, '(RA)');
-                            clean = clean.replace(/عليه السلام/g, '(AS)');
+                            // Pre-process any Unicode characters that might not be caught by standard regex
+                            // Replace the specific PBUH Unicode character that's causing issues
+                            clean = clean.replace(/\ufdfa/g, ' (PBUH) '); // Unicode for صلى الله عليه وسلم ligature
+                            clean = clean.replace(/ﷺ/g, ' (PBUH) '); // Direct replacement of the symbol
                             
-                            // Brute force approach: Remove ALL Arabic characters
+                            // Hard-coded replacements for specific Arabic honorifics
+                            clean = clean.replace(/صلى الله عليه وسلم/g, ' (PBUH) ');
+                            clean = clean.replace(/صلى الله عنه/g, ' (PBUH) ');
+                            clean = clean.replace(/رضي الله عنه/g, ' (RA) ');
+                            clean = clean.replace(/رضي الله عنها/g, ' (RA) ');
+                            clean = clean.replace(/عليه السلام/g, ' (AS) ');
+                            
+                            // Brute force approach: Remove ALL remaining Arabic characters
                             // This regex covers the entire Arabic Unicode range
                             clean = clean.replace(/[\u0600-\u06FF\u0750-\u077F\u08A0-\u08FF\uFB50-\uFDFF\uFE70-\uFEFF]+/g, '');
                             
                             // Fix formatting issues
                             clean = clean.replace(/\s+/g, ' '); // Fix multiple spaces
                             clean = clean.replace(/\(\s*\)/g, ''); // Remove empty parentheses
-                            clean = clean.replace(/\(PBUH\)\s*\(PBUH\)/g, '(PBUH)'); // Fix duplicates
-                            clean = clean.replace(/\(RA\)\s*\(RA\)/g, '(RA)');
-                            clean = clean.replace(/\(AS\)\s*\(AS\)/g, '(AS)');
+                            clean = clean.replace(/\(PBUH\)\s*\(PBUH\)/g, ' (PBUH) '); // Fix duplicates
+                            clean = clean.replace(/\(RA\)\s*\(RA\)/g, ' (RA) ');
+                            clean = clean.replace(/\(AS\)\s*\(AS\)/g, ' (AS) ');
                             
                             // Final cleanup
                             clean = clean.trim();
@@ -8627,6 +8633,533 @@
                     console.error('Error during auth UI initialization:', error);
                 }
             }, 500); // Increased timeout to ensure DOM is fully loaded
+        });
+    </script>
+    <!-- Footer Section -->
+    <footer class="site-footer">
+        <div class="footer-container">
+            <div class="footer-section mobile-app-section">
+                <h3><i class="fas fa-mobile-alt"></i> Mobile App Coming Soon</h3>
+                <p>We're working hard to create a mobile app to make Islamic knowledge more accessible for everyone. Sign up to be the first users notified when our mobile app launches!</p>
+                <form id="mobile-waitlist-form" class="footer-form">
+                    <div class="form-group">
+                        <input type="email" id="waitlist-email" placeholder="Your email address" required>
+                        <button type="submit" class="primary-button">Join Waitlist</button>
+                    </div>
+                    <div id="waitlist-message" class="form-message"></div>
+                </form>
+            </div>
+            
+            <div class="footer-section contact-section">
+                <h3><i class="fas fa-envelope"></i> Contact Us</h3>
+                <p>Have questions or feedback? We'd love to hear from you!</p>
+                <form id="contact-form" class="footer-form" action="https://formspree.io/f/mblgjvgy" method="POST">
+                    <div class="form-group">
+                        <input type="text" name="name" placeholder="Your name" required>
+                    </div>
+                    <div class="form-group">
+                        <input type="email" name="email" placeholder="Your email address" required>
+                    </div>
+                    <div class="form-group">
+                        <textarea name="message" placeholder="Your message" rows="3" required></textarea>
+                    </div>
+                    <button type="submit" class="primary-button">Send Message</button>
+                    <div id="contact-message" class="form-message"></div>
+                </form>
+            </div>
+            
+            <div class="footer-section social-section">
+                <h3><i class="fas fa-share-alt"></i> Connect With Us</h3>
+                <p>Follow us on social media for updates and Islamic knowledge.</p>
+                <div class="social-icons">
+                    <a href="#" class="social-icon coming-soon" title="Instagram Coming Soon">
+                        <i class="fab fa-instagram"></i>
+                    </a>
+                    <a href="#" class="social-icon coming-soon" title="X (Twitter) Coming Soon">
+                        <i class="fab fa-x-twitter"></i>
+                    </a>
+                    <a href="https://www.reddit.com/r/askmoanything/" class="social-icon" title="Reddit">
+                        <i class="fab fa-reddit"></i>
+                    </a>
+                </div>
+            </div>
+        </div>
+        <div class="footer-bottom">
+            <p>&copy; 2025 AskMoAnything. All rights reserved.</p>
+        </div>
+    </footer>
+
+    <!-- Footer Styles -->
+    <style>
+        .site-footer {
+            background-color: var(--primary-color);
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+            padding: 3rem 0 1rem;
+            margin-top: 3rem;
+            color: rgba(255, 255, 255, 0.9);
+        }
+        
+        .footer-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 1rem;
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: space-between;
+        }
+        
+        .footer-section {
+            flex: 1;
+            min-width: 250px;
+            margin-bottom: 2rem;
+            padding: 0 1rem;
+        }
+        
+        .footer-section h3 {
+            background: linear-gradient(to right, #ffd700, #f9f295, #e6c200);
+            -webkit-background-clip: text;
+            background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 1rem;
+            font-size: 1.5rem;
+            display: flex;
+            align-items: center;
+            font-weight: 700;
+            text-shadow: 0px 0px 1px rgba(150, 150, 150, 0.2);
+        }
+        
+        .footer-section h3 i {
+            margin-right: 0.5rem;
+        }
+        
+        .footer-section p {
+            margin-bottom: 1rem;
+            line-height: 1.5;
+        }
+        
+        .contact-email a {
+            background: linear-gradient(to right, #ffd700, #f9f295, #e6c200);
+            -webkit-background-clip: text;
+            background-clip: text;
+            -webkit-text-fill-color: transparent;
+            text-decoration: none;
+            font-weight: 600;
+            text-shadow: 0px 0px 1px rgba(150, 150, 150, 0.2);
+        }
+        
+        .contact-email a:hover {
+            text-decoration: underline;
+        }
+        
+        .footer-form .form-group {
+            margin-bottom: 1rem;
+        }
+        
+        .footer-form input,
+        .footer-form textarea {
+            width: 100%;
+            padding: 0.75rem;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 4px;
+            font-family: inherit;
+            font-size: 0.9rem;
+            background-color: rgba(255, 255, 255, 0.1);
+            color: white;
+        }
+        
+        .footer-form input::placeholder,
+        .footer-form textarea::placeholder {
+            color: rgba(255, 255, 255, 0.7);
+        }
+        
+        .footer-form textarea {
+            resize: vertical;
+        }
+        
+        #mobile-waitlist-form .form-group {
+            display: flex;
+        }
+        
+        #mobile-waitlist-form input {
+            border-top-right-radius: 0;
+            border-bottom-right-radius: 0;
+            flex: 1;
+        }
+        
+        #mobile-waitlist-form button {
+            border-top-left-radius: 0;
+            border-bottom-left-radius: 0;
+            white-space: nowrap;
+        }
+        
+        .primary-button {
+            background-color: white;
+            color: var(--primary-color);
+            border: none;
+            padding: 0.75rem 1rem;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: 500;
+            transition: all 0.2s;
+        }
+        
+        .primary-button:hover {
+            background: linear-gradient(to right, #ffd700, #f9f295, #e6c200);
+            color: #333;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+        }
+        
+        .form-message {
+            margin-top: 0.5rem;
+            font-size: 0.9rem;
+        }
+        
+        .form-message.success {
+            background: linear-gradient(to right, #ffd700, #f9f295, #e6c200);
+            -webkit-background-clip: text;
+            background-clip: text;
+            -webkit-text-fill-color: transparent;
+            font-weight: 600;
+            text-shadow: 0px 0px 1px rgba(150, 150, 150, 0.2);
+        }
+        
+        .form-message.error {
+            color: #ffcccc;
+            font-weight: 500;
+        }
+        
+        .social-icons {
+            display: flex;
+            gap: 1rem;
+            margin-top: 1rem;
+        }
+        
+        .social-icon {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 40px;
+            height: 40px;
+            background-color: rgba(255, 255, 255, 0.2);
+            border-radius: 50%;
+            color: white;
+            text-decoration: none;
+            transition: all 0.2s;
+        }
+        
+        .social-icon:hover {
+            background: linear-gradient(to right, #ffd700, #f9f295, #e6c200);
+            color: var(--primary-color);
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+        }
+        
+        .social-icon.coming-soon {
+            opacity: 0.6;
+            cursor: default;
+            position: relative;
+        }
+        
+        .social-icon.coming-soon:hover {
+            background-color: rgba(255, 255, 255, 0.2);
+            color: white;
+        }
+        
+        .social-icon.coming-soon::after {
+            content: 'Coming Soon';
+            position: absolute;
+            bottom: -25px;
+            left: 50%;
+            transform: translateX(-50%);
+            font-size: 0.7rem;
+            white-space: nowrap;
+            opacity: 0;
+            transition: opacity 0.2s;
+        }
+        
+        .social-icon.coming-soon:hover::after {
+            opacity: 1;
+        }
+        
+        .footer-bottom {
+            text-align: center;
+            padding-top: 1rem;
+            margin-top: 1rem;
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+            font-size: 0.9rem;
+            color: rgba(255, 255, 255, 0.8);
+        }
+        
+        @media (max-width: 768px) {
+            .footer-container {
+                flex-direction: column;
+            }
+            
+            .footer-section {
+                width: 100%;
+                padding: 0;
+            }
+        }
+    </style>
+    
+    <!-- Footer Scripts -->    
+    <!-- Firebase SDK for Client Side -->    
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
+    
+    <script>
+        
+        // Initialize Firebase for client-side use
+        try {
+            // Firebase configuration for v8 SDK
+            const firebaseConfig = {
+                apiKey: "AIzaSyDn_yz3eL1c4cxxaChd2YFx8TReFYSWI-Q",
+                authDomain: "ask-mo-anything.firebaseapp.com",
+                projectId: "ask-mo-anything",
+                storageBucket: "ask-mo-anything.appspot.com",
+                messagingSenderId: "31573817503",
+                appId: "1:31573817503:web:b8f5c3a066b3cb4243b69d"
+            };
+            
+            // Initialize Firebase for client-side use (v8 syntax)
+            firebase.initializeApp(firebaseConfig);
+            window.firebaseDb = firebase.firestore();
+            console.log('Firebase initialized successfully');
+        } catch (error) {
+            console.error('Firebase client initialization error:', error);
+        }
+        
+        // Helper function to show messages
+        function showMessage(element, message, type) {
+            if (element) {
+                element.textContent = message;
+                element.className = 'form-message';
+                if (type) {
+                    element.classList.add(type);
+                }
+                
+                // Clear message after 5 seconds
+                setTimeout(() => {
+                    element.textContent = '';
+                    element.className = 'form-message';
+                }, 5000);
+            }
+        }
+        
+        // Form Handling for Footer Forms
+        document.addEventListener('DOMContentLoaded', function() {
+            const waitlistForm = document.getElementById('mobile-waitlist-form');
+            const waitlistMessage = document.getElementById('waitlist-message');
+            const contactForm = document.getElementById('contact-form');
+            const contactMessage = document.getElementById('contact-message');
+            
+            // Handle Mobile App Waitlist Form (hybrid approach)
+            if (waitlistForm) {
+                waitlistForm.addEventListener('submit', async function(e) {
+                    e.preventDefault();
+                    
+                    const emailInput = document.getElementById('waitlist-email');
+                    const email = emailInput.value.trim();
+                    
+                    if (!email) {
+                        showMessage(waitlistMessage, 'Please enter a valid email address.', 'error');
+                        return;
+                    }
+                    
+                    // Show loading state
+                    const submitButton = waitlistForm.querySelector('button[type="submit"]');
+                    if (submitButton) {
+                        submitButton.disabled = true;
+                        submitButton.textContent = 'Sending...';
+                    }
+                    
+                    // Show a loading message
+                    showMessage(waitlistMessage, 'Adding you to the waitlist...', '');
+                    
+                    try {
+                        let success = false;
+                        
+                        // 1. Try Firebase first (primary storage)
+                        if (window.firebaseDb) {
+                            try {
+                                const db = firebase.firestore();
+                                await db.collection('mobileAppWaitlist').add({
+                                    email: email,
+                                    timestamp: firebase.firestore.FieldValue.serverTimestamp(),
+                                    created: new Date().toISOString(),
+                                    source: 'website_footer'
+                                });
+                                success = true;
+                                console.log('Email added to Firebase waitlist:', email);
+                            } catch (firebaseError) {
+                                console.error('Firebase error:', firebaseError);
+                                // Will fall back to Formspree
+                            }
+                        }
+                        
+                        // 2. Use Formspree as backup if Firebase fails
+                        if (!success) {
+                            try {
+                                const formData = new FormData();
+                                formData.append('email', email);
+                                formData.append('form-type', 'mobile-app-waitlist');
+                                
+                                const response = await fetch('https://formspree.io/f/mblgjvgy', {
+                                    method: 'POST',
+                                    body: formData,
+                                    headers: {
+                                        'Accept': 'application/json'
+                                    }
+                                });
+                                
+                                if (response.ok) {
+                                    success = true;
+                                    console.log('Email sent to Formspree as backup:', email);
+                                } else {
+                                    throw new Error('Formspree submission failed');
+                                }
+                            } catch (formspreeError) {
+                                console.error('Formspree error:', formspreeError);
+                            }
+                        }
+                        
+                        // 3. Always store in localStorage as a backup
+                        const waitlist = JSON.parse(localStorage.getItem('mobileAppWaitlist') || '[]');
+                        const entry = { 
+                            email, 
+                            timestamp: new Date().toISOString(), 
+                            source: 'website_footer'
+                        };
+                        
+                        // Check if email already exists in localStorage
+                        const emailExists = waitlist.some(item => item.email === email);
+                        if (!emailExists) {
+                            waitlist.push(entry);
+                            localStorage.setItem('mobileAppWaitlist', JSON.stringify(waitlist));
+                        }
+                        
+                        // Show success message and reset form
+                        showMessage(waitlistMessage, 'Thank you! You\'ve been added to our waitlist.', 'success');
+                        emailInput.value = '';
+                        
+                        // Reset button state
+                        if (submitButton) {
+                            submitButton.disabled = false;
+                            submitButton.textContent = 'Join Waitlist';
+                        }
+                        
+                        // Add admin export function (only visible to admins)
+                        if (!window.exportWaitlist) {
+                            window.exportWaitlist = function() {
+                                const waitlist = JSON.parse(localStorage.getItem('mobileAppWaitlist') || '[]');
+                                console.log('Waitlist entries:', waitlist);
+                                
+                                // Create CSV for download
+                                let csv = 'Email,Timestamp,Source\n';
+                                waitlist.forEach(entry => {
+                                    csv += `${entry.email},${entry.timestamp},${entry.source}\n`;
+                                });
+                                
+                                const blob = new Blob([csv], { type: 'text/csv' });
+                                const url = URL.createObjectURL(blob);
+                                const a = document.createElement('a');
+                                a.setAttribute('hidden', '');
+                                a.setAttribute('href', url);
+                                a.setAttribute('download', 'mobile_app_waitlist.csv');
+                                document.body.appendChild(a);
+                                a.click();
+                                document.body.removeChild(a);
+                            };
+                            console.log('Admin: Use window.exportWaitlist() to download the waitlist data');
+                        }
+                    } catch (error) {
+                        console.error('Error adding to waitlist:', error);
+                        showMessage(waitlistMessage, 'Something went wrong. Please try again later.', 'error');
+                    } finally {
+                        // Reset button state
+                        if (submitButton) {
+                            submitButton.disabled = false;
+                            submitButton.textContent = 'Join Waitlist';
+                        }
+                    }
+                });
+            }
+            
+            // Handle Contact Form (Formspree with their recommended AJAX implementation)
+            if (contactForm) {
+                async function handleContactSubmit(event) {
+                    event.preventDefault();
+                    
+                    // Show loading state
+                    const submitButton = contactForm.querySelector('button[type="submit"]');
+                    if (submitButton) {
+                        submitButton.disabled = true;
+                        submitButton.textContent = 'Sending...';
+                    }
+                    
+                    // Show a loading message
+                    showMessage(contactMessage, 'Sending your message...', '');
+                    
+                    // Submit using Formspree's recommended approach
+                    const formData = new FormData(event.target);
+                    try {
+                        const response = await fetch(event.target.action, {
+                            method: contactForm.method,
+                            body: formData,
+                            headers: {
+                                'Accept': 'application/json'
+                            }
+                        });
+                        
+                        if (response.ok) {
+                            // Success
+                            contactForm.reset();
+                            showMessage(contactMessage, 'Thank you! Your message has been sent.', 'success');
+                        } else {
+                            // Server error
+                            const data = await response.json();
+                            let errorMessage = 'Oops! There was a problem submitting your form';
+                            
+                            if (Object.hasOwn(data, 'errors')) {
+                                errorMessage = data.errors.map(error => error.message).join(", ");
+                            }
+                            
+                            showMessage(contactMessage, errorMessage, 'error');
+                        }
+                    } catch (error) {
+                        // Network error
+                        console.error('Error:', error);
+                        showMessage(contactMessage, 'Oops! There was a problem submitting your form', 'error');
+                    } finally {
+                        // Reset button state
+                        if (submitButton) {
+                            submitButton.disabled = false;
+                            submitButton.textContent = 'Send Message';
+                        }
+                    }
+                }
+                
+                contactForm.addEventListener('submit', handleContactSubmit);
+                
+                // Check for Formspree success in URL
+                const urlParams = new URLSearchParams(window.location.search);
+                if (urlParams.get('success') === 'true') {
+                    contactForm.reset();
+                    showMessage(contactMessage, 'Thank you! Your message has been sent.', 'success');
+                }
+                
+                // Listen for the formspree:submit event as a backup
+                window.addEventListener('formspree:submit', function() {
+                    const submitButton = contactForm.querySelector('button[type="submit"]');
+                    if (submitButton) {
+                        submitButton.disabled = false;
+                        submitButton.textContent = 'Send Message';
+                    }
+                    
+                    // Reset the form on success
+                    contactForm.reset();
+                    showMessage(contactMessage, 'Thank you! Your message has been sent.', 'success');
+                });
+            }
         });
     </script>
 </body>
