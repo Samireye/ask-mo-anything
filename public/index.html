@@ -3,7 +3,14 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="description" content="Ask Mo Anything - Islamic Knowledge AI Assistant">
+    <meta name="description" content="Ask Mo Anything - Your AI Islamic Knowledge Assistant for Ramadan questions, Quran, Hadith, and Islamic guidance">
+    <meta name="keywords" content="Islamic AI, Islamic knowledge, Quran, Hadith, Islamic questions, Ramadan, Ramadan 2025, fasting, Taraweeh, Laylatul Qadr, Islamic guidance">
+    <meta name="robots" content="index, follow">
+    <meta property="og:title" content="Ask Mo Anything - AI Islamic Knowledge Assistant">
+    <meta property="og:description" content="Get instant answers to your Ramadan and Islamic questions with our AI assistant. Join our mobile app waitlist!">
+    <meta property="og:url" content="https://ask-mo-anything.vercel.app">
+    <meta property="og:type" content="website">
+    <meta name="twitter:card" content="summary_large_image">
     <title>Ask Mo Anything</title>
     <link rel="icon" type="image/png" href="/favicon-96x96.png" sizes="96x96" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
@@ -77,6 +84,15 @@
         window.va('config', { debug: false, badge: false });
     </script>
     <script defer src="/_vercel/insights/script.js"></script>
+    
+    <!-- Google Analytics (GA4) -->
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-0PS7B8P3V6"></script>
+    <script>
+        window.dataLayer = window.dataLayer || [];
+        function gtag(){dataLayer.push(arguments);}
+        gtag('js', new Date());
+        gtag('config', 'G-0PS7B8P3V6');
+    </script>
     
     <!-- Firebase SDK -->
     <script type="module">
@@ -8701,7 +8717,7 @@
             </div>
         </div>
         <div class="footer-bottom">
-            <p>&copy; 2025 AskMoAnything. All rights reserved.</p>
+            <p>&copy; 2025 AskMoAnything. All rights reserved. | <a href="/terms.html" class="footer-link">Terms of Service</a> | <a href="/privacy.html" class="footer-link">Privacy Policy</a></p>
         </div>
     </footer>
 
@@ -8951,6 +8967,17 @@
             border-top: 1px solid rgba(255, 255, 255, 0.1);
             font-size: 0.9rem;
             color: rgba(255, 255, 255, 0.8);
+        }
+        
+        .footer-link {
+            color: var(--secondary-color);
+            text-decoration: none;
+            transition: color 0.2s;
+            margin: 0 5px;
+        }
+        
+        .footer-link:hover {
+            text-decoration: underline;
         }
         
         @media (max-width: 768px) {
