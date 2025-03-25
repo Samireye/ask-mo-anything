@@ -1551,6 +1551,22 @@
             font-size: 0.9em;
             line-height: 1.4;
         }
+        
+        .topics-instruction {
+            text-align: center;
+            margin-bottom: 15px;
+            background: linear-gradient(135deg, rgba(30, 111, 92, 0.1), rgba(212, 175, 55, 0.1));
+            padding: 12px 20px;
+            border-radius: 12px;
+            border: 1px dashed rgba(30, 111, 92, 0.3);
+        }
+        
+        .topics-instruction p {
+            font-size: 1.1rem;
+            color: var(--text-color);
+            margin: 0;
+            font-weight: 500;
+        }
 
         .related-topics {
             display: flex;
@@ -2130,6 +2146,15 @@
                 min-height: 400px; /* Taller on mobile */
                 margin: 20px auto 30px;
             }
+            
+            .topics-instruction {
+                padding: 10px 15px;
+                margin-bottom: 10px;
+            }
+            
+            .topics-instruction p {
+                font-size: 1rem;
+            }
 
             .chat-messages {
                 padding: 15px;
@@ -2253,6 +2278,9 @@
 
 
         <div class="suggested-topics">
+            <div class="topics-instruction">
+                <p>Choose one of these topics to start a chat or ask your own question in the chat box below!</p>
+            </div>
             <h2>Ramadan Special Topics</h2>
             <div class="topic-grid">
                 <!-- Ramadan-specific Topics -->
@@ -2629,9 +2657,10 @@
                         <div class="pricing-header">
                             <h4>Premium Annual</h4>
                             <div class="pricing-cost">
-                                <span class="original-price">$199.99</span>
-                                $99.99<span>/year</span>
+                                <span class="original-price">$16.67</span>
+                                $8.33<span>/month</span>
                             </div>
+                            <div class="pricing-subcost">Billed annually at $99.99</div>
                         </div>
                         <div class="pricing-features">
                             <ul>
@@ -2996,6 +3025,13 @@
             font-weight: bold;
             color: var(--primary-color);
             margin: 15px 0 5px;
+        }
+        
+        .pricing-subcost {
+            font-size: 0.9rem;
+            color: rgba(255, 255, 255, 0.7);
+            margin-bottom: 10px;
+            font-style: italic;
         }
         
         .pricing-cost span {
