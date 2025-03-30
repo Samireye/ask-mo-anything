@@ -286,6 +286,17 @@
             text-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
         }
         
+        .shawwal-reminder {
+            font-size: 0.9rem;
+            color: rgba(255, 255, 255, 0.9);
+            margin-top: 8px;
+            font-style: italic;
+            max-width: 300px;
+            margin-left: auto;
+            margin-right: auto;
+            line-height: 1.4;
+        }
+        
         .prayer-times-container {
             background: rgba(255, 255, 255, 0.1);
             border-radius: 12px;
@@ -2214,42 +2225,43 @@
     <div class="ramadan-banner">
         <div class="ramadan-content">
             <div class="eid-countdown">
-                <div class="countdown-label">Eid Al-Fitr Countdown:</div>
-                <div class="countdown-timer" id="eid-countdown">Loading...</div>
+                <div class="countdown-label">Shawwal Fasting Reminder</div>
+                <div class="countdown-timer" id="shawwal-countdown">Loading...</div>
+                <div class="shawwal-reminder">Fast 6 days in Shawwal to earn the reward of fasting the entire year</div>
             </div>
             
             <div class="ramadan-greeting">
-                <div class="ramadan-icon">☪️</div>
-                <h2>Ramadan Mubarak!</h2>
-                <div class="ramadan-dates">March 1 - March 29, 2025</div>
+                <div class="ramadan-icon">🌙</div>
+                <h2>Eid Mubarak!</h2>
+                <div class="ramadan-dates">Eid al-Fitr • March 30, 2025</div>
             </div>
             
             <div class="prayer-times-container">
-                <div class="prayer-times-header">Today's Fasting Times</div>
+                <div class="prayer-times-header">Eid Prayer Information</div>
                 <div class="prayer-times">
                     <div class="prayer-time">
-                        <span class="prayer-name">Suhoor Ends</span>
-                        <span class="prayer-time-value" id="suhoor-time">Loading...</span>
+                        <span class="prayer-name">Eid Prayer</span>
+                        <span class="prayer-time-value">Check your local masjid</span>
                     </div>
                     <div class="prayer-time">
-                        <span class="prayer-name">Iftar</span>
-                        <span class="prayer-time-value" id="iftar-time">Loading...</span>
+                        <span class="prayer-name">Takbir</span>
+                        <span class="prayer-time-value">Allahu Akbar, Allahu Akbar, La ilaha illallah...</span>
                     </div>
                 </div>
-                <div class="location-info" id="location-info">Based on your location</div>
+                <div class="location-info">Taqabbal Allahu minna wa minkum (May Allah accept from us and from you)</div>
             </div>
         </div>
     </div>
 
-    <!-- Ramadan FAQ Banner -->
+    <!-- Eid FAQ Banner -->
     <div class="ramadan-faq-banner">
         <div class="faq-banner-content">
             <div class="faq-icon"><i class="fas fa-question-circle"></i></div>
             <div class="faq-banner-text">
-                <h3>Questions about the final days of Ramadan?</h3>
-                <p>Get answers about Laylatul Qadr, Eid preparations, and more</p>
+                <h3>Questions about Eid al-Fitr?</h3>
+                <p>Get answers about Eid prayers, celebrations, traditions, and more</p>
             </div>
-            <a href="/ramadan-faq.html" class="faq-banner-button">View Ramadan FAQ</a>
+            <a href="/ramadan-faq.html" class="faq-banner-button">View Eid & Ramadan FAQ</a>
         </div>
     </div>
 
@@ -2281,7 +2293,7 @@
             <div class="topics-instruction">
                 <p>Choose one of these topics to start a chat or ask your own question in the chat box below!</p>
             </div>
-            <h2>Ramadan Special Topics</h2>
+            <h2>Eid & Ramadan Topics</h2>
             <div class="topic-grid">
                 <!-- Ramadan-specific Topics -->
                 <div class="topic-card ramadan-card" data-topic="What is the significance of Ramadan in Islam?">
@@ -2299,10 +2311,10 @@
                     <div class="topic-title">Fasting Guidelines</div>
                     <div class="topic-description">Learn about fasting rules, exemptions, and making up missed fasts</div>
                 </div>
-                <div class="topic-card ramadan-card" data-topic="What is Laylatul Qadr and how should we observe it?">
-                    <div class="topic-icon">⭐</div>
-                    <div class="topic-title">Laylatul Qadr</div>
-                    <div class="topic-description">Understand the Night of Power and its special significance</div>
+                <div class="topic-card ramadan-card" data-topic="What is Eid al-Fitr and how should Muslims celebrate it?">
+                    <div class="topic-icon">🎉</div>
+                    <div class="topic-title">Eid al-Fitr</div>
+                    <div class="topic-description">Learn about Eid celebrations, prayers, and traditions</div>
                 </div>
             </div>
             
@@ -2392,9 +2404,9 @@
                 <h3>Choose the Right Plan for You</h3>
                 <div class="ramadan-promo">
                     <div class="ramadan-badge">
-                        <span class="ramadan-icon">☪</span> RAMADAN SPECIAL
+                        <span class="ramadan-icon">🎉</span> EID SPECIAL
                     </div>
-                    <p>Enjoy up to 50% off during the blessed month of Ramadan!</p>
+                    <p>Enjoy up to 50% off as we celebrate Eid al-Fitr!</p>
                 </div>
                 
                 <!-- Pricing Toggle -->
@@ -2403,7 +2415,7 @@
                     <button id="monthly-toggle" class="pricing-toggle-btn">Pay monthly</button>
                 </div>
                 <style>
-                    /* Ramadan promo styles */
+                    /* Eid promo styles */
                     .ramadan-promo {
                         text-align: center;
                         margin: 15px auto 25px;
@@ -4852,115 +4864,41 @@
         }
         
         // Function to get user's location and fetch prayer times
-        async function getPrayerTimes() {
-            try {
-                // First try to get user's location
-                if (navigator.geolocation) {
-                    navigator.geolocation.getCurrentPosition(async (position) => {
-                        const lat = position.coords.latitude;
-                        const lng = position.coords.longitude;
-                        
-                        // Get location name using reverse geocoding
-                        try {
-                            const response = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}`);
-                            const data = await response.json();
-                            const city = data.address.city || data.address.town || data.address.village || 'your location';
-                            document.getElementById('location-info').textContent = `Based on ${city}`;
-                        } catch (error) {
-                            console.error('Error getting location name:', error);
-                        }
-                        
-                        // Fetch prayer times using coordinates
-                        fetchPrayerTimes(lat, lng);
-                    }, (error) => {
-                        console.error('Error getting location:', error);
-                        // Fallback to default location (Washington DC)
-                        fetchPrayerTimes(38.9072, -77.0369);
-                        document.getElementById('location-info').textContent = 'Based on Washington DC (default)';
-                    });
-                } else {
-                    // Geolocation not supported
-                    fetchPrayerTimes(38.9072, -77.0369); // Default to Washington DC
-                    document.getElementById('location-info').textContent = 'Based on Washington DC (default)';
-                }
-            } catch (error) {
-                console.error('Error in getPrayerTimes:', error);
-            }
+        // Function for Eid prayer information - no need to fetch prayer times
+        function getPrayerTimes() {
+            // No need to fetch prayer times for Eid
+            // The prayer information is now static
+            console.log('Eid Mubarak! No prayer times to fetch today.');
         }
         
-        // Function to fetch prayer times from API
-        async function fetchPrayerTimes(latitude, longitude) {
-            try {
-                const today = new Date();
-                const date = today.getDate();
-                const month = today.getMonth() + 1;
-                const year = today.getFullYear();
-                
-                // Using AlAdhan API to get prayer times
-                const url = `https://api.aladhan.com/v1/timings/${date}-${month}-${year}?latitude=${latitude}&longitude=${longitude}&method=2`;
-                
-                const response = await fetch(url);
-                const data = await response.json();
-                
-                if (data.code === 200 && data.data) {
-                    // Set Suhoor time (Fajr time)
-                    const fajrTime = data.data.timings.Fajr;
-                    document.getElementById('suhoor-time').textContent = formatTime(fajrTime);
-                    
-                    // Set Iftar time (Maghrib time)
-                    const maghribTime = data.data.timings.Maghrib;
-                    document.getElementById('iftar-time').textContent = formatTime(maghribTime);
-                }
-            } catch (error) {
-                console.error('Error fetching prayer times:', error);
-                document.getElementById('suhoor-time').textContent = 'Error loading';
-                document.getElementById('iftar-time').textContent = 'Error loading';
-            }
-        }
-        
-        // Function to format time from 24h to 12h format
-        function formatTime(time24) {
-            const [hours, minutes] = time24.split(':');
-            let period = 'AM';
-            let hour = parseInt(hours, 10);
-            
-            if (hour >= 12) {
-                period = 'PM';
-                if (hour > 12) hour -= 12;
-            }
-            if (hour === 0) hour = 12;
-            
-            return `${hour}:${minutes} ${period}`;
-        }
-        
-        // Function to update Eid countdown timer
-        function updateEidCountdown() {
-            // Eid al-Fitr 2025 date (March 30, 2025)
-            const eidDate = new Date('March 30, 2025 00:00:00').getTime();
+        // Function to update Shawwal countdown timer
+        function updateShawwalCountdown() {
+            // Shawwal ends on April 28, 2025 (30 days after March 30)
+            const shawwalEndDate = new Date('April 28, 2025 23:59:59').getTime();
             const now = new Date().getTime();
-            const distance = eidDate - now;
+            const distance = shawwalEndDate - now;
             
-            // Calculate days, hours, minutes and seconds
+            // Calculate days, hours, minutes
             const days = Math.floor(distance / (1000 * 60 * 60 * 24));
             const hours = Math.floor((distance % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
             const minutes = Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60));
             
             // Display the result
-            const countdownElement = document.getElementById('eid-countdown');
+            const countdownElement = document.getElementById('shawwal-countdown');
             
             if (distance < 0) {
-                countdownElement.innerHTML = 'Eid Mubarak! 🎉';
+                countdownElement.innerHTML = 'Shawwal has ended';
             } else {
-                countdownElement.innerHTML = `${days}d ${hours}h ${minutes}m`;
+                countdownElement.innerHTML = `${days}d ${hours}h ${minutes}m remaining`;
             }
         }
         
         // Initialize prayer times and countdown on page load
         document.addEventListener('DOMContentLoaded', () => {
             getPrayerTimes();
-            updateEidCountdown();
+            updateShawwalCountdown();
             // Update countdown every minute
-            setInterval(updateEidCountdown, 60000);
+            setInterval(updateShawwalCountdown, 60000);
             
             // Set up hadith refresh button
             document.getElementById('refresh-hadith-btn').addEventListener('click', displayRandomHadith);
