@@ -3,8 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="description" content="Ask Mo Anything - Your AI Islamic Knowledge Assistant for questions about Quran, Hadith, Islamic history, and guidance. Get instant, accurate answers to your Islamic questions from a reliable AI source.">
-    <meta name="keywords" content="Islamic AI, Islamic knowledge, Quran explanation, Hadith interpretation, Islamic questions, Islamic history, Prophet Muhammad, Islamic guidance, Islamic FAQ, Islamic teachings, Islamic scholars, Islamic jurisprudence, fiqh questions, Islamic ethics, Islamic practices">
+    <meta name="description" content="Ask Mo Anything - Your AI Islamic Knowledge Assistant for questions about Quran, Hadith, Islamic history, and guidance. Get instant, accurate answers to your Islamic questions about prayer, fasting, zakat, and more.">
+    <meta name="keywords" content="Islamic AI, Islamic knowledge, Quran explanation, Hadith interpretation, Islamic questions, salah prayer times, how to pray in Islam, fasting in Ramadan, zakat calculation, Islamic history, Prophet Muhammad PBUH, Islamic guidance, Islamic FAQ, Islamic teachings, Islamic scholars, Islamic jurisprudence, fiqh questions, Islamic ethics, Islamic practices, halal food guidelines, Islamic finance">
     <meta name="robots" content="index, follow">
     <meta property="og:title" content="Ask Mo Anything - AI Islamic Knowledge Assistant">
     <meta property="og:description" content="Get instant, accurate answers to your Islamic questions about Quran, Hadith, and Islamic teachings from a reliable AI source.">
@@ -25,9 +25,18 @@
     <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
     <meta name="apple-mobile-web-app-title" content="AskMo" />
     <link rel="manifest" href="/site.webmanifest" />
-    <link href="https://fonts.googleapis.com/css2?family=Amiri:wght@400;700&family=Roboto:wght@300;400;500;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+    <!-- SEO Optimization: Preconnect to external domains for faster loading -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link rel="preconnect" href="https://cdnjs.cloudflare.com">
+    <link rel="preconnect" href="https://www.googletagmanager.com">
+    <link rel="preconnect" href="https://pagead2.googlesyndication.com">
+    
+    <!-- Load fonts with display=swap for better performance -->
+    <link href="https://fonts.googleapis.com/css2?family=Amiri:wght@400;700&family=Roboto:wght@300;400;500;700&display=swap" rel="stylesheet" media="print" onload="this.media='all'">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" media="print" onload="this.media='all'">
+    <!-- SEO Optimization: Load non-critical scripts with defer -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js" defer></script>
     <!-- Stripe JavaScript SDK with defer to prevent blocking -->
     <script src="https://js.stripe.com/v3/" defer></script>
     <!-- Load buy-button.js only when needed, not on initial page load -->
@@ -2274,7 +2283,8 @@
 
     <div class="container">
         <div class="header-image-container">
-            <img src="/images/islamic-art.png" alt="Islamic Art - Artistic Illustration" class="header-image">
+            <!-- SEO Optimization: Add loading="lazy" and explicit dimensions for better CLS metrics -->
+            <img src="/images/islamic-art.png" alt="Islamic Art - Artistic Illustration" class="header-image" loading="lazy" width="800" height="400">
             <p class="image-disclaimer">Note: This is an artistic illustration and not a depiction of Prophet Muhammad (peace be upon him)</p>
         </div>
         
@@ -2378,6 +2388,13 @@
                     </div>
                 </div>
             </div>
+            
+            <!-- SEO Enhancement: Internal Linking Section -->
+            <div class="seo-internal-links" style="margin: 15px 0; padding: 15px; border-radius: 8px; background-color: #f8f9fa; display: none;">
+                <h3 style="color: var(--primary-color); margin-bottom: 10px; font-size: 1.1em;">Explore Related Topics:</h3>
+                <div class="internal-links-container" style="display: flex; flex-wrap: wrap; gap: 8px;"></div>
+            </div>
+            
             <!-- Ad Container - Above Input Section -->
             <div class="ad-container" style="margin: 20px 0; text-align: center;">
                 <ins class="adsbygoogle"
@@ -4362,6 +4379,84 @@
             userMessage.textContent = message;
             chatMessages.appendChild(userMessage);
             scrollToBottom();
+            
+            // SEO Enhancement: Show related topics based on user query
+            const relatedTopicsSection = document.querySelector('.seo-internal-links');
+            const relatedTopicsContainer = document.querySelector('.internal-links-container');
+            
+            if (relatedTopicsSection && relatedTopicsContainer) {
+                // Common Islamic topics for internal linking
+                const commonTopics = [
+                    { text: "Prayer in Islam", query: "How do Muslims pray?" },
+                    { text: "Fasting in Ramadan", query: "What are the rules of fasting in Ramadan?" },
+                    { text: "Zakat Guidelines", query: "How is zakat calculated?" },
+                    { text: "Hajj Pilgrimage", query: "What are the rituals of Hajj?" },
+                    { text: "Islamic Dietary Laws", query: "What foods are halal in Islam?" },
+                    { text: "Prophet Muhammad's Life", query: "Tell me about Prophet Muhammad's life" },
+                    { text: "Quran Interpretation", query: "How to understand the Quran?" },
+                    { text: "Islamic Finance", query: "What is Islamic banking?" },
+                    { text: "Marriage in Islam", query: "What are Islamic marriage customs?" },
+                    { text: "Islamic Ethics", query: "What are the core values in Islam?" }
+                ];
+                
+                // Keywords to match in the user query
+                const keywords = ['prayer', 'salah', 'fasting', 'ramadan', 'zakat', 'hajj', 'halal', 'quran', 'prophet', 'muhammad', 
+                                 'finance', 'marriage', 'ethics', 'values', 'pillars', 'islam', 'muslim', 'hadith', 'sunnah'];
+                
+                // Find matching topics based on keywords in the user query
+                const lowerQuery = message.toLowerCase();
+                const matchedTopics = [];
+                
+                keywords.forEach(keyword => {
+                    if (lowerQuery.includes(keyword)) {
+                        commonTopics.forEach(topic => {
+                            // Only add unique topics that match the keyword
+                            if (topic.text.toLowerCase().includes(keyword) && !matchedTopics.some(t => t.text === topic.text)) {
+                                matchedTopics.push(topic);
+                            }
+                        });
+                    }
+                });
+                
+                // Get up to 3 related topics
+                const relatedTopics = matchedTopics.slice(0, 3);
+                
+                // Clear previous links
+                relatedTopicsContainer.innerHTML = '';
+                
+                // If we have related topics, display them
+                if (relatedTopics.length > 0) {
+                    relatedTopics.forEach(topic => {
+                        const link = document.createElement('a');
+                        link.href = '#';
+                        link.className = 'internal-link';
+                        link.textContent = topic.text;
+                        link.style.padding = '6px 12px';
+                        link.style.backgroundColor = 'var(--primary-color)';
+                        link.style.color = 'white';
+                        link.style.borderRadius = '20px';
+                        link.style.fontSize = '0.9em';
+                        link.style.textDecoration = 'none';
+                        link.style.display = 'inline-block';
+                        link.style.margin = '4px';
+                        link.style.boxShadow = '0 2px 4px rgba(0,0,0,0.1)';
+                        
+                        link.addEventListener('click', (e) => {
+                            e.preventDefault();
+                            document.getElementById('user-input').value = topic.query;
+                            document.getElementById('send-button').click();
+                        });
+                        
+                        relatedTopicsContainer.appendChild(link);
+                    });
+                    
+                    // Show the section
+                    relatedTopicsSection.style.display = 'block';
+                } else {
+                    // Hide the section if no related topics
+                    relatedTopicsSection.style.display = 'none';
+                }
+            }
 
             // Show thinking message with Islamic theme
             const loadingMessage = document.createElement('div');
