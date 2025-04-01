@@ -3565,7 +3565,7 @@
                     relatedTopicsHtml = `<div class="related-topics">
                         <div class="related-topics-header">Related Questions:</div>
                         ${topics.map(topic => {
-                            // EMERGENCY FIX: Completely different approach to handle Arabic honorifics
+                            // EMERGENCY FIX: Enhanced approach to handle Arabic honorifics
                             // First, convert any non-string to string and ensure we're working with a string
                             let clean = String(topic || '');
                             
@@ -3580,6 +3580,11 @@
                             clean = clean.replace(/رضي الله عنه/g, ' (RA) ');
                             clean = clean.replace(/رضي الله عنها/g, ' (RA) ');
                             clean = clean.replace(/عليه السلام/g, ' (AS) ');
+                            
+                            // Handle any other potential Arabic honorific patterns
+                            clean = clean.replace(/محمد\s*ﷺ/g, 'Muhammad (PBUH)');
+                            clean = clean.replace(/Prophet\s*Muhammad\s*ﷺ/gi, 'Prophet Muhammad (PBUH)');
+                            clean = clean.replace(/Muhammad\s*ﷺ/gi, 'Muhammad (PBUH)');
                             
                             // Brute force approach: Remove ALL remaining Arabic characters
                             // This regex covers the entire Arabic Unicode range
@@ -4011,12 +4016,35 @@
                                     .replace(/\s+/g, ' ')       // Normalize whitespace
                                     .trim();
                                 
-                                // Convert honorifics to English
+                                // Convert honorifics to English - Enhanced version
                                 cleanTopic = cleanTopic
+                                    // Handle direct honorific symbols
                                     .replace(/\ufdfa/g, ' (PBUH) ')
+                                    .replace(/ﷺ/g, ' (PBUH) ')
+                                    // Handle Arabic text for PBUH
+                                    .replace(/صلى الله عليه وسلم/g, ' (PBUH) ')
+                                    .replace(/صلى الله عنه/g, ' (PBUH) ')
+                                    // Handle Arabic text for RA
                                     .replace(/\u0631\u0636\u064a \u0627\u0644\u0644\u0647 \u0639\u0646\u0647|\u0631\u0636\u064a \u0627\u0644\u0644\u0647 \u0639\u0646\u0647\u0627/g, ' (RA) ')
+                                    .replace(/رضي الله عنه/g, ' (RA) ')
+                                    .replace(/رضي الله عنها/g, ' (RA) ')
+                                    // Handle Arabic text for AS
                                     .replace(/\u0639\u0644\u064a\u0647 \u0627\u0644\u0633\u0644\u0627\u0645/g, ' (AS) ')
-                                    .replace(/\s+/g, ' ')  // Normalize whitespace again
+                                    .replace(/عليه السلام/g, ' (AS) ')
+                                    // Handle specific patterns
+                                    .replace(/Prophet\s*Muhammad\s*ﷺ/gi, 'Prophet Muhammad (PBUH)')
+                                    .replace(/Muhammad\s*ﷺ/gi, 'Muhammad (PBUH)');
+                                    
+                                // Remove any remaining Arabic characters
+                                cleanTopic = cleanTopic.replace(/[\u0600-\u06FF\u0750-\u077F\u08A0-\u08FF\uFB50-\uFDFF\uFE70-\uFEFF]+/g, '');
+                                
+                                // Clean up formatting
+                                cleanTopic = cleanTopic
+                                    .replace(/\s+/g, ' ')  // Fix multiple spaces
+                                    .replace(/\(\s*\)/g, '') // Remove empty parentheses
+                                    .replace(/\(PBUH\)\s*\(PBUH\)/g, ' (PBUH) ') // Fix duplicates
+                                    .replace(/\(RA\)\s*\(RA\)/g, ' (RA) ')
+                                    .replace(/\(AS\)\s*\(AS\)/g, ' (AS) ')
                                     .trim();
                                 
                                 return cleanTopic;
@@ -4632,22 +4660,77 @@
                                                             .replace(/\s+/g, ' ')  // Normalize whitespace again after replacements
                                                             .trim();
                                                         
+                                                        // Enhanced processing for clean question to ensure all honorifics are properly converted
+                                                        let displayText = cleanQuestion;
+                                                        
+                                                        // First pass: Convert all known honorific patterns
+                                                        displayText = displayText
+                                                            // Handle direct honorific symbols
+                                                            .replace(/\ufdfa/g, ' (PBUH) ')
+                                                            .replace(/ﷺ/g, ' (PBUH) ')
+                                                            // Handle Arabic text for PBUH
+                                                            .replace(/صلى الله عليه وسلم/g, ' (PBUH) ')
+                                                            .replace(/صلى الله عنه/g, ' (PBUH) ')
+                                                            // Handle specific patterns with honorifics
+                                                            .replace(/Prophet\s*Muhammad\s*ﷺ/gi, 'Prophet Muhammad (PBUH)')
+                                                            .replace(/Muhammad\s*ﷺ/gi, 'Muhammad (PBUH)')
+                                                            .replace(/Prophet\s*Muhammad/gi, 'Prophet Muhammad (PBUH)');
+                                                            
+                                                        // Second pass: Remove any remaining Arabic characters
+                                                        displayText = displayText.replace(/[\u0600-\u06FF\u0750-\u077F\u08A0-\u08FF\uFB50-\uFDFF\uFE70-\uFEFF]+/g, '');
+                                                        
+                                                        // Third pass: Clean up formatting
+                                                        displayText = displayText
+                                                            .replace(/\s+/g, ' ')  // Fix multiple spaces
+                                                            .replace(/\(\s*\)/g, '') // Remove empty parentheses
+                                                            .replace(/\(PBUH\)\s*\(PBUH\)/g, ' (PBUH) ') // Fix duplicates
+                                                            .replace(/\(RA\)\s*\(RA\)/g, ' (RA) ')
+                                                            .replace(/\(AS\)\s*\(AS\)/g, ' (AS) ')
+                                                            .trim();
+                                                            
+                                                        // Final check to ensure no Arabic characters remain
+                                                        if (displayText.match(/[\u0600-\u06FF\u0750-\u077F\u08A0-\u08FF\uFB50-\uFDFF\uFE70-\uFEFF]+/)) {
+                                                            console.log('Arabic characters still detected, applying final cleanup');
+                                                            displayText = displayText.replace(/[\u0600-\u06FF\u0750-\u077F\u08A0-\u08FF\uFB50-\uFDFF\uFE70-\uFEFF]+/g, '');
+                                                        }
+                                                            
                                                         // Create button for the question
                                                         const button = document.createElement('button');
                                                         button.className = 'related-topic-tile';
-                                                        button.textContent = cleanQuestion;
-                                                        button.onclick = () => selectTopic(cleanQuestion);
+                                                        button.textContent = displayText;
+                                                        button.onclick = () => selectTopic(displayText);
                                                         topicsDiv.appendChild(button);
                                                         
                                                         // Store the topic in the global array with full text
                                                         // Make sure we don't add duplicates and the topic is complete
                                                         if (cleanQuestion && cleanQuestion.length > 0 && !window.relatedTopics.includes(cleanQuestion)) {
                                                             // Ensure honorifics are properly converted
-                                                            const processedTopic = cleanQuestion
+                                                            let processedTopic = cleanQuestion
+                                                                // Convert Unicode character for PBUH
                                                                 .replace(/\ufdfa/g, ' (PBUH) ')
+                                                                // Direct replacement of the PBUH symbol
+                                                                .replace(/ﷺ/g, ' (PBUH) ')
+                                                                // Arabic text for PBUH
+                                                                .replace(/صلى الله عليه وسلم/g, ' (PBUH) ')
+                                                                .replace(/صلى الله عنه/g, ' (PBUH) ')
+                                                                // Arabic text for RA
                                                                 .replace(/\u0631\u0636\u064a \u0627\u0644\u0644\u0647 \u0639\u0646\u0647|\u0631\u0636\u064a \u0627\u0644\u0644\u0647 \u0639\u0646\u0647\u0627/g, ' (RA) ')
+                                                                .replace(/رضي الله عنه/g, ' (RA) ')
+                                                                .replace(/رضي الله عنها/g, ' (RA) ')
+                                                                // Arabic text for AS
                                                                 .replace(/\u0639\u0644\u064a\u0647 \u0627\u0644\u0633\u0644\u0627\u0645/g, ' (AS) ')
-                                                                .replace(/\s+/g, ' ')
+                                                                .replace(/عليه السلام/g, ' (AS) ');
+                                                                
+                                                            // Remove any remaining Arabic characters
+                                                            processedTopic = processedTopic.replace(/[\u0600-\u06FF\u0750-\u077F\u08A0-\u08FF\uFB50-\uFDFF\uFE70-\uFEFF]+/g, '');
+                                                            
+                                                            // Clean up formatting
+                                                            processedTopic = processedTopic
+                                                                .replace(/\s+/g, ' ')  // Fix multiple spaces
+                                                                .replace(/\(\s*\)/g, '') // Remove empty parentheses
+                                                                .replace(/\(PBUH\)\s*\(PBUH\)/g, ' (PBUH) ') // Fix duplicates
+                                                                .replace(/\(RA\)\s*\(RA\)/g, ' (RA) ')
+                                                                .replace(/\(AS\)\s*\(AS\)/g, ' (AS) ')
                                                                 .trim();
                                                                 
                                                             window.relatedTopics.push(processedTopic);
