@@ -1885,17 +1885,39 @@
         }
         
         /* Add a subtle highlight to make it stand out */
+        .chat-container {
+            flex: 1;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15), 0 0 30px rgba(212, 175, 55, 0.8);
+            padding: 25px;
+            margin: 30px auto 40px;
+            overflow-y: auto;
+            min-height: 350px;
+            max-height: calc(100vh - 250px);
+            display: flex;
+            flex-direction: column;
+            transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+            will-change: min-height;
+            width: 90%;
+            max-width: 1000px;
+            border: 2px solid var(--ramadan-gold);
+            position: relative;
+            background: linear-gradient(to bottom, rgba(255, 248, 225, 0.3), rgba(255, 255, 255, 0.9));
+        }
+        
         .chat-container::before {
             content: '';
             position: absolute;
-            top: -5px;
-            left: -5px;
-            right: -5px;
-            bottom: -5px;
-            background: linear-gradient(135deg, var(--primary-color), var(--ramadan-gold));
-            border-radius: 25px;
+            top: -12px;
+            left: -12px;
+            right: -12px;
+            bottom: -12px;
+            background: linear-gradient(135deg, #d4af37, #f5e7b8);
+            border-radius: 28px;
             z-index: -1;
-            opacity: 0.3;
+            opacity: 0.85;
+            box-shadow: 0 0 40px 5px rgba(212, 175, 55, 0.8);
         }
 
         .chat-messages {
