@@ -2429,6 +2429,41 @@
                 width: 95%;
                 min-height: 400px; /* Taller on mobile */
                 margin: 20px auto 30px;
+                overflow-x: hidden;
+                max-height: 70vh; /* Limit height on mobile */
+            }
+            
+            .chat-container::before {
+                top: -6px;
+                left: -6px;
+                right: -6px;
+                bottom: -6px;
+                border-radius: 16px;
+            }
+            
+            /* Improve message display on mobile */
+            .message-content {
+                max-width: 100%;
+                overflow-wrap: break-word;
+                word-wrap: break-word;
+                hyphens: auto;
+                font-size: 0.95rem;
+            }
+            
+            /* Fix input area on mobile */
+            .input-container {
+                padding: 8px;
+            }
+            
+            #user-input {
+                padding: 10px 40px 10px 12px;
+                font-size: 0.95rem;
+            }
+            
+            /* Ensure messages don't overflow on mobile */
+            .bot-message, .user-message {
+                max-width: 100%;
+                padding: 10px 12px;
             }
             
             .topics-instruction {
@@ -5341,6 +5376,7 @@
         async function fetchPrayerTimesForHeader() {
             const currentPrayerElement = document.getElementById('header-current-prayer');
             const nextPrayerElement = document.getElementById('header-next-prayer');
+            const locationButton = document.getElementById('header-enable-location-btn');
             
             if (!currentPrayerElement || !nextPrayerElement) return;
             
@@ -5348,13 +5384,21 @@
             currentPrayerElement.innerHTML = `<i class="fas fa-spinner fa-spin"></i> Getting prayer times...`;
             nextPrayerElement.innerHTML = '';
             
+            // Hide the location button initially
+            if (locationButton) locationButton.style.display = 'none';
+            
             try {
-                // Get user's position
+                // Check if geolocation is supported
+                if (!navigator.geolocation) {
+                    throw new Error('Geolocation is not supported by your browser');
+                }
+                
+                // Get user's position with a shorter timeout for mobile
                 const position = await new Promise((resolve, reject) => {
                     navigator.geolocation.getCurrentPosition(resolve, reject, {
-                        enableHighAccuracy: true,
-                        timeout: 10000,
-                        maximumAge: 0
+                        enableHighAccuracy: false, // Less strict for mobile
+                        timeout: 5000, // Shorter timeout
+                        maximumAge: 60000 // Allow cached position for 1 minute
                     });
                 });
                 
@@ -5392,15 +5436,40 @@
                 
                 // Show error message
                 const currentPrayerElement = document.getElementById('header-current-prayer');
+                const locationButton = document.getElementById('header-enable-location-btn');
+                
                 if (currentPrayerElement) {
-                    currentPrayerElement.innerHTML = 
-                        `<i class="fas fa-exclamation-circle"></i> Could not get prayer times. <a href="#" id="header-retry-prayer-times">Retry</a>`;
+                    // Different message based on error type
+                    if (error.code === 1) { // Permission denied
+                        currentPrayerElement.innerHTML = 
+                            `<i class="fas fa-exclamation-circle"></i> Location permission denied`;
+                    } else if (error.code === 2) { // Position unavailable
+                        currentPrayerElement.innerHTML = 
+                            `<i class="fas fa-exclamation-circle"></i> Location unavailable`;
+                    } else if (error.code === 3) { // Timeout
+                        currentPrayerElement.innerHTML = 
+                            `<i class="fas fa-exclamation-circle"></i> Location request timed out`;
+                    } else {
+                        currentPrayerElement.innerHTML = 
+                            `<i class="fas fa-exclamation-circle"></i> Could not get prayer times`;
+                    }
+                    
+                    // Add retry link
+                    currentPrayerElement.innerHTML += ` <a href="#" id="header-retry-prayer-times">Retry</a>`;
                     
                     // Add event listener to retry link
-                    document.getElementById('header-retry-prayer-times').addEventListener('click', function(e) {
-                        e.preventDefault();
-                        fetchPrayerTimesForHeader();
-                    });
+                    const retryLink = document.getElementById('header-retry-prayer-times');
+                    if (retryLink) {
+                        retryLink.addEventListener('click', function(e) {
+                            e.preventDefault();
+                            fetchPrayerTimesForHeader();
+                        });
+                    }
+                }
+                
+                // Show the location button
+                if (locationButton) {
+                    locationButton.style.display = 'block';
                 }
                 
                 const nextPrayerElement = document.getElementById('header-next-prayer');
