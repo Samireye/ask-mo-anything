@@ -519,7 +519,7 @@
             border-bottom: 1px solid rgba(255, 255, 255, 0.5);
         }
         
-        .ramadan-hadith-container {
+        .daily-wisdom-container {
             max-width: 1000px;
             margin: 0 auto;
             padding: 0 20px;
@@ -529,13 +529,13 @@
             color: #333;
         }
         
-        .ramadan-hadith-container:hover {
+        .daily-wisdom-container:hover {
             transform: translateY(-3px);
             box-shadow: 0 8px 22px rgba(0, 0, 0, 0.12);
         }
         
-        .ramadan-hadith-container::before {
-            content: '\f658';
+        .daily-wisdom-container::before {
+            content: '\f0eb';
             font-family: 'Font Awesome 6 Free';
             font-weight: 900;
             position: absolute;
@@ -546,7 +546,7 @@
             z-index: 0;
         }
         
-        .hadith-header {
+        .wisdom-header {
             display: flex;
             align-items: center;
             margin-bottom: 15px;
@@ -555,7 +555,7 @@
             color: #333;
         }
         
-        .hadith-icon {
+        .wisdom-icon {
             width: 40px;
             height: 40px;
             background: #fff;
@@ -570,24 +570,24 @@
             box-shadow: 0 3px 8px rgba(0, 0, 0, 0.1);
         }
         
-        .hadith-header h3 {
+        .wisdom-header h3 {
             color: var(--primary-color);
             font-weight: 600;
             margin: 0;
             font-size: 1.3rem;
         }
         
-        .hadith-content {
+        .wisdom-content {
             padding: 22px;
-            background: white;
+            background: linear-gradient(135deg, #fff8e1, #fff);
             border-radius: 12px;
             position: relative;
             z-index: 1;
-            border-left: 4px solid var(--primary-color);
+            border-left: 4px solid var(--gold-color);
             box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
         }
         
-        .hadith-arabic {
+        .wisdom-arabic {
             font-family: var(--arabic-font);
             font-size: 1.5rem;
             line-height: 1.8;
@@ -596,20 +596,20 @@
             color: var(--primary-color);
         }
         
-        .hadith-english {
+        .wisdom-english {
             font-size: 1.1rem;
             line-height: 1.6;
             margin-bottom: 15px;
             color: var(--text-color);
         }
         
-        .hadith-source {
+        .wisdom-source {
             font-size: 0.9rem;
             color: #666;
             font-style: italic;
         }
         
-        .refresh-hadith-btn {
+        .refresh-wisdom-btn {
             background: var(--primary-color);
             color: white;
             border: none;
@@ -625,25 +625,101 @@
             box-shadow: 0 3px 10px rgba(0, 0, 0, 0.2);
             border: 1px solid rgba(255, 255, 255, 0.5);
             font-weight: 500;
+            margin-bottom: 15px;
         }
         
-        .refresh-hadith-btn i {
+        .refresh-wisdom-btn i {
             margin-right: 5px;
         }
         
-        .refresh-hadith-btn:hover {
-            background: var(--ramadan-gold);
-            color: var(--ramadan-deep-blue);
+        .refresh-wisdom-btn:hover {
+            background: var(--gold-color);
+            color: var(--primary-color);
             transform: translateY(-2px);
-            box-shadow: 0 5px 15px rgba(212, 175, 55, 0.3);
+            box-shadow: 0 5px 15px rgba(212, 175, 55, 0.5);
+        }
+        
+        .share-wisdom {
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+            margin-top: 10px;
+            margin-bottom: 15px; /* Reduced spacing since we have a separate divider */
+            clear: both;
+        }
+        
+        .wisdom-divider-container {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 20px 0 40px;
+            clear: both;
+        }
+        
+        .wisdom-divider-line {
+            height: 2px;
+            flex-grow: 1;
+            background: linear-gradient(to right, transparent, #d4af37, #d4af37);
+            margin: 0 10px;
+        }
+        
+        .wisdom-divider-line:last-child {
+            background: linear-gradient(to left, transparent, #d4af37, #d4af37);
+        }
+        
+        .wisdom-divider-icon {
+            color: #d4af37;
+            font-size: 16px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            background: white;
+            border: 2px solid #d4af37;
+        }
+        
+        .share-wisdom-btn {
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            transition: all 0.2s ease;
+            box-shadow: 0 3px 8px rgba(0, 0, 0, 0.15);
+        }
+        
+        .share-wisdom-btn:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 5px 12px rgba(0, 0, 0, 0.2);
+        }
+        
+        #share-wisdom-twitter {
+            background: #000;
+        }
+        
+        #share-wisdom-facebook {
+            background: #1877f2;
+        }
+        
+        #share-wisdom-instagram {
+            background: #C13584;
+            background: linear-gradient(45deg, #405DE6, #5851DB, #833AB4, #C13584, #E1306C, #FD1D1D);
+        }
+        
+        #share-wisdom-whatsapp {
+            background: #25D366;
         }
         
         @media (max-width: 768px) {
-            .hadith-arabic {
+            .wisdom-arabic {
                 font-size: 1.3rem;
             }
             
-            .hadith-english {
+            .wisdom-english {
                 font-size: 1rem;
             }
             
@@ -2288,19 +2364,30 @@
             <p class="image-disclaimer">Note: This is an artistic illustration and not a depiction of Prophet Muhammad (peace be upon him)</p>
         </div>
         
-        <!-- Ramadan Daily Hadith -->
-        <div class="hadith-section">
-            <div class="ramadan-hadith-container">
-                <div class="hadith-header">
-                    <div class="hadith-icon"><i class="fas fa-book-open"></i></div>
-                    <h3>Hadith of the Day</h3>
+        <!-- Daily Islamic Wisdom -->
+        <div class="wisdom-section">
+            <div class="daily-wisdom-container">
+                <div class="wisdom-header">
+                    <div class="wisdom-icon"><i class="fas fa-lightbulb"></i></div>
+                    <h3>Daily Wisdom</h3>
                 </div>
-                <div class="hadith-content" id="daily-hadith">
-                    <div class="hadith-arabic" lang="ar">مَنْ صَامَ رَمَضَانَ إِيمَانًا وَاحْتِسَابًا غُفِرَ لَهُ مَا تَقَدَّمَ مِنْ ذَنْبِهِ</div>
-                    <div class="hadith-english">"Whoever fasts during Ramadan out of sincere faith and hoping to attain Allah's rewards, then all his past sins will be forgiven."</div>
-                    <div class="hadith-source">Sahih al-Bukhari 2014</div>
+                <div class="wisdom-content" id="daily-wisdom">
+                    <div class="wisdom-arabic" lang="ar">خَيْرُ النَّاسِ أَنْفَعُهُمْ لِلنَّاسِ</div>
+                    <div class="wisdom-english">"The best of people are those who are most beneficial to people."</div>
+                    <div class="wisdom-source">Hadith - Daraqutni</div>
                 </div>
-                <button class="refresh-hadith-btn" id="refresh-hadith-btn"><i class="fas fa-sync-alt"></i> New Hadith</button>
+                <button class="refresh-wisdom-btn" id="refresh-wisdom-btn"><i class="fas fa-sync-alt"></i> New Wisdom</button>
+                <div class="share-wisdom">
+                    <a href="#" id="share-wisdom-twitter" title="Share on X" class="share-wisdom-btn"><i class="fab fa-twitter"></i></a>
+                    <a href="#" id="share-wisdom-facebook" title="Share on Facebook" class="share-wisdom-btn"><i class="fab fa-facebook"></i></a>
+                    <a href="#" id="share-wisdom-instagram" title="Share on Instagram" class="share-wisdom-btn"><i class="fab fa-instagram"></i></a>
+                    <a href="#" id="share-wisdom-whatsapp" title="Share on WhatsApp" class="share-wisdom-btn"><i class="fab fa-whatsapp"></i></a>
+                </div>
+                <div class="wisdom-divider-container">
+                    <div class="wisdom-divider-line"></div>
+                    <div class="wisdom-divider-icon"><i class="fas fa-star"></i></div>
+                    <div class="wisdom-divider-line"></div>
+                </div>
             </div>
         </div>
 
@@ -3457,13 +3544,49 @@
         }
 
         async function shareToTwitter(message) {
-            const text = encodeURIComponent(message.textContent.substring(0, 280));
-            window.open(`https://twitter.com/intent/tweet?text=${text}&url=${encodeURIComponent('https://ask-mo-anything.vercel.app')}`);
+            // Get the full response text, with fallbacks for different formats
+            let responseText = '';
+            if (message.completeResponse) {
+                responseText = message.completeResponse;
+            } else if (message.fullResponse) {
+                responseText = message.fullResponse;
+            } else if (message.rawResponse) {
+                responseText = message.rawResponse;
+            } else if (message.querySelector('.response-text')) {
+                responseText = message.querySelector('.response-text').textContent;
+            } else {
+                responseText = message.textContent;
+            }
+            
+            // Trim to Twitter's character limit, leaving room for URL
+            const trimmedText = responseText.substring(0, 250) + (responseText.length > 250 ? '...' : '');
+            const text = encodeURIComponent(trimmedText);
+            
+            // Use the correct URL
+            window.open(`https://twitter.com/intent/tweet?text=${text}&url=${encodeURIComponent('https://askmoanything.com')}`);
         }
 
         async function shareToWhatsApp(message) {
-            const text = encodeURIComponent(message.completeResponse || message.fullResponse || message.rawResponse || message.textContent);
-            window.open(`https://wa.me/?text=${text}%20-%20via%20https://ask-mo-anything.vercel.app`);
+            // Get the full response text, with fallbacks for different formats
+            let responseText = '';
+            if (message.completeResponse) {
+                responseText = message.completeResponse;
+            } else if (message.fullResponse) {
+                responseText = message.fullResponse;
+            } else if (message.rawResponse) {
+                responseText = message.rawResponse;
+            } else if (message.querySelector('.response-text')) {
+                responseText = message.querySelector('.response-text').textContent;
+            } else {
+                responseText = message.textContent;
+            }
+            
+            // Append the correct URL
+            const fullText = responseText + ' - via https://askmoanything.com';
+            const text = encodeURIComponent(fullText);
+            
+            // Open WhatsApp sharing
+            window.open(`https://wa.me/?text=${text}`);
         }
 
         async function shareToTelegram(message) {
@@ -5003,75 +5126,196 @@
     
     <!-- Ramadan Prayer Times & Hadith Script -->
     <script>
-        // Ramadan Hadiths Collection
-        const ramadanHadiths = [
+        // Islamic Wisdom Collection
+        const islamicWisdom = [
+            // Hadith quotes
             {
-                arabic: "مَنْ صَامَ رَمَضَانَ إِيمَانًا وَاحْتِسَابًا غُفِرَ لَهُ مَا تَقَدَّمَ مِنْ ذَنْبِهِ",
-                english: "Whoever fasts during Ramadan out of sincere faith and hoping to attain Allah's rewards, then all his past sins will be forgiven.",
-                source: "Sahih al-Bukhari 2014"
+                arabic: "خَيْرُ النَّاسِ أَنْفَعُهُمْ لِلنَّاسِ",
+                english: "The best of people are those who are most beneficial to people.",
+                source: "Hadith - Daraqutni"
             },
             {
-                arabic: "الصِّيَامُ جُنَّةٌ فَلاَ يَرْفُثْ وَلاَ يَجْهَلْ، وَإِنِ امْرُؤٌ قَاتَلَهُ أَوْ شَاتَمَهُ فَلْيَقُلْ إِنِّي صَائِمٌ، إِنِّي صَائِمٌ",
-                english: "Fasting is a shield. So, the person observing fasting should avoid sexual relation with his wife and should not behave foolishly and impudently, and if somebody fights with him or abuses him, he should tell him twice, 'I am fasting.'",
-                source: "Sahih al-Bukhari 1894"
+                arabic: "إِنَّمَا الْأَعْمَالُ بِالنِّيَّاتِ",
+                english: "Actions are judged by intentions.",
+                source: "Sahih al-Bukhari 1"
             },
             {
-                arabic: "إِذَا جَاءَ رَمَضَانُ فُتِحَتْ أَبْوَابُ الْجَنَّةِ، وَغُلِّقَتْ أَبْوَابُ النَّارِ، وَصُفِّدَتِ الشَّيَاطِينُ",
-                english: "When the month of Ramadan starts, the gates of heaven are opened and the gates of Hell are closed and the devils are chained.",
-                source: "Sahih al-Bukhari 1899"
+                arabic: "الْمُسْلِمُ مَنْ سَلِمَ الْمُسْلِمُونَ مِنْ لِسَانِهِ وَيَدِهِ",
+                english: "A Muslim is one from whose tongue and hand other Muslims are safe.",
+                source: "Sahih al-Bukhari 10"
             },
             {
-                arabic: "مَنْ قَامَ رَمَضَانَ إِيمَانًا وَاحْتِسَابًا غُفِرَ لَهُ مَا تَقَدَّمَ مِنْ ذَنْبِهِ",
-                english: "Whoever establishes prayers during the nights of Ramadan faithfully out of sincere faith and hoping to attain Allah's rewards, all his past sins will be forgiven.",
-                source: "Sahih al-Bukhari 2008"
+                arabic: "لَا يُؤْمِنُ أَحَدُكُمْ حَتَّى يُحِبَّ لِأَخِيهِ مَا يُحِبُّ لِنَفْسِهِ",
+                english: "None of you truly believes until he loves for his brother what he loves for himself.",
+                source: "Sahih al-Bukhari 13"
             },
             {
-                arabic: "مَنْ أَفْطَرَ صَائِمًا، كَانَ لَهُ مِثْلُ أَجْرِهِ، غَيْرَ أَنَّهُ لاَ يَنْقُصُ مِنْ أَجْرِ الصَّائِمِ شَيْئًا",
-                english: "Whoever provides food for breaking the fast of a fasting person receives the same reward as the one who was fasting, without decreasing the reward of the fasting person.",
-                source: "Sunan al-Tirmidhi 807"
+                arabic: "الدِّينُ النَّصِيحَةُ",
+                english: "Religion is sincerity (sincere advice).",
+                source: "Sahih Muslim 55"
             },
             {
-                arabic: "إِنَّ فِي الْجَنَّةِ بَابًا يُقَالُ لَهُ الرَّيَّانُ يَدْخُلُ مِنْهُ الصَّائِمُونَ يَوْمَ الْقِيَامَةِ لاَ يَدْخُلُ مِنْهُ أَحَدٌ غَيْرُهُمْ",
-                english: "There is a gate in Paradise called Ar-Raiyan, through which those who observe fasting will enter on the Day of Resurrection, and none except them will enter through it.",
-                source: "Sahih al-Bukhari 1896"
+                arabic: "طَلَبُ الْعِلْمِ فَرِيضَةٌ عَلَى كُلِّ مُسْلِمٍ",
+                english: "Seeking knowledge is an obligation upon every Muslim.",
+                source: "Sunan Ibn Majah 224"
             },
             {
-                arabic: "اَلصَّوْمُ لِي وَأَنَا أَجْزِي بِهِ",
-                english: "Allah says: 'Fasting is for Me and I will give the reward for it.'",
-                source: "Sahih al-Bukhari 1904"
+                arabic: "الدُّنْيَا مَتَاعٌ وَخَيْرُ مَتَاعِهَا الْمَرْأَةُ الصَّالِحَةُ",
+                english: "The world is a provision, and the best provision of the world is a righteous woman.",
+                source: "Sahih Muslim 1467"
+            },
+            {
+                arabic: "لاَ تَغْضَبْ",
+                english: "Do not become angry.",
+                source: "Sahih al-Bukhari 6116"
+            },
+            {
+                arabic: "مَنْ كَانَ يُؤْمِنُ بِاللَّهِ وَالْيَوْمِ الآخِرِ فَلْيَقُلْ خَيْرًا أَوْ لِيَصْمُتْ، وَمَنْ كَانَ يُؤْمِنُ بِاللَّهِ وَالْيَوْمِ الآخِرِ فَلْيُكْرِمْ جَارَهُ، وَمَنْ كَانَ يُؤْمِنُ بِاللَّهِ وَالْيَوْمِ الآخِرِ فَلْيُكْرِمْ ضَيْفَهُ",
+                english: "Whoever believes in Allah and the Last Day, let him speak good or remain silent. Whoever believes in Allah and the Last Day, let him honor his neighbor. Whoever believes in Allah and the Last Day, let him honor his guest.",
+                source: "Sahih al-Bukhari 6018"
+            },
+            
+            // Quran verses
+            {
+                arabic: "وَلَا تَقْفُ مَا لَيْسَ لَكَ بِهِ عِلْمٌ ۚ إِنَّ السَّمْعَ وَالْبَصَرَ وَالْفُؤَادَ كُلُّ أُولَٰئِكَ كَانَ عَنْهُ مَسْئُولًا",
+                english: "And do not pursue that of which you have no knowledge. Indeed, the hearing, the sight and the heart - about all those [one] will be questioned.",
+                source: "Quran 17:36"
+            },
+            {
+                arabic: "إِنَّ اللَّهَ لَا يُغَيِّرُ مَا بِقَوْمٍ حَتَّىٰ يُغَيِّرُوا مَا بِأَنفُسِهِمْ",
+                english: "Indeed, Allah will not change the condition of a people until they change what is in themselves.",
+                source: "Quran 13:11"
+            },
+            {
+                arabic: "وَإِن تَعُدُّوا نِعْمَةَ اللَّهِ لَا تُحْصُوهَا ۗ إِنَّ اللَّهَ لَغَفُورٌ رَّحِيمٌ",
+                english: "And if you should count the favors of Allah, you could not enumerate them. Indeed, Allah is Forgiving and Merciful.",
+                source: "Quran 16:18"
+            },
+            {
+                arabic: "يَا أَيُّهَا الَّذِينَ آمَنُوا اتَّقُوا اللَّهَ وَكُونُوا مَعَ الصَّادِقِينَ",
+                english: "O you who have believed, fear Allah and be with those who are true.",
+                source: "Quran 9:119"
+            },
+            {
+                arabic: "وَلَا تَهِنُوا وَلَا تَحْزَنُوا وَأَنتُمُ الْأَعْلَوْنَ إِن كُنتُم مُّؤْمِنِينَ",
+                english: "So do not weaken and do not grieve, and you will be superior if you are [true] believers.",
+                source: "Quran 3:139"
+            },
+            {
+                arabic: "فَاصْبِرْ إِنَّ وَعْدَ اللَّهِ حَقٌّ ۖ وَاسْتَغْفِرْ لِذَنبِكَ وَسَبِّحْ بِحَمْدِ رَبِّكَ بِالْعَشِيِّ وَالْإِبْكَارِ",
+                english: "So be patient. Indeed, the promise of Allah is truth. And ask forgiveness for your sin and exalt [Allah] with praise of your Lord in the evening and the morning.",
+                source: "Quran 40:55"
+            },
+            {
+                arabic: "إِنَّ مَعَ الْعُسْرِ يُسْرًا ۚ فَإِذَا فَرَغْتَ فَانصَبْ ۚ وَإِلَىٰ رَبِّكَ فَارْغَب",
+                english: "Indeed, with hardship [will be] ease. So when you have finished [your duties], then stand up [for worship]. And to your Lord direct [your] longing.",
+                source: "Quran 94:6-8"
+            },
+            {
+                arabic: "يَا أَيُّهَا الَّذِينَ آمَنُوا اجْتَنِبُوا كَثِيرًا مِّنَ الظَّنِّ إِنَّ بَعْضَ الظَّنِّ إِثْمٌ ۖ وَلَا تَجَسَّسُوا وَلَا يَغْتَب بَّعْضُكُم بَعْضًا ۚ أَيُحِبُّ أَحَدُكُمْ أَن يَأْكُلَ لَحْمَ أَخِيهِ مَيْتًا فَكَرِهْتُمُوهُ ۚ وَاتَّقُوا اللَّهَ ۚ إِنَّ اللَّهَ تَوَّابٌ رَّحِيمٌ",
+                english: "O you who have believed, avoid much [negative] assumption. Indeed, some assumption is sin. And do not spy or backbite each other. Would one of you like to eat the flesh of his brother when dead? You would detest it. And fear Allah; indeed, Allah is Accepting of repentance and Merciful.",
+                source: "Quran 49:12"
+            },
+            {
+                arabic: "مَنْ كَانَ يُؤْمِنُ بِاللَّهِ وَالْيَوْمِ الْآخِرِ فَلْيَقُلْ خَيْرًا أَوْ لِيَصْمُتْ",
+                english: "Whoever believes in Allah and the Last Day, let him speak good or remain silent.",
+                source: "Sahih al-Bukhari 6018"
+            },
+            {
+                arabic: "الدُّنْيَا مَتَاعٌ وَخَيْرُ مَتَاعِهَا الْمَرْأَةُ الصَّالِحَةُ",
+                english: "The world is a provision, and the best provision of the world is a righteous woman.",
+                source: "Sahih Muslim 1467"
+            },
+            {
+                arabic: "لَا تَغْضَبْ",
+                english: "Do not become angry.",
+                source: "Sahih al-Bukhari 6116"
+            },
+            {
+                arabic: "الْكَلِمَةُ الطَّيِّبَةُ صَدَقَةٌ",
+                english: "A kind word is charity.",
+                source: "Sahih al-Bukhari 2989"
+            },
+            {
+                arabic: "طَلَبُ الْعِلْمِ فَرِيضَةٌ عَلَى كُلِّ مُسْلِمٍ",
+                english: "Seeking knowledge is an obligation upon every Muslim.",
+                source: "Sunan Ibn Majah 224"
+            },
+            {
+                arabic: "الدِّينُ النَّصِيحَةُ",
+                english: "Religion is sincerity (sincere advice).",
+                source: "Sahih Muslim 55"
             }
         ];
         
-        // Function to display a random hadith
-        function displayRandomHadith() {
-            // Get a random hadith that's different from the current one
-            let currentArabic = document.querySelector('.hadith-arabic').textContent;
+        // Function to display a random wisdom quote
+        function displayRandomWisdom() {
+            // Get a random wisdom quote that's different from the current one
+            let currentArabic = document.querySelector('.wisdom-arabic').textContent;
             let randomIndex;
-            let hadith;
+            let wisdom;
             
-            // Make sure we get a different hadith
+            // Make sure we get a different wisdom quote
             do {
-                randomIndex = Math.floor(Math.random() * ramadanHadiths.length);
-                hadith = ramadanHadiths[randomIndex];
-            } while (hadith.arabic === currentArabic && ramadanHadiths.length > 1);
+                randomIndex = Math.floor(Math.random() * islamicWisdom.length);
+                wisdom = islamicWisdom[randomIndex];
+            } while (wisdom.arabic === currentArabic && islamicWisdom.length > 1);
             
             // Add a small animation effect
-            const hadithContent = document.getElementById('daily-hadith');
-            hadithContent.style.opacity = '0';
+            const wisdomContent = document.getElementById('daily-wisdom');
+            wisdomContent.style.opacity = '0';
             
-            // Update the hadith after a short delay for animation
+            // Update the wisdom after a short delay for animation
             setTimeout(() => {
-                // Update the hadith text
-                document.querySelector('.hadith-arabic').textContent = hadith.arabic;
-                document.querySelector('.hadith-english').textContent = hadith.english;
-                document.querySelector('.hadith-source').textContent = hadith.source;
+                // Update the wisdom text
+                document.querySelector('.wisdom-arabic').textContent = wisdom.arabic;
+                document.querySelector('.wisdom-english').textContent = wisdom.english;
+                document.querySelector('.wisdom-source').textContent = wisdom.source;
                 
                 // Fade back in
-                hadithContent.style.opacity = '1';
+                wisdomContent.style.opacity = '1';
+                
+                // Update share links
+                updateSocialShareLinks(wisdom);
                 
                 // Log for debugging
-                console.log('Displayed new hadith:', hadith.english.substring(0, 30) + '...');
+                console.log('Displayed new wisdom:', wisdom.english.substring(0, 30) + '...');
             }, 300);
+        }
+        
+        // Function to update social share links
+        function updateSocialShareLinks(wisdom) {
+            const twitterLink = document.getElementById('share-wisdom-twitter');
+            const facebookLink = document.getElementById('share-wisdom-facebook');
+            const instagramLink = document.getElementById('share-wisdom-instagram');
+            const whatsappLink = document.getElementById('share-wisdom-whatsapp');
+            
+            const shareText = `"${wisdom.english}" - ${wisdom.source} | via @AskMoAnything`;
+            const shareUrl = encodeURIComponent(window.location.href);
+            
+            // Update Twitter share link
+            twitterLink.href = `https://twitter.com/intent/tweet?text=${encodeURIComponent(shareText)}&url=${shareUrl}`;
+            
+            // Update Facebook share link
+            facebookLink.href = `https://www.facebook.com/sharer/sharer.php?u=${shareUrl}&quote=${encodeURIComponent(shareText)}`;
+            
+            // Update Instagram link
+            // Note: Instagram doesn't have a direct web sharing API like Twitter
+            // This will open Instagram app or website, but user will need to manually paste the content
+            instagramLink.href = `https://www.instagram.com/`;
+            instagramLink.setAttribute('target', '_blank');
+            instagramLink.onclick = function() {
+                // Copy text to clipboard for easier sharing
+                navigator.clipboard.writeText(shareText + ' ' + window.location.href).then(() => {
+                    alert('Wisdom copied to clipboard! Paste it in your Instagram post.');
+                }).catch(err => {
+                    console.error('Could not copy text: ', err);
+                });
+                return true; // Continue with link navigation
+            };
+            
+            // Update WhatsApp share link
+            whatsappLink.href = `https://wa.me/?text=${encodeURIComponent(shareText + ' ' + window.location.href)}`;
         }
         
         // Function to get user's location and fetch prayer times
@@ -5111,10 +5355,10 @@
             // Update countdown every minute
             setInterval(updateShawwalCountdown, 60000);
             
-            // Set up hadith refresh button
-            document.getElementById('refresh-hadith-btn').addEventListener('click', displayRandomHadith);
-            // Display initial random hadith
-            displayRandomHadith();
+            // Set up wisdom refresh button
+            document.getElementById('refresh-wisdom-btn').addEventListener('click', displayRandomWisdom);
+            // Display initial random wisdom
+            displayRandomWisdom();
             
             // Initialize authentication UI
             initAuthUI();
