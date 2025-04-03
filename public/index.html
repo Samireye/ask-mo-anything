@@ -714,6 +714,165 @@
             background: #25D366;
         }
         
+        /* Prayer Times Styles */
+        .prayer-times-container {
+            max-width: 1000px;
+            margin: 15px auto;
+            padding: 15px 20px;
+            position: relative;
+            overflow: hidden;
+            transition: transform 0.3s ease;
+            color: #333;
+            background: linear-gradient(to bottom, #fff8e1, white);
+            border-left: 4px solid gold;
+            border-radius: 4px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.08);
+        }
+        
+        .prayer-times-container:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 8px 22px rgba(0, 0, 0, 0.12);
+        }
+        
+        .prayer-times-header {
+            display: flex;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+        
+        .prayer-icon {
+            width: 40px;
+            height: 40px;
+            background: var(--primary-color);
+            color: white;
+            border-radius: 50%;
+            display: flex;
+            box-shadow: 0 3px 8px rgba(0, 0, 0, 0.15);
+            align-items: center;
+            justify-content: center;
+            margin-right: 15px;
+            font-size: 18px;
+        }
+        
+        .prayer-times-header h3 {
+            color: var(--primary-color);
+            font-weight: 600;
+            margin: 0;
+            font-size: 1.3rem;
+        }
+        
+        .prayer-times-content {
+            position: relative;
+            z-index: 1;
+            padding: 10px 0;
+        }
+        
+        .prayer-time {
+            display: flex;
+            justify-content: space-between;
+            padding: 8px 0;
+            border-bottom: 1px solid rgba(212, 175, 55, 0.2);
+        }
+        
+        .prayer-time:last-child {
+            border-bottom: none;
+        }
+        
+        .prayer-time.next-prayer {
+            background-color: rgba(212, 175, 55, 0.1);
+            padding: 10px;
+            border-radius: 4px;
+            font-weight: bold;
+            margin: 5px 0;
+        }
+        
+        .time-remaining {
+            color: var(--primary-color);
+            font-weight: bold;
+            font-size: 0.9rem;
+            margin-top: 5px;
+        }
+        
+        .location-info {
+            font-size: 0.8rem;
+            color: #666;
+            margin-top: 10px;
+            font-style: italic;
+        }
+        
+        .location-button {
+            background-color: var(--primary-color);
+            color: white;
+            border: none;
+            padding: 8px 15px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 0.9rem;
+            margin-top: 10px;
+            transition: background-color 0.3s;
+        }
+        
+        .location-button:hover {
+            background-color: #005a8c;
+        }
+        
+        /* Simple Prayer Times Styles */
+        .simple-prayer-times {
+            display: flex;
+            align-items: center;
+            margin: 15px 0;
+            padding: 10px 15px;
+            background: linear-gradient(to bottom, #fff8e1, white);
+            border-radius: 4px;
+            color: #333;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+        }
+        
+        .simple-prayer-times .prayer-icon {
+            margin-right: 12px;
+            width: 36px;
+            height: 36px;
+            background: var(--primary-color);
+            color: white;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 16px;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.15);
+        }
+        
+        .next-prayer-info, .prayer-times-content {
+            flex: 1;
+            font-size: 0.95rem;
+        }
+        
+        #header-current-prayer, #header-next-prayer {
+            margin: 5px 0;
+            font-size: 0.95em;
+        }
+        
+        #header-current-prayer {
+            font-weight: bold;
+        }
+        
+        .next-prayer-name, .current-prayer-name {
+            font-weight: bold;
+            color: var(--primary-color);
+        }
+        
+        .next-prayer-time, .current-prayer-time {
+            margin-left: 5px;
+            font-weight: 500;
+        }
+        
+        .time-until, .time-since {
+            font-size: 0.85rem;
+            color: #666;
+            margin-top: 2px;
+            font-style: italic;
+        }
+        
         @media (max-width: 768px) {
             .wisdom-arabic {
                 font-size: 1.3rem;
@@ -2328,19 +2487,18 @@
                 <div class="ramadan-dates">Eid al-Fitr • March 30, 2025</div>
             </div>
             
-            <div class="prayer-times-container">
-                <div class="prayer-times-header">Eid Prayer Information</div>
-                <div class="prayer-times">
-                    <div class="prayer-time">
-                        <span class="prayer-name">Eid Prayer</span>
-                        <span class="prayer-time-value">Check your local masjid</span>
-                    </div>
-                    <div class="prayer-time">
-                        <span class="prayer-name">Takbir</span>
-                        <span class="prayer-time-value">Allahu Akbar, Allahu Akbar, La ilaha illallah...</span>
+            <div class="prayer-times-container" id="top-prayer-times-container">
+                <div class="prayer-times-header">
+                    <div class="prayer-icon"><i class="fas fa-mosque"></i></div>
+                    <h3>Prayer Times</h3>
+                </div>
+                <div class="simple-prayer-times" id="header-simple-prayer-times">
+                    <div class="prayer-times-content">
+                        <div id="header-current-prayer">Loading current prayer...</div>
+                        <div id="header-next-prayer">Loading next prayer...</div>
+                        <button id="header-enable-location-btn" class="location-button">Enable Location</button>
                     </div>
                 </div>
-                <div class="location-info">Taqabbal Allahu minna wa minkum (May Allah accept from us and from you)</div>
             </div>
         </div>
     </div>
@@ -2383,12 +2541,17 @@
                     <a href="#" id="share-wisdom-instagram" title="Share on Instagram" class="share-wisdom-btn"><i class="fab fa-instagram"></i></a>
                     <a href="#" id="share-wisdom-whatsapp" title="Share on WhatsApp" class="share-wisdom-btn"><i class="fab fa-whatsapp"></i></a>
                 </div>
+                
+
+                
                 <div class="wisdom-divider-container">
                     <div class="wisdom-divider-line"></div>
                     <div class="wisdom-divider-icon"><i class="fas fa-star"></i></div>
                     <div class="wisdom-divider-line"></div>
                 </div>
             </div>
+            
+
         </div>
 
 
@@ -5124,7 +5287,271 @@
 
     </script>
     
-    <!-- Ramadan Prayer Times & Hadith Script -->
+    <!-- Prayer Times Script -->
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            initSimplePrayerTimes();
+        });
+        
+        function initSimplePrayerTimes() {
+            // Add event listener to the header enable location button
+            const headerEnableBtn = document.getElementById('header-enable-location-btn');
+            if (headerEnableBtn) {
+                headerEnableBtn.addEventListener('click', function() {
+                    fetchPrayerTimesForHeader();
+                    this.style.display = 'none';
+                });
+            }
+            
+            // Try to get prayer times automatically if geolocation is available
+            if (navigator.geolocation) {
+                fetchPrayerTimesForHeader();
+                
+                // Hide the enable location button if geolocation is available
+                if (headerEnableBtn) headerEnableBtn.style.display = 'none';
+            } else {
+                document.getElementById('header-current-prayer').innerHTML = 
+                    'Enable location to see prayer times';
+                document.getElementById('header-next-prayer').innerHTML = '';
+            }
+        }
+        
+        async function fetchPrayerTimesForHeader() {
+            const currentPrayerElement = document.getElementById('header-current-prayer');
+            const nextPrayerElement = document.getElementById('header-next-prayer');
+            
+            if (!currentPrayerElement || !nextPrayerElement) return;
+            
+            // Show loading state
+            currentPrayerElement.innerHTML = `<i class="fas fa-spinner fa-spin"></i> Getting prayer times...`;
+            nextPrayerElement.innerHTML = '';
+            
+            try {
+                // Get user's position
+                const position = await new Promise((resolve, reject) => {
+                    navigator.geolocation.getCurrentPosition(resolve, reject, {
+                        enableHighAccuracy: true,
+                        timeout: 10000,
+                        maximumAge: 0
+                    });
+                });
+                
+                const { latitude, longitude } = position.coords;
+                
+                // Get city name from coordinates using reverse geocoding
+                let locationName = "your location";
+                try {
+                    const geocodeResponse = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}`);
+                    const geocodeData = await geocodeResponse.json();
+                    
+                    if (geocodeData.address) {
+                        const address = geocodeData.address;
+                        locationName = address.city || address.town || address.village || address.county || "your location";
+                    }
+                } catch (error) {
+                    console.error('Error getting location name:', error);
+                }
+                
+                // Get prayer times from API
+                const date = new Date();
+                const formattedDate = `${date.getDate()}-${date.getMonth() + 1}-${date.getFullYear()}`;
+                
+                const response = await fetch(`https://api.aladhan.com/v1/timings/${formattedDate}?latitude=${latitude}&longitude=${longitude}&method=2`);
+                const data = await response.json();
+                
+                if (data.code === 200 && data.data && data.data.timings) {
+                    displayHeaderPrayerTimes(data.data.timings, locationName);
+                } else {
+                    throw new Error('Invalid response from prayer times API');
+                }
+                
+            } catch (error) {
+                console.error('Error getting prayer times:', error);
+                
+                // Show error message
+                const currentPrayerElement = document.getElementById('header-current-prayer');
+                if (currentPrayerElement) {
+                    currentPrayerElement.innerHTML = 
+                        `<i class="fas fa-exclamation-circle"></i> Could not get prayer times. <a href="#" id="header-retry-prayer-times">Retry</a>`;
+                    
+                    // Add event listener to retry link
+                    document.getElementById('header-retry-prayer-times').addEventListener('click', function(e) {
+                        e.preventDefault();
+                        fetchPrayerTimesForHeader();
+                    });
+                }
+                
+                const nextPrayerElement = document.getElementById('header-next-prayer');
+                if (nextPrayerElement) {
+                    nextPrayerElement.innerHTML = '';
+                }
+            }
+        }
+        
+        function displayHeaderPrayerTimes(timings, locationName) {
+            const currentPrayerElement = document.getElementById('header-current-prayer');
+            const nextPrayerElement = document.getElementById('header-next-prayer');
+            
+            if (!currentPrayerElement || !nextPrayerElement) return;
+            
+            // Convert 24-hour format to 12-hour format
+            function formatTime(time24) {
+                const [hours, minutes] = time24.split(':');
+                const period = hours >= 12 ? 'PM' : 'AM';
+                const hours12 = hours % 12 || 12;
+                return `${hours12}:${minutes} ${period}`;
+            }
+            
+            // Get current time
+            const now = new Date();
+            const currentHours = now.getHours();
+            const currentMinutes = now.getMinutes();
+            
+            // Define prayer names and their order
+            const prayers = [
+                { name: 'Fajr', time: timings.Fajr },
+                { name: 'Sunrise', time: timings.Sunrise },
+                { name: 'Dhuhr', time: timings.Dhuhr },
+                { name: 'Asr', time: timings.Asr },
+                { name: 'Maghrib', time: timings.Maghrib },
+                { name: 'Isha', time: timings.Isha }
+            ];
+            
+            // Find the current prayer (the last one that has passed)
+            let currentPrayer = null;
+            let nextPrayer = null;
+            
+            // First, find the next prayer
+            for (const prayer of prayers) {
+                const [prayerHours, prayerMinutes] = prayer.time.split(':').map(Number);
+                
+                if (prayerHours > currentHours || 
+                    (prayerHours === currentHours && prayerMinutes > currentMinutes)) {
+                    nextPrayer = prayer;
+                    break;
+                }
+                currentPrayer = prayer; // The last prayer that has passed
+            }
+            
+            // If no next prayer found (all prayers for today have passed)
+            if (!nextPrayer) {
+                nextPrayer = prayers[0]; // Tomorrow's Fajr
+                currentPrayer = prayers[prayers.length - 1]; // Last prayer of the day
+            }
+            
+            // If we're before the first prayer of the day
+            if (!currentPrayer) {
+                currentPrayer = prayers[prayers.length - 1]; // Last prayer of yesterday
+            }
+            
+            // Calculate time since current prayer
+            let timeSinceCurrent = '';
+            if (currentPrayer) {
+                const [prayerHours, prayerMinutes] = currentPrayer.time.split(':').map(Number);
+                
+                // Calculate time elapsed
+                let hoursElapsed = currentHours - prayerHours;
+                let minutesElapsed = currentMinutes - prayerMinutes;
+                
+                if (minutesElapsed < 0) {
+                    hoursElapsed--;
+                    minutesElapsed += 60;
+                }
+                
+                timeSinceCurrent = `${hoursElapsed}h ${minutesElapsed}m ago`;
+                
+                // If it's a very recent prayer (within 10 minutes), show 'just started'
+                if (hoursElapsed === 0 && minutesElapsed < 10) {
+                    timeSinceCurrent = 'just started';
+                }
+            }
+            
+            // Calculate time until next prayer
+            let timeUntilNext = '';
+            if (nextPrayer) {
+                const [prayerHours, prayerMinutes] = nextPrayer.time.split(':').map(Number);
+                
+                // Calculate time remaining
+                let hoursRemaining = prayerHours - currentHours;
+                let minutesRemaining = prayerMinutes - currentMinutes;
+                
+                if (minutesRemaining < 0) {
+                    hoursRemaining--;
+                    minutesRemaining += 60;
+                }
+                
+                if (nextPrayer === prayers[0] && currentPrayer === prayers[prayers.length - 1]) {
+                    timeUntilNext = 'tomorrow';
+                } else {
+                    timeUntilNext = `in ${hoursRemaining}h ${minutesRemaining}m`;
+                }
+            }
+            
+            // Build the HTML for the current prayer status
+            const currentPrayerHTML = `
+                <span class="current-prayer-name">${currentPrayer.name}</span> 
+                <span class="current-prayer-time">${formatTime(currentPrayer.time)}</span> 
+                <span class="time-since">(${timeSinceCurrent})</span>
+            `;
+            
+            // Build the HTML for the next prayer status
+            const nextPrayerHTML = `
+                <span class="next-prayer-name">Next: ${nextPrayer.name}</span> 
+                <span class="next-prayer-time">${formatTime(nextPrayer.time)}</span> 
+                <span class="time-until">(${timeUntilNext})</span> 
+                <span class="location-info">for ${locationName}</span>
+            `;
+            
+            // Update the content
+            currentPrayerElement.innerHTML = currentPrayerHTML;
+            nextPrayerElement.innerHTML = nextPrayerHTML;
+            
+            // Set up a timer to update the time remaining every minute
+            setInterval(() => {
+                updateHeaderPrayerTimes();
+            }, 60000);
+        }
+        
+        function updateHeaderPrayerTimes() {
+            // Simply re-fetch the prayer times to update the display
+            fetchPrayerTimesForHeader();
+        }
+        
+        function updateTimeRemaining(contentId = 'prayer-times-content') {
+            const container = document.getElementById(contentId);
+            if (!container) return;
+            
+            const nextPrayer = container.querySelector('.prayer-time.next-prayer');
+            if (!nextPrayer) return;
+            
+            const timeRemainingElement = nextPrayer.querySelector('.time-remaining');
+            if (!timeRemainingElement || timeRemainingElement.textContent === 'Tomorrow') return;
+            
+            // Extract current remaining time
+            const remainingText = timeRemainingElement.textContent;
+            const match = remainingText.match(/(\d+)h (\d+)m/); 
+            
+            if (match) {
+                let hours = parseInt(match[1]);
+                let minutes = parseInt(match[2]) - 1;
+                
+                if (minutes < 0) {
+                    hours--;
+                    minutes = 59;
+                }
+                
+                if (hours < 0) {
+                    // Time has elapsed, need to recalculate next prayer
+                    fetchDynamicPrayerTimes(contentId);
+                    return;
+                }
+                
+                timeRemainingElement.textContent = `${hours}h ${minutes}m remaining`;
+            }
+        }
+    </script>
+    
+    <!-- Islamic Wisdom Collection Script -->
     <script>
         // Islamic Wisdom Collection
         const islamicWisdom = [
