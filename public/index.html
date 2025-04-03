@@ -2073,7 +2073,8 @@
             padding-top: 15px;
             border-top: 1px solid #eee;
             display: flex;
-            align-items: center;
+            flex-direction: column;
+            align-items: flex-start;
             gap: 10px;
         }
 
@@ -2086,8 +2087,16 @@
 
         .share-buttons {
             display: flex;
+            flex-direction: column;
             gap: 12px;
             margin-top: 5px;
+            width: 100%;
+        }
+        
+        .share-btn-group {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 12px;
         }
 
         .share-btn {
@@ -2423,14 +2432,83 @@
             }
         }
 
+        /* Body style when chat is active on mobile - removed fixed positioning */
+        body.chat-active {
+            overflow: auto; /* Allow scrolling */
+        }
+        
         @media (max-width: 600px) {
             .chat-container {
                 padding: 15px;
                 width: 95%;
-                min-height: 400px; /* Taller on mobile */
+                min-height: 400px;
                 margin: 20px auto 30px;
                 overflow-x: hidden;
-                max-height: 70vh; /* Limit height on mobile */
+                max-height: 80vh; /* Increased height on mobile */
+                overscroll-behavior: contain; /* Prevent scroll chaining */
+                -webkit-overflow-scrolling: touch; /* Smooth scrolling on iOS */
+                position: relative;
+                z-index: 100;
+            }
+            
+            /* Mobile-specific styling for share section */
+            .share-section {
+                padding-right: 10px;
+            }
+            
+            .share-buttons {
+                padding-bottom: 10px;
+            }
+            
+            /* Full-height chat container when active */
+            .chat-container.active-chat {
+                min-height: 85vh;
+                max-height: 90vh;
+                transition: min-height 0.3s ease, max-height 0.3s ease;
+                position: relative; /* Keep normal document flow */
+                overflow-y: auto; /* Enable vertical scrolling */
+            }
+            
+            /* Expand/collapse button for chat - always visible */
+            .chat-close-btn {
+                position: absolute;
+                top: 10px;
+                right: 10px;
+                background: rgba(0, 0, 0, 0.7);
+                color: white;
+                border: none;
+                border-radius: 50%;
+                width: 40px;
+                height: 40px;
+                font-size: 18px;
+                text-align: center;
+                cursor: pointer;
+                z-index: 100;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                transition: all 0.3s ease;
+            }
+            
+            .chat-close-btn:hover {
+                transform: scale(1.1);
+                background: rgba(0, 0, 0, 0.8);
+            }
+            
+            /* Make expand/collapse button more prominent on mobile */
+            @media (max-width: 600px) {
+                .chat-close-btn {
+                    background: rgba(212, 175, 55, 0.9);
+                    color: #333;
+                    width: 44px;
+                    height: 44px;
+                    font-size: 20px;
+                    box-shadow: 0 0 8px rgba(0, 0, 0, 0.4);
+                }
+                
+                .chat-close-btn:active {
+                    transform: scale(0.95);
+                }
             }
             
             .chat-container::before {
@@ -2464,6 +2542,35 @@
             .bot-message, .user-message {
                 max-width: 100%;
                 padding: 10px 12px;
+            }
+            
+            /* Improve scrolling on mobile */
+            .chat-messages {
+                overflow-y: auto;
+                overflow-x: hidden;
+                -webkit-overflow-scrolling: touch;
+                scroll-behavior: smooth;
+                width: 100%;
+                direction: ltr; /* Ensure LTR scrolling */
+                padding-right: 5px; /* Add some padding to prevent text touching the edge */
+                max-height: 75vh; /* Ensure messages don't overflow the container */
+            }
+            
+            /* Make sure chat container active state has proper scroll behavior */
+            .chat-container.active-chat .chat-messages {
+                max-height: 70vh; /* Reduced to make room for input area */
+                overflow-y: auto;
+                padding-bottom: 20px; /* Add padding to ensure messages aren't cut off */
+            }
+            
+            /* Ensure input area is always visible in active chat */
+            .chat-container.active-chat .input-container {
+                position: relative;
+                bottom: 0;
+                width: 100%;
+                background: #fff;
+                padding: 10px;
+                border-top: 1px solid rgba(212, 175, 55, 0.3);
             }
             
             .topics-instruction {
@@ -2669,6 +2776,9 @@
         </div>
 
         <div class="chat-container">
+            <button class="chat-close-btn" id="chat-close-btn">
+                <i class="fas fa-expand-alt" id="chat-btn-icon"></i>
+            </button>
             <div class="chat-messages" id="chat-messages">
                 <!-- Ad Container - Below Header -->
                 <div class="ad-container" style="margin-bottom: 20px; text-align: center;">
@@ -4053,6 +4163,55 @@
             chatMessages = document.getElementById('chat-messages');
             userInput = document.getElementById('user-input');
             sendButton = document.getElementById('send-button');
+            
+            // Add a simple way to exit expanded chat mode on mobile
+            document.addEventListener('click', function(event) {
+                // If we click outside the chat container when it's active
+                const chatContainer = document.querySelector('.chat-container');
+                const isMobile = window.innerWidth <= 600;
+                
+                if (isMobile && chatContainer && chatContainer.classList.contains('active-chat')) {
+                    // If the click is outside the chat container
+                    if (!chatContainer.contains(event.target)) {
+                        // Reset chat container to normal height
+                        chatContainer.classList.remove('active-chat');
+                    }
+                }
+            }, { passive: true });
+            
+            // Add event listener for the close button
+            const closeButton = document.getElementById('chat-close-btn');
+            if (closeButton) {
+                closeButton.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    e.stopPropagation(); // Prevent event bubbling
+                    
+                    const chatContainer = document.querySelector('.chat-container');
+                    const chatBtnIcon = document.getElementById('chat-btn-icon');
+                    
+                    if (chatContainer) {
+                        // If the chat is expanded, collapse it
+                        if (chatContainer.classList.contains('active-chat')) {
+                            chatContainer.classList.remove('active-chat');
+                            // Change icon to expand
+                            if (chatBtnIcon) {
+                                chatBtnIcon.className = 'fas fa-expand-alt';
+                            }
+                        } 
+                        // If chat is not expanded, expand it
+                        else {
+                            chatContainer.classList.add('active-chat');
+                            chatContainer.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                            // Change icon to compress
+                            if (chatBtnIcon) {
+                                chatBtnIcon.className = 'fas fa-compress-alt';
+                            }
+                        }
+                    }
+                    
+                    console.log('Close button clicked');
+                });
+            }
 
             // Handle Enter key
             // Auto-resize textarea on input
@@ -4721,6 +4880,22 @@
             userMessage.className = 'message user-message';
             userMessage.textContent = message;
             chatMessages.appendChild(userMessage);
+            
+            // Expand chat container to full height when a question is asked
+            const chatContainer = document.querySelector('.chat-container');
+            if (chatContainer) {
+                chatContainer.classList.add('active-chat');
+                
+                // Make sure the chat container is visible
+                chatContainer.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                
+                // Update the expand/collapse button icon
+                const chatBtnIcon = document.getElementById('chat-btn-icon');
+                if (chatBtnIcon) {
+                    chatBtnIcon.className = 'fas fa-compress-alt';
+                }
+            }
+            
             scrollToBottom();
             
             // SEO Enhancement: Show related topics based on user query
@@ -5298,21 +5473,25 @@
                 shareSection.innerHTML = `
                     <div class="share-text">Continue the conversation:</div>
                     <div class="share-buttons">
-                        <button class="share-btn x-btn" onclick="shareToTwitter(this.closest('.complete-response-container'))" title="Share on X">
-                            <span class="x-icon">𝕏</span>
-                        </button>
-                        <button class="share-btn" onclick="shareToWhatsApp(this.closest('.complete-response-container'))" title="Share on WhatsApp">
-                            <i class="fab fa-whatsapp"></i>
-                        </button>
-                        <button class="share-btn" onclick="shareToReddit(this.closest('.complete-response-container'))" title="Share on Reddit">
-                            <i class="fab fa-reddit"></i>
-                        </button>
-                        <button class="share-btn" onclick="copyToClipboard(this.closest('.complete-response-container'))" title="Copy to clipboard">
-                            <i class="far fa-copy"></i>
-                        </button>
-                        <button class="share-btn" onclick="saveDirectResponse(this)" title="Save this response">
-                            <i class="far fa-bookmark"></i>
-                        </button>
+                        <div class="share-btn-group">
+                            <button class="share-btn x-btn" onclick="shareToTwitter(this.closest('.complete-response-container'))" title="Share on X">
+                                <span class="x-icon">𝕏</span>
+                            </button>
+                            <button class="share-btn" onclick="shareToWhatsApp(this.closest('.complete-response-container'))" title="Share on WhatsApp">
+                                <i class="fab fa-whatsapp"></i>
+                            </button>
+                            <button class="share-btn" onclick="shareToReddit(this.closest('.complete-response-container'))" title="Share on Reddit">
+                                <i class="fab fa-reddit"></i>
+                            </button>
+                        </div>
+                        <div class="share-btn-group">
+                            <button class="share-btn" onclick="copyToClipboard(this.closest('.complete-response-container'))" title="Copy to clipboard">
+                                <i class="far fa-copy"></i>
+                            </button>
+                            <button class="share-btn" onclick="saveDirectResponse(this)" title="Save this response">
+                                <i class="far fa-bookmark"></i>
+                            </button>
+                        </div>
                     </div>
                 `;
                 completeResponseContainer.appendChild(shareSection);
@@ -5404,18 +5583,73 @@
                 
                 const { latitude, longitude } = position.coords;
                 
-                // Get city name from coordinates using reverse geocoding
+                // Get city name from coordinates using reverse geocoding with caching
                 let locationName = "your location";
-                try {
-                    const geocodeResponse = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}`);
-                    const geocodeData = await geocodeResponse.json();
-                    
-                    if (geocodeData.address) {
-                        const address = geocodeData.address;
-                        locationName = address.city || address.town || address.village || address.county || "your location";
+                
+                // Check if we have a cached location name
+                const cachedLocation = localStorage.getItem('cachedLocationName');
+                const cachedCoords = localStorage.getItem('cachedCoords');
+                const cacheTimestamp = localStorage.getItem('locationCacheTimestamp');
+                const now = new Date().getTime();
+                
+                // Cache is valid for 24 hours (86400000 ms)
+                const cacheValid = cacheTimestamp && (now - parseInt(cacheTimestamp) < 86400000);
+                
+                // Check if coordinates are close enough to cached ones (within ~5km)
+                let coordsMatch = false;
+                if (cachedCoords) {
+                    const [cachedLat, cachedLon] = cachedCoords.split(',').map(Number);
+                    const distance = Math.sqrt(
+                        Math.pow(latitude - cachedLat, 2) + 
+                        Math.pow(longitude - cachedLon, 2)
+                    );
+                    // If distance is less than ~0.05 degrees (roughly 5km)
+                    coordsMatch = distance < 0.05;
+                }
+                
+                // Use cached location if valid and coordinates match
+                if (cacheValid && coordsMatch && cachedLocation) {
+                    locationName = cachedLocation;
+                    console.log('Using cached location name:', locationName);
+                } else {
+                    try {
+                        // Add a random delay between 1-3 seconds to avoid rate limiting
+                        await new Promise(resolve => setTimeout(resolve, 1000 + Math.random() * 2000));
+                        
+                        // Add user agent to comply with Nominatim usage policy
+                        const geocodeResponse = await fetch(
+                            `https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}`,
+                            {
+                                headers: {
+                                    'User-Agent': 'AskMoAnything/1.0 (Islamic prayer app)'
+                                }
+                            }
+                        );
+                        
+                        if (!geocodeResponse.ok) {
+                            throw new Error(`HTTP error! status: ${geocodeResponse.status}`);
+                        }
+                        
+                        const geocodeData = await geocodeResponse.json();
+                        
+                        if (geocodeData.address) {
+                            const address = geocodeData.address;
+                            locationName = address.city || address.town || address.village || address.county || "your location";
+                            
+                            // Cache the location name and coordinates
+                            localStorage.setItem('cachedLocationName', locationName);
+                            localStorage.setItem('cachedCoords', `${latitude},${longitude}`);
+                            localStorage.setItem('locationCacheTimestamp', now.toString());
+                            console.log('Cached new location name:', locationName);
+                        }
+                    } catch (error) {
+                        console.error('Error getting location name:', error);
+                        // If we have any cached location, use it as fallback even if expired
+                        if (cachedLocation) {
+                            locationName = cachedLocation;
+                            console.log('Using expired cached location as fallback:', locationName);
+                        }
                     }
-                } catch (error) {
-                    console.error('Error getting location name:', error);
                 }
                 
                 // Get prayer times from API
@@ -5426,13 +5660,40 @@
                 const data = await response.json();
                 
                 if (data.code === 200 && data.data && data.data.timings) {
+                    // Store the data in our global cache
+                    cachedPrayerTimings = data.data.timings;
+                    cachedLocationName = locationName;
+                    lastPrayerTimeFetch = new Date().getTime();
+                    
+                    // Display the data
                     displayHeaderPrayerTimes(data.data.timings, locationName);
+                    
+                    // Set up a single interval if it doesn't exist yet
+                    if (!headerPrayerTimesInterval) {
+                        headerPrayerTimesInterval = setInterval(() => {
+                            // This will use cached data most of the time
+                            updateHeaderPrayerTimes();
+                        }, 60000); // Update every minute
+                    }
                 } else {
                     throw new Error('Invalid response from prayer times API');
                 }
                 
             } catch (error) {
-                console.error('Error getting prayer times:', error);
+                // Only log the error if it's not already been logged recently
+                // This prevents console spam
+                const lastErrorTime = localStorage.getItem('lastPrayerTimesErrorTime');
+                const now = new Date().getTime();
+                if (!lastErrorTime || (now - parseInt(lastErrorTime) > 60000)) { // Only log once per minute
+                    console.error('Error getting prayer times:', error);
+                    localStorage.setItem('lastPrayerTimesErrorTime', now.toString());
+                }
+                
+                // If we have cached data, use it even if it's old
+                if (cachedPrayerTimings) {
+                    displayHeaderPrayerTimes(cachedPrayerTimings, cachedLocationName);
+                    return;
+                }
                 
                 // Show error message
                 const currentPrayerElement = document.getElementById('header-current-prayer');
@@ -5597,15 +5858,32 @@
             currentPrayerElement.innerHTML = currentPrayerHTML;
             nextPrayerElement.innerHTML = nextPrayerHTML;
             
-            // Set up a timer to update the time remaining every minute
-            setInterval(() => {
-                updateHeaderPrayerTimes();
-            }, 60000);
+            // We'll set up a single global timer in the initialization code
+            // instead of creating a new interval every time this function is called
         }
         
+        // Store prayer times data globally
+        let cachedPrayerTimings = null;
+        let cachedLocationName = "your location";
+        let lastPrayerTimeFetch = 0;
+        let headerPrayerTimesInterval = null;
+        
         function updateHeaderPrayerTimes() {
-            // Simply re-fetch the prayer times to update the display
-            fetchPrayerTimesForHeader();
+            const currentTime = new Date().getTime();
+            const currentPrayerElement = document.getElementById('header-current-prayer');
+            const nextPrayerElement = document.getElementById('header-next-prayer');
+            
+            if (!currentPrayerElement || !nextPrayerElement) return;
+            
+            // If we have cached prayer times and they're less than 6 hours old, just update the display
+            // without making a new API call
+            if (cachedPrayerTimings && (currentTime - lastPrayerTimeFetch < 6 * 60 * 60 * 1000)) {
+                // Just update the times without making a new API call
+                displayHeaderPrayerTimes(cachedPrayerTimings, cachedLocationName);
+            } else {
+                // Only fetch new data if our cache is older than 6 hours
+                fetchPrayerTimesForHeader();
+            }
         }
         
         function updateTimeRemaining(contentId = 'prayer-times-content') {
