@@ -1864,27 +1864,7 @@
             margin-bottom: 5px;
         }
 
-        .chat-container {
-            flex: 1;
-            background: white;
-            border-radius: 20px;
-            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
-            padding: 25px;
-            margin: 30px auto 40px;
-            overflow-y: auto;
-            min-height: 350px; /* Increased height */
-            max-height: calc(100vh - 250px);
-            display: flex;
-            flex-direction: column;
-            transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
-            will-change: min-height;
-            width: 90%; /* Control width */
-            max-width: 1000px; /* Maximum width */
-            border: 1px solid rgba(0, 128, 128, 0.2);
-            position: relative;
-        }
-        
-        /* Add a subtle highlight to make it stand out */
+        /* Main chat container styling */
         .chat-container {
             flex: 1;
             background: white;
@@ -1893,16 +1873,17 @@
             padding: 25px;
             margin: 30px auto 40px;
             overflow-y: auto;
-            min-height: 350px;
-            max-height: calc(100vh - 250px);
+            min-height: 500px; /* Increased height */
+            max-height: calc(100vh - 200px);
             display: flex;
             flex-direction: column;
             transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
             will-change: min-height;
-            width: 90%;
-            max-width: 1000px;
+            width: 90%; /* Control width */
+            max-width: 1000px; /* Maximum width */
             border: 2px solid var(--ramadan-gold);
             position: relative;
+            z-index: 10;
             background: linear-gradient(to bottom, rgba(255, 248, 225, 0.3), rgba(255, 255, 255, 0.9));
         }
         
@@ -1929,6 +1910,7 @@
             flex-direction: column;
             transition: height 0.3s ease;
             gap: 20px; /* Add space between messages */
+            min-height: 300px; /* Ensure minimum height for messages area */
         }
 
         .message {
@@ -2263,6 +2245,9 @@
             margin-top: auto;
             border: 1px solid rgba(0, 128, 128, 0.15);
             transition: all 0.3s ease;
+            position: sticky;
+            bottom: 0;
+            z-index: 5;
         }
         
         .input-container:focus-within {
@@ -2441,14 +2426,16 @@
             .chat-container {
                 padding: 15px;
                 width: 95%;
-                min-height: 400px;
+                min-height: 500px;
                 margin: 20px auto 30px;
                 overflow-x: hidden;
-                max-height: 80vh; /* Increased height on mobile */
+                max-height: 85vh; /* Increased height on mobile */
                 overscroll-behavior: contain; /* Prevent scroll chaining */
                 -webkit-overflow-scrolling: touch; /* Smooth scrolling on iOS */
                 position: relative;
                 z-index: 100;
+                display: flex;
+                flex-direction: column;
             }
             
             /* Mobile-specific styling for share section */
@@ -2585,6 +2572,10 @@
             .chat-messages {
                 padding: 15px;
                 gap: 15px;
+                flex: 1;
+                min-height: 350px;
+                display: flex;
+                flex-direction: column;
             }
 
             .message {
